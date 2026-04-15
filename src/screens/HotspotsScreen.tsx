@@ -4,12 +4,14 @@ import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
 import { hotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
+import { useDisease } from "@/contexts/DiseaseContext";
 
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
 
 export default function HotspotsScreen() {
   const [timeRange, setTimeRange] = useState<"2weeks" | "4weeks">("4weeks");
   const { appliedFilters } = useFilters();
+  const { diseaseName, currentDisease } = useDisease();
 
   const hotspots = getFilteredHotspots(appliedFilters.district, appliedFilters.block);
 
@@ -19,8 +21,8 @@ export default function HotspotsScreen() {
 
   const displayHotspots = hotspots.map((r) => ({
     ...r,
-    currentCases: timeRange === "2weeks" ? Math.round(r.currentCases * 0.55) : r.currentCases,
-    prevCases: timeRange === "2weeks" ? Math.round(r.prevCases * 0.55) : r.prevCases,
+    currentCases: Math.round((timeRange === "2weeks" ? r.currentCases * 0.55 : r.currentCases) * currentDisease.caseMultiplier),
+    prevCases: Math.round((timeRange === "2weeks" ? r.prevCases * 0.55 : r.prevCases) * currentDisease.caseMultiplier),
   }));
 
   const areaLabel = appliedFilters.block !== "All Blocks"
@@ -29,7 +31,6 @@ export default function HotspotsScreen() {
     ? "Blocks / Municipalities"
     : "Districts";
 
-  // Check if there are no significant cases but forecast shows high risk
   const totalCases = displayHotspots.reduce((sum, h) => sum + h.currentCases, 0);
   const predictions = getOutbreakPredictions(appliedFilters.district, appliedFilters.block);
   const hasHighForecast = predictions.some(p => p.risk === "high");
@@ -41,9 +42,9 @@ export default function HotspotsScreen() {
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Hotspots — Past Data</h2>
+          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Hotspots — Past Data</h2>
           <p className="text-xs text-muted-foreground">
-            Hotspots are based on confirmed cases in the last {timeRange === "4weeks" ? "4" : "2"} weeks · No forecast data shown here · Showing: {areaLabel.toLowerCase()}
+            Hotspots are based on confirmed {diseaseName.toLowerCase()} cases in the last {timeRange === "4weeks" ? "4" : "2"} weeks · No forecast data shown here · Showing: {areaLabel.toLowerCase()}
           </p>
         </div>
         <div className="tab-nav">
@@ -56,7 +57,7 @@ export default function HotspotsScreen() {
         <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm">
           <Info className="h-4 w-4 text-primary flex-shrink-0" />
           <span className="text-foreground">
-            No significant cases reported in the last {timeRange === "4weeks" ? "4" : "2"} weeks.
+            No significant {diseaseName.toLowerCase()} cases reported in the last {timeRange === "4weeks" ? "4" : "2"} weeks.
             <span className="text-muted-foreground ml-1">However, the Forecast tab shows high risk due to predictive signals (climate / trend / history).</span>
           </span>
         </div>
@@ -89,7 +90,7 @@ export default function HotspotsScreen() {
 
       {displayHotspots.length > 0 ? (
         <div className="section-card p-5">
-          <h3 className="section-title mb-3">Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks · {areaLabel}</h3>
+          <h3 className="section-title mb-3">{diseaseName} Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks · {areaLabel}</h3>
           <div className="overflow-auto">
             <table className="w-full text-sm">
               <thead>
@@ -120,7 +121,7 @@ export default function HotspotsScreen() {
         </div>
       ) : (
         <div className="section-card p-5 text-center text-muted-foreground text-sm">
-          No hotspot data available for the selected area and time range.
+          No {diseaseName.toLowerCase()} hotspot data available for the selected area and time range.
         </div>
       )}
     </div>

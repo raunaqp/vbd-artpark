@@ -5,6 +5,7 @@ import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
 import { weeklyTimeSeries, dailyTimeSeries, monthlyTimeSeries, ageDistribution, genderDistribution, lineListingData } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
+import { useDisease } from "@/contexts/DiseaseContext";
 import { Download } from "lucide-react";
 
 type TimeRange = "daily" | "weekly" | "monthly";
@@ -14,6 +15,7 @@ export default function CaseSurveillanceScreen() {
   const [timeRange, setTimeRange] = useState<TimeRange>("weekly");
   const [search, setSearch] = useState("");
   const { appliedFilters } = useFilters();
+  const { diseaseName } = useDisease();
 
   const timeData = (timeRange === "weekly" ? weeklyTimeSeries : timeRange === "daily" ? dailyTimeSeries : monthlyTimeSeries) as any[];
   const xKey = timeRange === "weekly" ? "date" : timeRange === "daily" ? "date" : "month";
@@ -33,7 +35,7 @@ export default function CaseSurveillanceScreen() {
 
       <div className="section-card p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="section-title">Cases Over Time (Positive, Samples, TPR)</h3>
+          <h3 className="section-title">{diseaseName} Cases Over Time (Positive, Samples, TPR)</h3>
           <div className="tab-nav">
             {(["daily", "weekly", "monthly"] as TimeRange[]).map((t) => (
               <button key={t} onClick={() => setTimeRange(t)} className={`tab-nav-item capitalize ${timeRange === t ? "tab-nav-item-active" : ""}`}>{t}</button>
@@ -87,7 +89,7 @@ export default function CaseSurveillanceScreen() {
 
       <div className="section-card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="section-title">Line Listing</h3>
+          <h3 className="section-title">{diseaseName} Line Listing</h3>
           <div className="flex gap-3">
             <input
               placeholder="Search..."

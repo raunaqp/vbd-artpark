@@ -1,5 +1,6 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug } from "lucide-react";
 import { useRole, roles } from "@/contexts/RoleContext";
+import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { dataQualityIssues } from "@/data/mockData";
 import { useState } from "react";
 
@@ -23,23 +24,54 @@ interface Props {
 
 export default function DashboardLayout({ activeTab, onTabChange, children }: Props) {
   const { currentRole, setRole } = useRole();
+  const { currentDisease, setDisease } = useDisease();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showReportMenu, setShowReportMenu] = useState(false);
+  const [showDiseaseMenu, setShowDiseaseMenu] = useState(false);
   const [dataIssuesExpanded, setDataIssuesExpanded] = useState(false);
 
   const reportOptions = ["Weekly Report", "District Summary", "NVBDCP Format", "Line Listing"];
+
+  const closeAll = () => { setShowRoleMenu(false); setShowReportMenu(false); setShowDiseaseMenu(false); };
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="dashboard-header px-6 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Dengue Early Warning System</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Early Warning System for Vector-Borne Diseases</h1>
           <p className="text-xs opacity-80">Department of Health · Andhra Pradesh</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Disease Selector */}
           <div className="relative">
             <button
-              onClick={() => { setShowReportMenu(!showReportMenu); setShowRoleMenu(false); }}
+              onClick={() => { setShowDiseaseMenu(!showDiseaseMenu); setShowRoleMenu(false); setShowReportMenu(false); }}
+              className="flex items-center gap-1.5 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
+            >
+              <Bug className="h-3.5 w-3.5" />
+              {currentDisease.label}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showDiseaseMenu && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+                <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">Select Disease</div>
+                {diseases.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => { setDisease(d.id); setShowDiseaseMenu(false); }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${currentDisease.id === d.id ? "bg-muted font-medium text-foreground" : "text-foreground"}`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Download Report */}
+          <div className="relative">
+            <button
+              onClick={() => { setShowReportMenu(!showReportMenu); setShowRoleMenu(false); setShowDiseaseMenu(false); }}
               className="flex items-center gap-1.5 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
             >
               <Download className="h-3.5 w-3.5" />
@@ -57,9 +89,10 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
             )}
           </div>
 
+          {/* Role Switcher */}
           <div className="relative">
             <button
-              onClick={() => { setShowRoleMenu(!showRoleMenu); setShowReportMenu(false); }}
+              onClick={() => { setShowRoleMenu(!showRoleMenu); setShowReportMenu(false); setShowDiseaseMenu(false); }}
               className="flex items-center gap-2 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
             >
               <User className="h-3.5 w-3.5" />

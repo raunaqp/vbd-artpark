@@ -9,6 +9,7 @@ import SignalsScreen from "@/screens/SignalsScreen";
 import DataUploadScreen from "@/screens/DataUploadScreen";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { FilterProvider } from "@/contexts/FilterContext";
+import { DiseaseProvider } from "@/contexts/DiseaseContext";
 
 const screens: Record<TabId, React.ComponentType> = {
   overview: OverviewScreen,
@@ -26,11 +27,13 @@ export default function Index() {
 
   return (
     <RoleProvider>
-      <FilterProvider>
-        <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-          <Screen />
-        </DashboardLayout>
-      </FilterProvider>
+      <DiseaseProvider>
+        <FilterProvider>
+          <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+            <Screen />
+          </DashboardLayout>
+        </FilterProvider>
+      </DiseaseProvider>
     </RoleProvider>
   );
 }

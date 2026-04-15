@@ -1,7 +1,8 @@
 import { Shield, AlertTriangle, Info } from "lucide-react";
-import { actionsByScope, getFilteredRegions } from "@/data/mockData";
+import { getFilteredRegions } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
+import { useDisease } from "@/contexts/DiseaseContext";
 
 const riskIcons = { high: AlertTriangle, moderate: Shield, low: Info };
 const riskHeadings: Record<string, string> = {
@@ -13,9 +14,9 @@ const riskHeadings: Record<string, string> = {
 export default function RecommendedActions() {
   const { currentRole } = useRole();
   const { appliedFilters } = useFilters();
+  const { currentDisease, diseaseName } = useDisease();
   const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
 
-  // Determine action scope based on what we're viewing
   const scopeLevel = appliedFilters.block !== "All Blocks"
     ? "ward"
     : appliedFilters.district !== "All Districts"
@@ -31,7 +32,7 @@ export default function RecommendedActions() {
   return (
     <div className="section-card p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="section-title">Recommended Actions</h3>
+        <h3 className="section-title">Recommended Actions — {diseaseName}</h3>
         <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
           {scopeLevel}-level actions · {currentRole.roleName} · {currentRole.userName}
         </span>
@@ -40,7 +41,7 @@ export default function RecommendedActions() {
         {(["high", "moderate", "low"] as const).map((level) => {
           const Icon = riskIcons[level];
           const areas = grouped[level];
-          const actions = actionsByScope[level]?.[scopeLevel] || [];
+          const actions = currentDisease.actions[level]?.[scopeLevel] || [];
           if (areas.length === 0) return null;
           return (
             <div key={level} className={`rounded-lg border p-4 ${

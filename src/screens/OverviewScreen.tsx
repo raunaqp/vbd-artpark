@@ -5,12 +5,15 @@ import DashboardMap from "@/components/DashboardMap";
 import RegionTable from "@/components/RegionTable";
 import RecommendedActions from "@/components/RecommendedActions";
 import { useFilters } from "@/contexts/FilterContext";
-import { getFilteredRegions, getSituationSummary } from "@/data/mockData";
+import { useDisease } from "@/contexts/DiseaseContext";
+import { getFilteredRegions, getSituationSummary, applyDiseaseMultiplier } from "@/data/mockData";
 
 export default function OverviewScreen() {
   const { appliedFilters } = useFilters();
-  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
-  const summary = getSituationSummary(regions, appliedFilters.district, appliedFilters.block);
+  const { currentDisease, diseaseName } = useDisease();
+  const rawRegions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
+  const summary = getSituationSummary(regions, diseaseName, appliedFilters.district, appliedFilters.block);
 
   const riskDistribution = {
     high: regions.filter((r) => r.risk === "high").length,
@@ -29,7 +32,7 @@ export default function OverviewScreen() {
       <GlobalFilters />
 
       <div className="section-card p-4 mb-6">
-        <h3 className="section-title mb-2">Situation Summary</h3>
+        <h3 className="section-title mb-2">Situation Summary — {diseaseName}</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">{summary}</p>
       </div>
 

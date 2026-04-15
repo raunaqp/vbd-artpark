@@ -13,13 +13,14 @@ const riskHeadings: Record<string, string> = {
 export default function RecommendedActions() {
   const { currentRole } = useRole();
   const { appliedFilters } = useFilters();
-  const regions = getFilteredRegions(appliedFilters.district);
+  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
 
-  const scopeLevel = currentRole.scope === "state" || currentRole.scope === "district"
-    ? "district"
-    : currentRole.scope === "municipality"
+  // Determine action scope based on what we're viewing
+  const scopeLevel = appliedFilters.block !== "All Blocks"
     ? "ward"
-    : "block";
+    : appliedFilters.district !== "All Districts"
+    ? "block"
+    : "district";
 
   const grouped = {
     high: regions.filter((r) => r.risk === "high"),
@@ -32,7 +33,7 @@ export default function RecommendedActions() {
       <div className="flex items-center justify-between mb-4">
         <h3 className="section-title">Recommended Actions</h3>
         <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-          {scopeLevel}-level actions · {currentRole.roleName}
+          {scopeLevel}-level actions · {currentRole.roleName} · {currentRole.userName}
         </span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

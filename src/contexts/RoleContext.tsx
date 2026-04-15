@@ -18,19 +18,20 @@ export interface RoleInfo {
   scope: "state" | "district" | "block" | "municipality";
   location: string;
   roleName: string;
+  userName: string;
 }
 
 export const roles: RoleInfo[] = [
-  { id: "state_officer", label: "State Surveillance Officer", scope: "state", location: "Andhra Pradesh", roleName: "State Officer" },
-  { id: "district_visakhapatnam", label: "District — Visakhapatnam", scope: "district", location: "Visakhapatnam", roleName: "DHO" },
-  { id: "district_guntur", label: "District — Guntur", scope: "district", location: "Guntur", roleName: "DHO" },
-  { id: "district_kurnool", label: "District — Kurnool", scope: "district", location: "Kurnool", roleName: "DHO" },
-  { id: "block_bheemunipatnam", label: "Block — Bheemunipatnam", scope: "block", location: "Bheemunipatnam", roleName: "Block Worker" },
-  { id: "block_anakapalle", label: "Block — Anakapalle", scope: "block", location: "Anakapalle", roleName: "Block Worker" },
-  { id: "block_tenali", label: "Block — Tenali", scope: "block", location: "Tenali", roleName: "Block Worker" },
-  { id: "municipality_vizag", label: "Municipality — Vizag MC", scope: "municipality", location: "Vizag MC", roleName: "Municipal Officer" },
-  { id: "municipality_vijayawada", label: "Municipality — Vijayawada MC", scope: "municipality", location: "Vijayawada MC", roleName: "Municipal Officer" },
-  { id: "analyst", label: "Analyst (Full Access)", scope: "state", location: "Andhra Pradesh", roleName: "Analyst" },
+  { id: "state_officer", label: "State Surveillance Officer", scope: "state", location: "Andhra Pradesh", roleName: "State Officer", userName: "Venkata Rao" },
+  { id: "district_visakhapatnam", label: "District — Visakhapatnam", scope: "district", location: "Visakhapatnam", roleName: "DHO", userName: "Lakshmi Prasad" },
+  { id: "district_guntur", label: "District — Guntur", scope: "district", location: "Guntur", roleName: "DHO", userName: "Ravi Reddy" },
+  { id: "district_kurnool", label: "District — Kurnool", scope: "district", location: "Kurnool", roleName: "DHO", userName: "Sudha Naidu" },
+  { id: "block_bheemunipatnam", label: "Block — Bheemunipatnam", scope: "block", location: "Bheemunipatnam", roleName: "Block Worker", userName: "Satya Murthy" },
+  { id: "block_anakapalle", label: "Block — Anakapalle", scope: "block", location: "Anakapalle", roleName: "Block Worker", userName: "Ramesh Babu" },
+  { id: "block_tenali", label: "Block — Tenali", scope: "block", location: "Tenali", roleName: "Block Worker", userName: "Prasad Varma" },
+  { id: "municipality_vizag", label: "Municipality — Vizag MC", scope: "municipality", location: "Vizag MC", roleName: "Municipal Officer", userName: "Padmavathi" },
+  { id: "municipality_vijayawada", label: "Municipality — Vijayawada MC", scope: "municipality", location: "Vijayawada MC", roleName: "Municipal Officer", userName: "Kishore Babu" },
+  { id: "analyst", label: "Analyst (Full Access)", scope: "state", location: "Andhra Pradesh", roleName: "Analyst", userName: "Admin" },
 ];
 
 interface RoleContextType {

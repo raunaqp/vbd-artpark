@@ -21,8 +21,9 @@ export default function CaseSurveillanceScreen() {
   const filteredListing = lineListingData.filter((r) => {
     const matchesSearch = Object.values(r).some((v) => String(v).toLowerCase().includes(search.toLowerCase()));
     const matchesDistrict = appliedFilters.district === "All Districts" || r.district === appliedFilters.district;
+    const matchesBlock = appliedFilters.block === "All Blocks" || r.block === appliedFilters.block;
     const matchesArea = appliedFilters.areaType === "all" || r.urbanRural.toLowerCase() === appliedFilters.areaType;
-    return matchesSearch && matchesDistrict && matchesArea;
+    return matchesSearch && matchesDistrict && matchesBlock && matchesArea;
   });
 
   return (
@@ -30,7 +31,6 @@ export default function CaseSurveillanceScreen() {
       <GlobalFilters />
       <KpiCards />
 
-      {/* Time Series Chart */}
       <div className="section-card p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="section-title">Cases Over Time (Positive, Samples, TPR)</h3>
@@ -54,7 +54,6 @@ export default function CaseSurveillanceScreen() {
         </ResponsiveContainer>
       </div>
 
-      {/* Demographics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="section-card p-5">
           <h3 className="section-title mb-4">Age Distribution</h3>
@@ -81,13 +80,11 @@ export default function CaseSurveillanceScreen() {
         </div>
       </div>
 
-      {/* Map */}
       <div className="mb-6">
         <h3 className="section-title mb-3">Geospatial Distribution</h3>
         <DashboardMap height="350px" />
       </div>
 
-      {/* Line Listing */}
       <div className="section-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="section-title">Line Listing</h3>

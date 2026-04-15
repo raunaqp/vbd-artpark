@@ -1,5 +1,6 @@
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, ReferenceLine } from "recharts";
-import { weatherObserved, weatherForecast, weatherData } from "@/data/mockData";
+import { weatherObserved, weatherForecast } from "@/data/mockData";
+import GlobalFilters from "@/components/GlobalFilters";
 
 function WeatherTable({ data, label }: { data: typeof weatherObserved; label: string }) {
   return (
@@ -9,7 +10,7 @@ function WeatherTable({ data, label }: { data: typeof weatherObserved; label: st
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              {["Wk", "End Date", "Rain (mm)", "Temp (°C)", "Max T", "Min T", "Humidity %"].map((h) => (
+              {["Week", "End Date", "Rain (mm)", "Temp (°C)", "Max T", "Min T", "Humidity %"].map((h) => (
                 <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
               ))}
             </tr>
@@ -41,10 +42,12 @@ function WeatherTable({ data, label }: { data: typeof weatherObserved; label: st
 export default function WeatherScreen() {
   return (
     <div className="space-y-6">
-      {/* Section A: Observed (Past 4 weeks) */}
+      <GlobalFilters />
+
+      {/* Section A: Observed (W-4 to W-1) */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Weather (Last 4 Weeks)</h2>
-        <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations</p>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Weather (W-4 to W-1)</h2>
+        <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations · Past 4 weeks</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="section-card p-5">
@@ -54,7 +57,7 @@ export default function WeatherScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
                 <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+                <Tooltip labelFormatter={(v) => {const d = weatherObserved.find(w => w.week === v); return d ? `${v} (${d.endDate})` : v;}} />
                 <Bar dataKey="rainfall" fill="hsl(215, 70%, 55%)" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -66,7 +69,7 @@ export default function WeatherScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
                 <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} domain={[10, 40]} />
-                <Tooltip />
+                <Tooltip labelFormatter={(v) => {const d = weatherObserved.find(w => w.week === v); return d ? `${v} (${d.endDate})` : v;}} />
                 <ReferenceArea y1={25} y2={32} fill="hsl(25, 90%, 50%)" fillOpacity={0.08} />
                 <Line type="monotone" dataKey="temp" stroke="hsl(25, 90%, 50%)" strokeWidth={2} dot={{ r: 3, fill: "hsl(25, 90%, 50%)" }} />
               </LineChart>
@@ -79,7 +82,7 @@ export default function WeatherScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
                 <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
-                <Tooltip />
+                <Tooltip labelFormatter={(v) => {const d = weatherObserved.find(w => w.week === v); return d ? `${v} (${d.endDate})` : v;}} />
                 <ReferenceArea y1={60} y2={80} fill="hsl(142, 50%, 45%)" fillOpacity={0.08} />
                 <Area type="monotone" dataKey="humidity" stroke="hsl(142, 50%, 45%)" fill="hsl(142, 50%, 45%)" fillOpacity={0.2} strokeWidth={2} />
               </AreaChart>
@@ -87,13 +90,13 @@ export default function WeatherScreen() {
           </div>
         </div>
 
-        <WeatherTable data={weatherObserved} label="Observed Climate Data" />
+        <WeatherTable data={weatherObserved} label="Observed Climate Data (W-4 to W-1)" />
       </div>
 
-      {/* Section B: Forecast (Next 8 weeks) */}
+      {/* Section B: Forecast (W+1 to W+8) */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Weather Forecast (Next 8 Weeks)</h2>
-        <p className="text-xs text-muted-foreground mb-4">Projected meteorological data — source: IMD extended range forecast</p>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Weather Forecast (W+1 to W+8)</h2>
+        <p className="text-xs text-muted-foreground mb-4">Projected meteorological data — source: IMD extended range forecast · Next 8 weeks</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="section-card p-5">
@@ -103,7 +106,7 @@ export default function WeatherScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
                 <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+                <Tooltip labelFormatter={(v) => {const d = weatherForecast.find(w => w.week === v); return d ? `${v} (${d.endDate})` : v;}} />
                 <ReferenceLine y={80} stroke="hsl(0, 72%, 51%)" strokeDasharray="3 3" />
                 <Bar dataKey="rainfall" fill="hsl(215, 70%, 55%)" radius={[2, 2, 0, 0]} opacity={0.7} />
               </BarChart>
@@ -116,7 +119,7 @@ export default function WeatherScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
                 <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} domain={[20, 40]} />
-                <Tooltip />
+                <Tooltip labelFormatter={(v) => {const d = weatherForecast.find(w => w.week === v); return d ? `${v} (${d.endDate})` : v;}} />
                 <ReferenceArea y1={25} y2={32} fill="hsl(25, 90%, 50%)" fillOpacity={0.08} />
                 <Line type="monotone" dataKey="temp" stroke="hsl(25, 90%, 50%)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: "hsl(25, 90%, 50%)" }} />
               </LineChart>
@@ -129,7 +132,7 @@ export default function WeatherScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
                 <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
-                <Tooltip />
+                <Tooltip labelFormatter={(v) => {const d = weatherForecast.find(w => w.week === v); return d ? `${v} (${d.endDate})` : v;}} />
                 <ReferenceArea y1={60} y2={80} fill="hsl(142, 50%, 45%)" fillOpacity={0.08} />
                 <Area type="monotone" dataKey="humidity" stroke="hsl(142, 50%, 45%)" fill="hsl(142, 50%, 45%)" fillOpacity={0.15} strokeWidth={2} strokeDasharray="6 3" />
               </AreaChart>
@@ -137,7 +140,7 @@ export default function WeatherScreen() {
           </div>
         </div>
 
-        <WeatherTable data={weatherForecast} label="Forecast Climate Data" />
+        <WeatherTable data={weatherForecast} label="Forecast Climate Data (W+1 to W+8)" />
       </div>
     </div>
   );

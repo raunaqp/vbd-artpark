@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useRole } from "./RoleContext";
-import { districts, blocks, wards } from "@/data/mockData";
+import { districts, subDistrictData, villageData, wardData } from "@/data/mockData";
 
 interface FilterState {
   district: string;
@@ -19,6 +19,8 @@ interface FilterContextType {
   appliedFilters: FilterState;
   isLocked: (field: "district" | "block" | "ward") => boolean;
   getLabel: (field: "district" | "block") => string;
+  drillDown: (area: string, level: "district" | "block") => void;
+  breadcrumb: string[];
 }
 
 const defaultFilters: FilterState = {
@@ -83,8 +85,30 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     return field === "district" ? "District" : "Block / Municipality";
   };
 
+  // Drill-down: click a district or block on the map
+  const drillDown = (area: string, level: "district" | "block") => {
+    if (level === "district") {
+      const next = { ...filters, district: area, block: "All Blocks", ward: "All Wards" };
+      setFiltersState(next);
+      setAppliedFilters(next);
+    } else if (level === "block") {
+      const next = { ...filters, block: area, ward: "All Wards" };
+      setFiltersState(next);
+      setAppliedFilters(next);
+    }
+  };
+
+  // Build breadcrumb from applied filters
+  const breadcrumb: string[] = ["Andhra Pradesh"];
+  if (appliedFilters.district !== "All Districts") {
+    breadcrumb.push(appliedFilters.district);
+  }
+  if (appliedFilters.block !== "All Blocks") {
+    breadcrumb.push(appliedFilters.block);
+  }
+
   return (
-    <FilterContext.Provider value={{ filters, setFilters, applyFilters, resetFilters, appliedFilters, isLocked, getLabel }}>
+    <FilterContext.Provider value={{ filters, setFilters, applyFilters, resetFilters, appliedFilters, isLocked, getLabel, drillDown, breadcrumb }}>
       {children}
     </FilterContext.Provider>
   );

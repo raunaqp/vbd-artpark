@@ -3,6 +3,7 @@ import KpiCards from "@/components/KpiCards";
 import RiskStrip from "@/components/RiskStrip";
 import DashboardMap from "@/components/DashboardMap";
 import RegionTable from "@/components/RegionTable";
+import RecommendedActions from "@/components/RecommendedActions";
 
 export default function OverviewScreen() {
   return (
@@ -14,11 +15,12 @@ export default function OverviewScreen() {
         <h3 className="section-title mb-2">Situation Summary</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           As of the latest reporting period, <strong>1,291 confirmed dengue cases</strong> have been recorded across Andhra Pradesh with <strong>24 deaths</strong>.
-          Krishna and Visakhapatnam districts show the highest case concentrations. The forecast indicates a projected increase in weeks W2–W3, with Krishna district at <strong>critical risk</strong>.
+          Krishna and Visakhapatnam districts show the highest case concentrations. The forecast indicates a projected increase in weeks W2–W3, with Krishna district at <strong>high risk</strong>.
           Immediate surveillance intensification is recommended for high-risk blocks.
         </p>
       </div>
 
+      <RecommendedActions />
       <KpiCards />
       <RiskStrip />
 

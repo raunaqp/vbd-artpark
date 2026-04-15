@@ -1,5 +1,7 @@
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User } from "lucide-react";
+import { useRole, roles } from "@/contexts/RoleContext";
+import { dataQualityIssues } from "@/data/mockData";
 import { useState } from "react";
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload } from "lucide-react";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -19,6 +21,10 @@ interface Props {
 }
 
 export default function DashboardLayout({ activeTab, onTabChange, children }: Props) {
+  const { currentRole, setRole } = useRole();
+  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showReportMenu, setShowReportMenu] = useState(false);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -27,8 +33,71 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
           <h1 className="text-lg font-semibold tracking-tight">Dengue Early Warning System</h1>
           <p className="text-xs opacity-80">Department of Health · Andhra Pradesh</p>
         </div>
-        <div className="text-xs opacity-70">Latest data: 07-04-2026</div>
+        <div className="flex items-center gap-4">
+          {/* Download Report */}
+          <div className="relative">
+            <button
+              onClick={() => setShowReportMenu(!showReportMenu)}
+              className="flex items-center gap-1.5 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download Report
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showReportMenu && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+                {["Weekly Report", "District Report", "NVBDCP Format"].map((r) => (
+                  <button key={r} onClick={() => setShowReportMenu(false)} className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
+                    {r}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Role Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setShowRoleMenu(!showRoleMenu)}
+              className="flex items-center gap-2 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
+            >
+              <User className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">
+                <span className="font-medium">Ravi Reddy</span>
+                <span className="opacity-70"> · {currentRole.roleName} · {currentRole.location}</span>
+              </span>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showRoleMenu && (
+              <div className="absolute right-0 top-full mt-1 w-64 bg-card border border-border rounded-lg shadow-lg z-50 py-1 max-h-80 overflow-auto">
+                <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">Switch Role</div>
+                {roles.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => { setRole(r.id); setShowRoleMenu(false); }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${currentRole.id === r.id ? "bg-muted font-medium text-foreground" : "text-foreground"}`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </header>
+
+      {/* Data Quality Banner */}
+      {dataQualityIssues.length > 0 && (
+        <div className="bg-risk-moderate/10 border-b border-risk-moderate/30 px-6 py-2">
+          <div className="flex items-center gap-2 text-sm">
+            <AlertTriangle className="h-4 w-4 text-risk-moderate flex-shrink-0" />
+            <span className="font-medium text-foreground">Data Issues:</span>
+            <span className="text-muted-foreground">
+              {dataQualityIssues.map((d) => d.message).join(" · ")}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <nav className="bg-card border-b border-border px-6 py-2">

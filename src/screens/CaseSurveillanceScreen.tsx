@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import { weeklyTimeSeries, dailyTimeSeries, monthlyTimeSeries, ageDistribution, genderDistribution, lineListingData } from "@/data/mockData";
@@ -10,7 +10,6 @@ const GENDER_COLORS = ["hsl(215, 60%, 40%)", "hsl(25, 90%, 50%)"];
 
 export default function CaseSurveillanceScreen() {
   const [timeRange, setTimeRange] = useState<TimeRange>("weekly");
-  const [areaType, setAreaType] = useState<"all" | "urban" | "rural">("all");
   const [search, setSearch] = useState("");
 
   const timeData = (timeRange === "weekly" ? weeklyTimeSeries : timeRange === "daily" ? dailyTimeSeries : monthlyTimeSeries) as any[];
@@ -48,8 +47,8 @@ export default function CaseSurveillanceScreen() {
         </ResponsiveContainer>
       </div>
 
-      {/* Demographics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      {/* Demographics — only Age + Gender, removed Urban/Rural 100% card */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="section-card p-5">
           <h3 className="section-title mb-4">Age Distribution</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -73,19 +72,6 @@ export default function CaseSurveillanceScreen() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-        </div>
-
-        <div className="section-card p-5">
-          <h3 className="section-title mb-4">Area Type</h3>
-          <div className="tab-nav mb-4">
-            {(["all", "urban", "rural"] as const).map((t) => (
-              <button key={t} onClick={() => setAreaType(t)} className={`tab-nav-item capitalize ${areaType === t ? "tab-nav-item-active" : ""}`}>{t}</button>
-            ))}
-          </div>
-          <div className="text-center py-8">
-            <div className="text-3xl font-bold text-foreground">{areaType === "urban" ? "62%" : areaType === "rural" ? "38%" : "100%"}</div>
-            <div className="text-sm text-muted-foreground mt-1">{areaType === "all" ? "All areas" : `${areaType.charAt(0).toUpperCase() + areaType.slice(1)} cases`}</div>
-          </div>
         </div>
       </div>
 

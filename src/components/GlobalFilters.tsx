@@ -5,6 +5,7 @@ export default function GlobalFilters() {
   const [district, setDistrict] = useState("All Districts");
   const [block, setBlock] = useState("All Blocks");
   const [ward, setWard] = useState("All Wards");
+  const [areaType, setAreaType] = useState("all");
   const [fromDate, setFromDate] = useState("2026-02-01");
   const [toDate, setToDate] = useState("2026-04-07");
 
@@ -26,6 +27,14 @@ export default function GlobalFilters() {
         <label className="text-xs font-medium text-muted-foreground">Ward</label>
         <select value={ward} onChange={(e) => setWard(e.target.value)} className="h-9 rounded-md border border-input bg-card px-3 text-sm">
           {wards.map((w) => <option key={w}>{w}</option>)}
+        </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-muted-foreground">Area Type</label>
+        <select value={areaType} onChange={(e) => setAreaType(e.target.value)} className="h-9 rounded-md border border-input bg-card px-3 text-sm">
+          <option value="all">All</option>
+          <option value="urban">Urban</option>
+          <option value="rural">Rural</option>
         </select>
       </div>
       <div className="flex flex-col gap-1">

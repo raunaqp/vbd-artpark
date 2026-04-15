@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Info } from "lucide-react";
 
 export default function DataUploadScreen() {
   const [dragActive, setDragActive] = useState(false);
@@ -10,7 +10,9 @@ export default function DataUploadScreen() {
     e.preventDefault();
     setDragActive(false);
     const file = e.dataTransfer.files[0];
-    if (file?.name.endsWith(".csv")) setFileName(file.name);
+    if (file && (file.name.endsWith(".csv") || file.name.endsWith(".xlsx") || file.name.endsWith(".xls"))) {
+      setFileName(file.name);
+    }
   }, []);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,9 +22,16 @@ export default function DataUploadScreen() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* CSV Upload */}
+      {/* Info Banner */}
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm">
+        <Info className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-muted-foreground">Data will reflect in dashboard within 15 minutes after successful upload.</span>
+      </div>
+
+      {/* CSV / Excel Upload */}
       <div className="section-card p-6">
-        <h3 className="section-title mb-4">Upload CSV Data</h3>
+        <h3 className="section-title mb-1">Upload Data File</h3>
+        <p className="text-xs text-muted-foreground mb-4">Accepts CSV and Excel files in NVBDCP format</p>
         <div
           onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
           onDragLeave={() => setDragActive(false)}
@@ -30,15 +39,21 @@ export default function DataUploadScreen() {
           className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors ${dragActive ? "border-primary bg-primary/5" : "border-border"}`}
         >
           <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground mb-2">Drag and drop a CSV file here, or click to browse</p>
-          <input type="file" accept=".csv" onChange={handleFile} className="hidden" id="csv-upload" />
+          <p className="text-sm text-muted-foreground mb-2">Drag and drop a CSV or Excel file here, or click to browse</p>
+          <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" id="csv-upload" />
           <label htmlFor="csv-upload" className="inline-block h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium cursor-pointer leading-9">
             Browse Files
           </label>
           {fileName && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-foreground">
-              <FileText className="h-4 w-4" />
-              {fileName}
+            <div className="mt-4">
+              <div className="flex items-center justify-center gap-2 text-sm text-foreground mb-2">
+                <FileText className="h-4 w-4" />
+                {fileName}
+              </div>
+              <p className="text-xs text-muted-foreground">Preview will appear here before upload</p>
+              <button className="mt-3 h-9 px-6 rounded-md bg-primary text-primary-foreground text-sm font-medium">
+                Upload & Process
+              </button>
             </div>
           )}
         </div>

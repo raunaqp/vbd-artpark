@@ -5,9 +5,10 @@ import "leaflet/dist/leaflet.css";
 const riskColor: Record<string, string> = {
   low: "#22c55e",
   moderate: "#eab308",
-  high: "#f97316",
-  critical: "#ef4444",
+  high: "#ef4444",
 };
+
+const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
 
 export default function DashboardMap({ height = "400px" }: { height?: string }) {
   return (
@@ -30,7 +31,8 @@ export default function DashboardMap({ height = "400px" }: { height?: string }) 
               <Tooltip>
                 <div className="text-xs">
                   <strong>{r.name}</strong><br />
-                  Confirmed: {r.confirmed}<br />
+                  Cases (4 wk): {r.confirmed}<br />
+                  Trend: {trendArrow[r.trend] || "→"}<br />
                   Risk: {r.risk}
                 </div>
               </Tooltip>
@@ -38,6 +40,15 @@ export default function DashboardMap({ height = "400px" }: { height?: string }) 
           );
         })}
       </MapContainer>
+      {/* Legend */}
+      <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3">
+        {(["low", "moderate", "high"] as const).map((level) => (
+          <div key={level} className="flex items-center gap-1.5 text-xs">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: riskColor[level] }} />
+            <span className="capitalize">{level}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

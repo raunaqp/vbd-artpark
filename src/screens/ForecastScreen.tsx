@@ -28,10 +28,12 @@ export default function ForecastScreen() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 rounded-lg border border-risk-moderate/30 bg-risk-moderate/5 px-4 py-2.5 text-sm">
-        <AlertTriangle className="h-4 w-4 text-risk-moderate flex-shrink-0" />
-        <span className="text-foreground">Data missing for 2 blocks in Eluru district and 1 block in Prakasam district.</span>
-      </div>
+      {predictions.length > 0 && predictions.every(p => p.risk === "high" || p.risk === "moderate") && (
+        <div className="flex items-center gap-2 rounded-lg border border-risk-high/30 bg-risk-high/5 px-4 py-2.5 text-sm">
+          <AlertTriangle className="h-4 w-4 text-risk-high flex-shrink-0" />
+          <span className="text-foreground">High risk detected due to predictive signals (climate conditions / rising trend / historical patterns).</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-4 gap-3">
         {riskForecast.map((f) => {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
+import KpiCards from "@/components/KpiCards";
 import { weeklyTimeSeries, dailyTimeSeries, monthlyTimeSeries, ageDistribution, genderDistribution, lineListingData } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { Download } from "lucide-react";
@@ -27,6 +28,7 @@ export default function CaseSurveillanceScreen() {
   return (
     <div>
       <GlobalFilters />
+      <KpiCards />
 
       {/* Time Series Chart */}
       <div className="section-card p-5 mb-6">
@@ -66,7 +68,6 @@ export default function CaseSurveillanceScreen() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
         <div className="section-card p-5">
           <h3 className="section-title mb-4">Gender Distribution</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -86,7 +87,7 @@ export default function CaseSurveillanceScreen() {
         <DashboardMap height="350px" />
       </div>
 
-      {/* Line Listing — NVBDCP format columns */}
+      {/* Line Listing */}
       <div className="section-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="section-title">Line Listing</h3>

@@ -1,6 +1,8 @@
-import { Newspaper, MapPin, AlertTriangle, ExternalLink } from "lucide-react";
+import { Newspaper, MapPin, AlertTriangle } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import { newsAlerts, geoTaggedAlerts, mapCenter } from "@/data/mockData";
+import { useFilters } from "@/contexts/FilterContext";
+import GlobalFilters from "@/components/GlobalFilters";
 
 const severityColor: Record<string, string> = {
   high: "#ef4444",
@@ -9,8 +11,20 @@ const severityColor: Record<string, string> = {
 };
 
 export default function SignalsScreen() {
+  const { appliedFilters } = useFilters();
+
+  const filteredNews = appliedFilters.district === "All Districts"
+    ? newsAlerts
+    : newsAlerts.filter((a) => a.district === appliedFilters.district);
+
+  const filteredGeo = appliedFilters.district === "All Districts"
+    ? geoTaggedAlerts
+    : geoTaggedAlerts.filter((a) => a.district === appliedFilters.district);
+
   return (
     <div className="space-y-6">
+      <GlobalFilters />
+
       <div>
         <h2 className="text-lg font-semibold text-foreground">Signals / Field Intelligence</h2>
         <p className="text-xs text-muted-foreground">External signals to complement model predictions and ground reality</p>
@@ -23,24 +37,28 @@ export default function SignalsScreen() {
             <Newspaper className="h-4 w-4 text-muted-foreground" />
             <h3 className="section-title">News / Media Alerts</h3>
           </div>
-          <div className="space-y-3">
-            {newsAlerts.map((alert) => (
-              <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
-                <div className="mt-0.5">
-                  <span className="w-2.5 h-2.5 rounded-full block" style={{ backgroundColor: severityColor[alert.severity] }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground leading-snug">{alert.headline}</p>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{alert.district}</span>
-                    <span>{alert.source}</span>
-                    <span>{alert.date}</span>
+          {filteredNews.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No alerts for selected district</p>
+          ) : (
+            <div className="space-y-3">
+              {filteredNews.map((alert) => (
+                <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                  <div className="mt-0.5">
+                    <span className="w-2.5 h-2.5 rounded-full block" style={{ backgroundColor: severityColor[alert.severity] }} />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground leading-snug">{alert.headline}</p>
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{alert.district}</span>
+                      <span>{alert.source}</span>
+                      <span>{alert.date}</span>
+                    </div>
+                  </div>
+                  <span className={`risk-badge-${alert.severity} flex-shrink-0`}>{alert.severity}</span>
                 </div>
-                <span className={`risk-badge-${alert.severity} flex-shrink-0`}>{alert.severity}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Geo-tagged Alerts Map */}
@@ -55,7 +73,7 @@ export default function SignalsScreen() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               />
-              {geoTaggedAlerts.map((a) => (
+              {filteredGeo.map((a) => (
                 <CircleMarker
                   key={a.id}
                   center={[a.lat, a.lng]}
@@ -73,7 +91,6 @@ export default function SignalsScreen() {
               ))}
             </MapContainer>
           </div>
-          {/* Legend */}
           <div className="flex gap-4 mt-3">
             {(["high", "moderate", "low"] as const).map((level) => (
               <div key={level} className="flex items-center gap-1.5 text-xs">
@@ -85,7 +102,7 @@ export default function SignalsScreen() {
         </div>
       </div>
 
-      {/* Future: Social / community signals */}
+      {/* Future */}
       <div className="section-card p-4 border-dashed">
         <div className="flex items-center gap-2 text-muted-foreground">
           <AlertTriangle className="h-4 w-4" />

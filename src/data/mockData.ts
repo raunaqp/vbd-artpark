@@ -4,20 +4,7 @@ export const districts = ["All Districts", "East Godavari", "Krishna", "Guntur",
 export const blocks = ["All Blocks", "Bheemunipatnam", "Anakapalle", "Tenali", "Vizag MC", "Vijayawada MC", "Block A", "Block B", "Block C"];
 export const wards = ["All Wards", "Ward 1", "Ward 2", "Ward 3", "Ward 4", "Ward 5"];
 
-export const kpiData = {
-  suspected: 14890,
-  tested: 13907,
-  confirmed: 1291,
-  deaths: 24,
-};
-
-export const riskForecast = [
-  { week: "W1", risk: "moderate" as const, cases: 45, label: "Apr 7–13" },
-  { week: "W2", risk: "high" as const, cases: 68, label: "Apr 14–20" },
-  { week: "W3", risk: "high" as const, cases: 92, label: "Apr 21–27" },
-  { week: "W4", risk: "moderate" as const, cases: 71, label: "Apr 28–May 4" },
-];
-
+// ── Region-level data (district-level) ──
 export const regionData = [
   { name: "East Godavari", suspected: 340, tested: 212, confirmed: 47, deaths: 1, risk: "high" as const, trend: "up" as const },
   { name: "Krishna", suspected: 548, tested: 512, confirmed: 49, deaths: 1, risk: "high" as const, trend: "up" as const },
@@ -29,8 +16,45 @@ export const regionData = [
   { name: "West Godavari", suspected: 380, tested: 355, confirmed: 42, deaths: 1, risk: "high" as const, trend: "up" as const },
   { name: "Guntur", suspected: 490, tested: 460, confirmed: 52, deaths: 1, risk: "high" as const, trend: "down" as const },
   { name: "Kurnool", suspected: 275, tested: 258, confirmed: 30, deaths: 0, risk: "moderate" as const, trend: "stable" as const },
+  { name: "Anakapalli", suspected: 150, tested: 140, confirmed: 18, deaths: 0, risk: "low" as const, trend: "down" as const },
+  { name: "Eluru", suspected: 130, tested: 120, confirmed: 12, deaths: 0, risk: "low" as const, trend: "stable" as const },
 ];
 
+// ── Computed helpers ──
+export function getFilteredRegions(district: string) {
+  if (district === "All Districts") return regionData;
+  return regionData.filter((r) => r.name === district);
+}
+
+export function getKpiFromRegions(regions: typeof regionData) {
+  return {
+    suspected: regions.reduce((s, r) => s + r.suspected, 0),
+    tested: regions.reduce((s, r) => s + r.tested, 0),
+    confirmed: regions.reduce((s, r) => s + r.confirmed, 0),
+    deaths: regions.reduce((s, r) => s + r.deaths, 0),
+  };
+}
+
+export function getSituationSummary(regions: typeof regionData) {
+  const kpi = getKpiFromRegions(regions);
+  const highRisk = regions.filter((r) => r.risk === "high");
+  const highNames = highRisk.map((r) => r.name).join(", ");
+  if (regions.length === 1) {
+    const r = regions[0];
+    return `${r.name} has recorded ${kpi.confirmed} confirmed dengue cases with ${kpi.deaths} death(s). Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
+  }
+  return `${kpi.confirmed} confirmed dengue cases across ${regions.length} districts with ${kpi.deaths} deaths. ${highRisk.length > 0 ? `High-risk districts: ${highNames}.` : "No districts at high risk currently."} Forecast indicates projected increase in weeks W2–W3.`;
+}
+
+// ── Risk forecast (W1–W4) ──
+export const riskForecast = [
+  { week: "W1", risk: "moderate" as const, cases: 45, label: "Apr 7–13" },
+  { week: "W2", risk: "high" as const, cases: 68, label: "Apr 14–20" },
+  { week: "W3", risk: "high" as const, cases: 92, label: "Apr 21–27" },
+  { week: "W4", risk: "moderate" as const, cases: 71, label: "Apr 28–May 4" },
+];
+
+// ── Time series ──
 export const weeklyTimeSeries = [
   { week: "W1", date: "Feb 3", positive: 8, samples: 45, tpr: 17.8 },
   { week: "W2", date: "Feb 10", positive: 12, samples: 52, tpr: 23.1 },
@@ -60,6 +84,7 @@ export const monthlyTimeSeries = [
   { month: "Mar", positive: 90, samples: 350, tpr: 25.7 },
 ];
 
+// ── Demographics ──
 export const ageDistribution = [
   { group: "0–4", count: 3, tpr: 15 },
   { group: "5–14", count: 5, tpr: 22 },
@@ -75,6 +100,7 @@ export const genderDistribution = [
   { name: "Female", value: 42 },
 ];
 
+// ── Line listing ──
 export const lineListingData = [
   { patient: "Afrid", gender: "Male", age: 10, subDistrict: "Kallur", block: "Kallur", village: "Kallur", district: "Kurnool", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-15", urbanRural: "Rural", referredBy: "ASHA" },
   { patient: "Thowdamma B", gender: "Female", age: 53, subDistrict: "Nellimarla", block: "Nellimarla", village: "Nellimarla", district: "Vizianagaram", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-03-18", urbanRural: "Rural", referredBy: "ANM" },
@@ -86,6 +112,7 @@ export const lineListingData = [
   { patient: "Salomi Ch", gender: "Female", age: 39, subDistrict: "Venkatachalam", block: "Venkatachalam", village: "Venkatachalam", district: "S.P.S. Nellore", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-01", urbanRural: "Urban", referredBy: "AWW" },
 ];
 
+// ── Forecast (actual vs predicted) ──
 export const forecastData = [
   { week: "W3", year: 2026, actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
   { week: "W4", year: 2026, actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
@@ -105,7 +132,7 @@ export const forecastData = [
   { week: "W18", year: 2026, actual: null, predicted: 8, lower: 4, upper: 12, type: "Forecast" },
 ];
 
-// Outbreak Prediction Table (replaces decision-ready table)
+// ── Outbreak Prediction (computed-style, sorted by probability) ──
 export const outbreakPredictionData = [
   { district: "Krishna", probability: 87, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + TPR spike + Historical trend" },
   { district: "Visakhapatnam", probability: 82, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + Climate conditions favorable" },
@@ -117,8 +144,11 @@ export const outbreakPredictionData = [
   { district: "Vizianagaram", probability: 30, risk: "moderate" as const, expectedWeek: "W4", signal: "Seasonal pattern" },
   { district: "Prakasam", probability: 18, risk: "low" as const, expectedWeek: "W1", signal: "Low case load + Declining trend" },
   { district: "Srikakulam", probability: 12, risk: "low" as const, expectedWeek: "W4", signal: "Low baseline + No climate trigger" },
+  { district: "Anakapalli", probability: 15, risk: "low" as const, expectedWeek: "W4", signal: "Declining cases + Stable climate" },
+  { district: "Eluru", probability: 10, risk: "low" as const, expectedWeek: "W4", signal: "Low baseline" },
 ];
 
+// ── Hotspot data ──
 export const hotspotAlerts = [
   { id: 1, district: "Krishna", message: "Unusual spike in confirmed cases — 28 new cases in W3", severity: "high" as const },
   { id: 2, district: "East Godavari", message: "TPR rising above 30% for 2 consecutive weeks", severity: "high" as const },
@@ -126,44 +156,23 @@ export const hotspotAlerts = [
 ];
 
 export const hotspotTableData = [
-  { district: "Krishna", currentCases: 49, trend: "up" as const, risk: "high" as const },
-  { district: "Visakhapatnam", currentCases: 65, trend: "up" as const, risk: "high" as const },
-  { district: "East Godavari", currentCases: 47, trend: "stable" as const, risk: "high" as const },
-  { district: "West Godavari", currentCases: 42, trend: "up" as const, risk: "moderate" as const },
-  { district: "Guntur", currentCases: 52, trend: "down" as const, risk: "moderate" as const },
-  { district: "Prakasam", currentCases: 31, trend: "down" as const, risk: "low" as const },
-  { district: "Kurnool", currentCases: 30, trend: "stable" as const, risk: "moderate" as const },
+  { district: "Krishna", currentCases: 49, prevCases: 32, trend: "up" as const, risk: "high" as const },
+  { district: "Visakhapatnam", currentCases: 65, prevCases: 45, trend: "up" as const, risk: "high" as const },
+  { district: "East Godavari", currentCases: 47, prevCases: 44, trend: "stable" as const, risk: "high" as const },
+  { district: "West Godavari", currentCases: 42, prevCases: 30, trend: "up" as const, risk: "moderate" as const },
+  { district: "Guntur", currentCases: 52, prevCases: 60, trend: "down" as const, risk: "moderate" as const },
+  { district: "Prakasam", currentCases: 31, prevCases: 35, trend: "down" as const, risk: "low" as const },
+  { district: "Kurnool", currentCases: 30, prevCases: 28, trend: "stable" as const, risk: "moderate" as const },
 ];
 
+// ── Data quality issues ──
 export const dataQualityIssues = [
   { type: "missing_reports", message: "3 blocks have not reported in last 7 days", severity: "high" as const },
   { type: "missing_lab", message: "1 district missing lab confirmation data", severity: "moderate" as const },
   { type: "delayed", message: "Eluru district data delayed by 3 days", severity: "moderate" as const },
 ];
 
-// Location-specific recommended actions
-export const recommendedActions = {
-  high: [
-    "Intensive fogging in affected wards (daily)",
-    "Door-to-door fever surveys",
-    "Deploy rapid response teams",
-    "Eliminate breeding sites (stagnant water, containers)",
-    "Increase hospital preparedness",
-  ],
-  moderate: [
-    "Fogging in hotspots (alternate days)",
-    "Larval surveys in parks, construction sites",
-    "Increase testing camps",
-    "Community awareness drives",
-  ],
-  low: [
-    "Routine surveillance",
-    "Preventive messaging",
-    "Monitor trends",
-  ],
-};
-
-// Granular actions by geography level
+// ── Granular actions by geography level ──
 export const actionsByScope: Record<string, { district: string[]; block: string[]; ward: string[] }> = {
   high: {
     district: [
@@ -209,7 +218,7 @@ export const actionsByScope: Record<string, { district: string[]; block: string[
   },
 };
 
-// Signals / Field Intelligence data
+// ── Signals / Field Intelligence ──
 export const newsAlerts = [
   { id: 1, headline: "Dengue cases rise sharply in Vijayawada hospitals", source: "The Hindu", date: "2026-04-10", district: "Krishna", severity: "high" as const },
   { id: 2, headline: "Water-logging after rains creates breeding grounds in Vizag", source: "Deccan Chronicle", date: "2026-04-08", district: "Visakhapatnam", severity: "high" as const },
@@ -227,7 +236,7 @@ export const geoTaggedAlerts = [
   { id: 5, lat: 15.83, lng: 78.04, message: "ASHA reports increased fever in 2 villages", district: "Kurnool", severity: "low" as const },
 ];
 
-// Upload format templates
+// ── Upload formats ──
 export const uploadFormats = [
   { id: "nvbdcp_linelist", name: "NVBDCP Line List", description: "Standard NVBDCP line listing format with patient details, test type, and results", columns: ["SL. NO", "SS Name", "Date of Testing", "Name of Patient", "Sex", "Age", "Address", "Mobile No", "District", "CHC", "SC", "Village", "Travel History", "Urban/Rural", "Referred By", "Test Type (IgM/NS1)", "Dengue Positive (Y/N)", "Death (Y/N)"] },
   { id: "nvbdcp_daily", name: "NVBDCP Daily Report", description: "Proforma for daily reporting of dengue cases/deaths by sentinel site", columns: ["Sl No", "Sentinel Site", "NS1 Tested", "IgM Tested", "Total Tested", "NS1 Positive", "IgM Positive", "Total Positive", "Urban", "Rural", "Others", "Deaths"] },
@@ -236,11 +245,8 @@ export const uploadFormats = [
   { id: "survey_data", name: "Survey Data", description: "Field survey and entomological data", columns: ["Date", "District", "Block", "Ward/Village", "Houses Surveyed", "Containers Found", "Containers Positive", "Breeding Index", "Surveyor Name"] },
 ];
 
-export const weatherData = [
-  { week: "W3", endDate: "21 Jan", rainfall: 0.2, temp: 19.0, maxT: 28.1, minT: 10.6, humidity: 59.7 },
-  { week: "W4", endDate: "28 Jan", rainfall: 2.2, temp: 19.9, maxT: 27.5, minT: 13.8, humidity: 63.0 },
-  { week: "W5", endDate: "4 Feb", rainfall: 1.6, temp: 18.9, maxT: 27.3, minT: 10.6, humidity: 72.2 },
-  { week: "W6", endDate: "11 Feb", rainfall: 0.0, temp: 20.6, maxT: 29.2, minT: 13.4, humidity: 59.2 },
+// ── Weather data (observed + forecast) ──
+export const weatherObserved = [
   { week: "W7", endDate: "18 Feb", rainfall: 0.6, temp: 22.8, maxT: 30.1, minT: 15.8, humidity: 47.7 },
   { week: "W8", endDate: "25 Feb", rainfall: 1.3, temp: 22.3, maxT: 31.3, minT: 15.9, humidity: 53.6 },
   { week: "W9", endDate: "4 Mar", rainfall: 0.0, temp: 25.5, maxT: 34.1, minT: 17.5, humidity: 37.0 },
@@ -251,6 +257,24 @@ export const weatherData = [
   { week: "W14", endDate: "8 Apr", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
 ];
 
+export const weatherForecast = [
+  { week: "W15", endDate: "15 Apr", rainfall: 5.2, temp: 30.1, maxT: 37.5, minT: 22.0, humidity: 45.0 },
+  { week: "W16", endDate: "22 Apr", rainfall: 12.4, temp: 31.2, maxT: 38.0, minT: 23.5, humidity: 52.0 },
+  { week: "W17", endDate: "29 Apr", rainfall: 18.6, temp: 32.0, maxT: 38.5, minT: 24.0, humidity: 58.0 },
+  { week: "W18", endDate: "6 May", rainfall: 25.0, temp: 31.5, maxT: 37.8, minT: 24.2, humidity: 62.0 },
+  { week: "W19", endDate: "13 May", rainfall: 35.0, temp: 30.8, maxT: 37.0, minT: 24.5, humidity: 68.0 },
+  { week: "W20", endDate: "20 May", rainfall: 42.0, temp: 30.2, maxT: 36.5, minT: 24.0, humidity: 72.0 },
+  { week: "W21", endDate: "27 May", rainfall: 55.0, temp: 29.5, maxT: 35.8, minT: 23.8, humidity: 75.0 },
+  { week: "W22", endDate: "3 Jun", rainfall: 65.0, temp: 28.8, maxT: 34.5, minT: 23.5, humidity: 78.0 },
+];
+
+// Combined for charts
+export const weatherData = [
+  ...weatherObserved.map((w) => ({ ...w, type: "observed" as const })),
+  ...weatherForecast.map((w) => ({ ...w, type: "forecast" as const })),
+];
+
+// ── Map ──
 export const mapCenter: [number, number] = [15.9129, 79.74];
 export const mapZoom = 7;
 

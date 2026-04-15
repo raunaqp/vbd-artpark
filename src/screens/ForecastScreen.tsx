@@ -1,25 +1,27 @@
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
-import { TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { forecastData, outbreakPredictionData, riskForecast } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
-
-const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+import GlobalFilters from "@/components/GlobalFilters";
 
 export default function ForecastScreen() {
   const { isAnalyst } = useRole();
   const { appliedFilters } = useFilters();
 
-  const filteredPredictions = appliedFilters.district === "All Districts"
+  const filteredPredictions = (appliedFilters.district === "All Districts"
     ? outbreakPredictionData
-    : outbreakPredictionData.filter(r => r.district === appliedFilters.district);
+    : outbreakPredictionData.filter(r => r.district === appliedFilters.district)
+  ).sort((a, b) => b.probability - a.probability);
 
   return (
     <div className="space-y-6">
+      <GlobalFilters />
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Forecast — Predicted Risk</h2>
+          <h2 className="text-lg font-semibold text-foreground">Forecast — Predicted Risk (Next 4 Weeks)</h2>
           <p className="text-xs text-muted-foreground">Forecast last updated: 07 Apr 2026 · Next update: 14 Apr 2026</p>
         </div>
       </div>
@@ -54,7 +56,7 @@ export default function ForecastScreen() {
             <h3 className="section-title">Dengue Incidence — Actual vs Predicted</h3>
             <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">Analyst View</span>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">12 weeks historical, then forecast</p>
+          <p className="text-xs text-muted-foreground mb-4">12 weeks historical, then forecast with confidence interval</p>
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
@@ -69,7 +71,7 @@ export default function ForecastScreen() {
           </ResponsiveContainer>
           <div className="flex gap-6 justify-center mt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-chart-actual inline-block" /> Actual</span>
-            <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-chart-predicted inline-block border-dashed" /> Predicted</span>
+            <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-chart-predicted inline-block" /> Predicted</span>
           </div>
         </div>
       )}

@@ -1,14 +1,19 @@
 import { FileText, TestTube, CheckCircle, AlertTriangle } from "lucide-react";
-import { kpiData } from "@/data/mockData";
-
-const cards = [
-  { label: "Suspected", value: kpiData.suspected, sub: "In selected period", className: "kpi-card-suspected", icon: FileText, color: "text-kpi-suspected" },
-  { label: "Tested", value: kpiData.tested, sub: "Samples / persons tested", className: "kpi-card-tested", icon: TestTube, color: "text-kpi-tested" },
-  { label: "Confirmed", value: kpiData.confirmed, sub: "L Form confirmed", className: "kpi-card-confirmed", icon: CheckCircle, color: "text-kpi-confirmed" },
-  { label: "Deaths", value: kpiData.deaths, sub: "In selected period", className: "kpi-card-deaths", icon: AlertTriangle, color: "text-kpi-deaths" },
-];
+import { useFilters } from "@/contexts/FilterContext";
+import { getFilteredRegions, getKpiFromRegions } from "@/data/mockData";
 
 export default function KpiCards() {
+  const { appliedFilters } = useFilters();
+  const regions = getFilteredRegions(appliedFilters.district);
+  const kpi = getKpiFromRegions(regions);
+
+  const cards = [
+    { label: "Suspected", value: kpi.suspected, sub: "In selected period", className: "kpi-card-suspected", icon: FileText, color: "text-kpi-suspected" },
+    { label: "Tested", value: kpi.tested, sub: "Samples / persons tested", className: "kpi-card-tested", icon: TestTube, color: "text-kpi-tested" },
+    { label: "Confirmed", value: kpi.confirmed, sub: "Lab confirmed", className: "kpi-card-confirmed", icon: CheckCircle, color: "text-kpi-confirmed" },
+    { label: "Deaths", value: kpi.deaths, sub: "In selected period", className: "kpi-card-deaths", icon: AlertTriangle, color: "text-kpi-deaths" },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {cards.map((c) => (

@@ -6,15 +6,21 @@ const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
 
 export default function RegionTable() {
   const { appliedFilters } = useFilters();
-  const regions = getFilteredRegions(appliedFilters.district);
+  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
   const sorted = [...regions].sort((a, b) => b.confirmed - a.confirmed);
+
+  const areaLabel = appliedFilters.block !== "All Blocks"
+    ? "Villages / Wards"
+    : appliedFilters.district !== "All Districts"
+    ? "Blocks / Municipalities"
+    : "Districts";
 
   return (
     <div className="section-card p-4">
       <div className="flex items-center justify-between mb-1">
         <h3 className="section-title">High Risk Areas (Last 4 Weeks)</h3>
       </div>
-      <p className="text-xs text-muted-foreground mb-3">Based on confirmed cases in last 4 weeks</p>
+      <p className="text-xs text-muted-foreground mb-3">Based on confirmed cases in last 4 weeks · Showing {areaLabel.toLowerCase()}</p>
       <div className="overflow-auto max-h-[340px]">
         <table className="w-full text-sm">
           <thead>
@@ -30,7 +36,12 @@ export default function RegionTable() {
               const TrendIcon = trendIcon[r.trend];
               return (
                 <tr key={r.name} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="py-2 px-2 font-medium">{r.name}</td>
+                  <td className="py-2 px-2 font-medium">
+                    {r.name}
+                    {r.type && r.type !== "district" && (
+                      <span className="text-[10px] text-muted-foreground ml-1.5 capitalize">({r.type})</span>
+                    )}
+                  </td>
                   <td className="py-2 px-2 text-right">{r.confirmed}</td>
                   <td className="py-2 px-2 text-center">
                     <TrendIcon className={`h-4 w-4 inline ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />

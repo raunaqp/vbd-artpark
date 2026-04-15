@@ -1,32 +1,124 @@
-// Mock data for Dengue EWS Dashboard
+// Mock data for Dengue EWS Dashboard — Hierarchical Role-Based
 
+// ── Geography hierarchy ──
 export const districts = ["All Districts", "East Godavari", "Krishna", "Guntur", "Kurnool", "Visakhapatnam", "Prakasam", "S.P.S. Nellore", "Srikakulam", "Vizianagaram", "West Godavari", "Anakapalli", "Eluru"];
-export const blocks = ["All Blocks", "Bheemunipatnam", "Anakapalle", "Tenali", "Vizag MC", "Vijayawada MC", "Block A", "Block B", "Block C"];
-export const wards = ["All Wards", "Ward 1", "Ward 2", "Ward 3", "Ward 4", "Ward 5"];
+export const blocks = ["All Blocks", "Bheemunipatnam", "Anakapalle", "Tenali", "Vizag MC", "Vijayawada MC", "Mangalagiri", "Amaravathi", "Gajuwaka", "Nandyal", "Adoni", "Kallur", "Pendurthi"];
+export const wards = ["All Wards", "Ward 1", "Ward 2", "Ward 3", "Ward 4", "Ward 5", "Ward 11", "Ward 12", "Ward 18", "Ward 19", "Ward 22"];
 
-// ── Region-level data (district-level) ──
-export const regionData = [
-  { name: "East Godavari", suspected: 340, tested: 212, confirmed: 47, deaths: 1, risk: "high" as const, trend: "up" as const },
-  { name: "Krishna", suspected: 548, tested: 512, confirmed: 49, deaths: 1, risk: "high" as const, trend: "up" as const },
-  { name: "S.P.S. Nellore", suspected: 420, tested: 398, confirmed: 38, deaths: 0, risk: "moderate" as const, trend: "stable" as const },
-  { name: "Prakasam", suspected: 312, tested: 290, confirmed: 31, deaths: 0, risk: "moderate" as const, trend: "down" as const },
-  { name: "Srikakulam", suspected: 198, tested: 180, confirmed: 22, deaths: 0, risk: "low" as const, trend: "stable" as const },
-  { name: "Visakhapatnam", suspected: 620, tested: 580, confirmed: 65, deaths: 2, risk: "high" as const, trend: "up" as const },
-  { name: "Vizianagaram", suspected: 245, tested: 230, confirmed: 28, deaths: 0, risk: "moderate" as const, trend: "stable" as const },
-  { name: "West Godavari", suspected: 380, tested: 355, confirmed: 42, deaths: 1, risk: "high" as const, trend: "up" as const },
-  { name: "Guntur", suspected: 490, tested: 460, confirmed: 52, deaths: 1, risk: "high" as const, trend: "down" as const },
-  { name: "Kurnool", suspected: 275, tested: 258, confirmed: 30, deaths: 0, risk: "moderate" as const, trend: "stable" as const },
-  { name: "Anakapalli", suspected: 150, tested: 140, confirmed: 18, deaths: 0, risk: "low" as const, trend: "down" as const },
-  { name: "Eluru", suspected: 130, tested: 120, confirmed: 12, deaths: 0, risk: "low" as const, trend: "stable" as const },
-];
-
-// ── Computed helpers ──
-export function getFilteredRegions(district: string) {
-  if (district === "All Districts") return regionData;
-  return regionData.filter((r) => r.name === district);
+// ── Region data (district-level) ──
+export interface RegionData {
+  name: string;
+  suspected: number;
+  tested: number;
+  confirmed: number;
+  deaths: number;
+  risk: "high" | "moderate" | "low";
+  trend: "up" | "down" | "stable";
+  type?: "district" | "block" | "municipality" | "village" | "ward";
+  parentDistrict?: string;
+  parentBlock?: string;
 }
 
-export function getKpiFromRegions(regions: typeof regionData) {
+export const regionData: RegionData[] = [
+  { name: "East Godavari", suspected: 340, tested: 212, confirmed: 47, deaths: 1, risk: "high", trend: "up", type: "district" },
+  { name: "Krishna", suspected: 548, tested: 512, confirmed: 49, deaths: 1, risk: "high", trend: "up", type: "district" },
+  { name: "S.P.S. Nellore", suspected: 420, tested: 398, confirmed: 38, deaths: 0, risk: "moderate", trend: "stable", type: "district" },
+  { name: "Prakasam", suspected: 312, tested: 290, confirmed: 31, deaths: 0, risk: "moderate", trend: "down", type: "district" },
+  { name: "Srikakulam", suspected: 198, tested: 180, confirmed: 22, deaths: 0, risk: "low", trend: "stable", type: "district" },
+  { name: "Visakhapatnam", suspected: 620, tested: 580, confirmed: 65, deaths: 2, risk: "high", trend: "up", type: "district" },
+  { name: "Vizianagaram", suspected: 245, tested: 230, confirmed: 28, deaths: 0, risk: "moderate", trend: "stable", type: "district" },
+  { name: "West Godavari", suspected: 380, tested: 355, confirmed: 42, deaths: 1, risk: "high", trend: "up", type: "district" },
+  { name: "Guntur", suspected: 490, tested: 460, confirmed: 52, deaths: 1, risk: "high", trend: "down", type: "district" },
+  { name: "Kurnool", suspected: 275, tested: 258, confirmed: 30, deaths: 0, risk: "moderate", trend: "stable", type: "district" },
+  { name: "Anakapalli", suspected: 150, tested: 140, confirmed: 18, deaths: 0, risk: "low", trend: "down", type: "district" },
+  { name: "Eluru", suspected: 130, tested: 120, confirmed: 12, deaths: 0, risk: "low", trend: "stable", type: "district" },
+];
+
+// ── Sub-district data: Blocks/Municipalities within each district ──
+export const subDistrictData: RegionData[] = [
+  // Guntur
+  { name: "Tenali", suspected: 145, tested: 132, confirmed: 22, deaths: 1, risk: "high", trend: "up", type: "block", parentDistrict: "Guntur" },
+  { name: "Mangalagiri", suspected: 120, tested: 110, confirmed: 15, deaths: 0, risk: "high", trend: "up", type: "municipality", parentDistrict: "Guntur" },
+  { name: "Amaravathi", suspected: 95, tested: 88, confirmed: 10, deaths: 0, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Guntur" },
+  { name: "Pedakakani", suspected: 70, tested: 68, confirmed: 5, deaths: 0, risk: "low", trend: "down", type: "block", parentDistrict: "Guntur" },
+  { name: "Guntur West", suspected: 60, tested: 62, confirmed: 3, deaths: 0, risk: "low", trend: "stable", type: "block", parentDistrict: "Guntur" },
+  // Visakhapatnam
+  { name: "Bheemunipatnam", suspected: 180, tested: 165, confirmed: 28, deaths: 1, risk: "high", trend: "up", type: "block", parentDistrict: "Visakhapatnam" },
+  { name: "Vizag MC", suspected: 200, tested: 190, confirmed: 20, deaths: 1, risk: "high", trend: "up", type: "municipality", parentDistrict: "Visakhapatnam" },
+  { name: "Gajuwaka", suspected: 110, tested: 100, confirmed: 12, deaths: 0, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Visakhapatnam" },
+  { name: "Pendurthi", suspected: 80, tested: 78, confirmed: 5, deaths: 0, risk: "low", trend: "down", type: "block", parentDistrict: "Visakhapatnam" },
+  { name: "Anakapalle", suspected: 50, tested: 47, confirmed: 3, deaths: 0, risk: "low", trend: "stable", type: "block", parentDistrict: "Visakhapatnam" },
+  // Kurnool
+  { name: "Nandyal", suspected: 110, tested: 100, confirmed: 14, deaths: 0, risk: "high", trend: "up", type: "block", parentDistrict: "Kurnool" },
+  { name: "Adoni", suspected: 80, tested: 75, confirmed: 9, deaths: 0, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Kurnool" },
+  { name: "Kallur", suspected: 55, tested: 52, confirmed: 5, deaths: 0, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Kurnool" },
+  { name: "C.Belagal", suspected: 30, tested: 31, confirmed: 2, deaths: 0, risk: "low", trend: "down", type: "block", parentDistrict: "Kurnool" },
+  // Krishna
+  { name: "Vijayawada MC", suspected: 200, tested: 195, confirmed: 22, deaths: 1, risk: "high", trend: "up", type: "municipality", parentDistrict: "Krishna" },
+  { name: "Machilipatnam", suspected: 140, tested: 130, confirmed: 14, deaths: 0, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Krishna" },
+  { name: "Gudivada", suspected: 100, tested: 95, confirmed: 8, deaths: 0, risk: "moderate", trend: "up", type: "block", parentDistrict: "Krishna" },
+  { name: "Nuzvid", suspected: 60, tested: 55, confirmed: 5, deaths: 0, risk: "low", trend: "stable", type: "block", parentDistrict: "Krishna" },
+];
+
+// ── Village data (within blocks) ──
+export const villageData: RegionData[] = [
+  // Tenali block
+  { name: "Village A", suspected: 48, tested: 44, confirmed: 9, deaths: 0, risk: "high", trend: "up", type: "village", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { name: "Village B", suspected: 42, tested: 38, confirmed: 7, deaths: 0, risk: "moderate", trend: "up", type: "village", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { name: "Village C", suspected: 30, tested: 28, confirmed: 4, deaths: 0, risk: "moderate", trend: "stable", type: "village", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { name: "Village D", suspected: 25, tested: 22, confirmed: 2, deaths: 0, risk: "low", trend: "down", type: "village", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  // Bheemunipatnam block
+  { name: "Village X", suspected: 62, tested: 58, confirmed: 12, deaths: 1, risk: "high", trend: "up", type: "village", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { name: "Village Y", suspected: 50, tested: 45, confirmed: 9, deaths: 0, risk: "high", trend: "up", type: "village", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { name: "Village Z", suspected: 38, tested: 34, confirmed: 5, deaths: 0, risk: "moderate", trend: "stable", type: "village", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { name: "Village W", suspected: 30, tested: 28, confirmed: 2, deaths: 0, risk: "low", trend: "down", type: "village", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  // Anakapalle block
+  { name: "Village P", suspected: 20, tested: 18, confirmed: 2, deaths: 0, risk: "low", trend: "stable", type: "village", parentDistrict: "Visakhapatnam", parentBlock: "Anakapalle" },
+  { name: "Village Q", suspected: 18, tested: 17, confirmed: 1, deaths: 0, risk: "low", trend: "down", type: "village", parentDistrict: "Visakhapatnam", parentBlock: "Anakapalle" },
+  // Nandyal block
+  { name: "Village N1", suspected: 40, tested: 36, confirmed: 6, deaths: 0, risk: "high", trend: "up", type: "village", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+  { name: "Village N2", suspected: 35, tested: 32, confirmed: 4, deaths: 0, risk: "moderate", trend: "stable", type: "village", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+  { name: "Village N3", suspected: 25, tested: 22, confirmed: 3, deaths: 0, risk: "moderate", trend: "stable", type: "village", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+];
+
+// ── Ward data (within municipalities) ──
+export const wardData: RegionData[] = [
+  // Vizag MC
+  { name: "Ward 12", suspected: 55, tested: 50, confirmed: 8, deaths: 0, risk: "high", trend: "up", type: "ward", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { name: "Ward 18", suspected: 42, tested: 38, confirmed: 5, deaths: 0, risk: "moderate", trend: "up", type: "ward", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { name: "Ward 22", suspected: 35, tested: 32, confirmed: 4, deaths: 0, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { name: "Ward 3", suspected: 28, tested: 30, confirmed: 2, deaths: 0, risk: "low", trend: "down", type: "ward", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { name: "Ward 7", suspected: 22, tested: 20, confirmed: 1, deaths: 0, risk: "low", trend: "stable", type: "ward", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  // Vijayawada MC
+  { name: "Ward 5", suspected: 58, tested: 55, confirmed: 9, deaths: 0, risk: "high", trend: "up", type: "ward", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { name: "Ward 11", suspected: 45, tested: 42, confirmed: 6, deaths: 0, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { name: "Ward 19", suspected: 38, tested: 36, confirmed: 4, deaths: 0, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { name: "Ward 2", suspected: 30, tested: 28, confirmed: 2, deaths: 0, risk: "low", trend: "down", type: "ward", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  // Mangalagiri
+  { name: "Ward 1", suspected: 40, tested: 38, confirmed: 6, deaths: 0, risk: "high", trend: "up", type: "ward", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+  { name: "Ward 4", suspected: 35, tested: 32, confirmed: 4, deaths: 0, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+  { name: "Ward 8", suspected: 25, tested: 22, confirmed: 3, deaths: 0, risk: "moderate", trend: "up", type: "ward", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+];
+
+// ── Get regions at the correct hierarchy level based on role/filters ──
+export function getFilteredRegions(district: string, block?: string): RegionData[] {
+  // If a block/municipality is selected → show villages/wards within it
+  if (block && block !== "All Blocks") {
+    const villages = villageData.filter(v => v.parentBlock === block);
+    const wardsInBlock = wardData.filter(w => w.parentBlock === block);
+    const result = [...villages, ...wardsInBlock];
+    return result.length > 0 ? result : subDistrictData.filter(s => s.name === block);
+  }
+  // If a district is selected → show blocks/municipalities within it
+  if (district && district !== "All Districts") {
+    const subs = subDistrictData.filter(s => s.parentDistrict === district);
+    return subs.length > 0 ? subs : regionData.filter(r => r.name === district);
+  }
+  // State level → show all districts
+  return regionData;
+}
+
+export function getKpiFromRegions(regions: RegionData[]) {
   return {
     suspected: regions.reduce((s, r) => s + r.suspected, 0),
     tested: regions.reduce((s, r) => s + r.tested, 0),
@@ -35,16 +127,203 @@ export function getKpiFromRegions(regions: typeof regionData) {
   };
 }
 
-export function getSituationSummary(regions: typeof regionData) {
+export function getSituationSummary(regions: RegionData[], district?: string, block?: string) {
   const kpi = getKpiFromRegions(regions);
-  const highRisk = regions.filter((r) => r.risk === "high");
-  const highNames = highRisk.map((r) => r.name).join(", ");
+  const highRisk = regions.filter(r => r.risk === "high");
+  const highNames = highRisk.map(r => r.name).join(", ");
+  const areaLabel = block && block !== "All Blocks"
+    ? "villages/wards"
+    : district && district !== "All Districts"
+    ? "blocks/municipalities"
+    : "districts";
+
   if (regions.length === 1) {
     const r = regions[0];
     return `${r.name} has recorded ${kpi.confirmed} confirmed dengue cases with ${kpi.deaths} death(s). Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
   }
-  return `${kpi.confirmed} confirmed dengue cases across ${regions.length} districts with ${kpi.deaths} deaths. ${highRisk.length > 0 ? `High-risk districts: ${highNames}.` : "No districts at high risk currently."} Forecast indicates projected increase in weeks W2–W3.`;
+  return `${kpi.confirmed} confirmed dengue cases across ${regions.length} ${areaLabel} with ${kpi.deaths} deaths. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W2–W3.`;
 }
+
+// ── Outbreak Prediction Data (role-specific) ──
+export interface OutbreakPrediction {
+  area: string;
+  probability: number;
+  risk: "high" | "moderate" | "low";
+  expectedWeek: string;
+  signal: string;
+  parentDistrict?: string;
+  parentBlock?: string;
+  areaType?: string;
+}
+
+// State-level (district predictions)
+export const statePredictions: OutbreakPrediction[] = [
+  { area: "Guntur", probability: 78, risk: "high", expectedWeek: "W3", signal: "Cases rising + TPR spike + Historical trend" },
+  { area: "Krishna", probability: 72, risk: "high", expectedWeek: "W2", signal: "Cases rising + Climate conditions favorable" },
+  { area: "Visakhapatnam", probability: 61, risk: "moderate", expectedWeek: "W3", signal: "TPR spike + High humidity corridor" },
+  { area: "East Godavari", probability: 55, risk: "moderate", expectedWeek: "W3", signal: "Historical trend + Post-rainfall breeding" },
+  { area: "West Godavari", probability: 48, risk: "moderate", expectedWeek: "W4", signal: "Climate conditions + Moderate case load" },
+  { area: "S.P.S. Nellore", probability: 35, risk: "moderate", expectedWeek: "W4", signal: "Seasonal pattern" },
+  { area: "Kurnool", probability: 30, risk: "moderate", expectedWeek: "W3", signal: "Historical trend + Moderate humidity" },
+  { area: "Prakasam", probability: 18, risk: "low", expectedWeek: "W4", signal: "Low case load + Declining trend" },
+  { area: "Srikakulam", probability: 12, risk: "low", expectedWeek: "W4", signal: "Low baseline + No climate trigger" },
+  { area: "Anakapalli", probability: 15, risk: "low", expectedWeek: "W4", signal: "Declining cases + Stable climate" },
+  { area: "Eluru", probability: 10, risk: "low", expectedWeek: "W4", signal: "Low baseline" },
+  { area: "Vizianagaram", probability: 22, risk: "low", expectedWeek: "W4", signal: "Seasonal pattern" },
+];
+
+// District-level (block/municipality predictions)
+export const districtPredictions: OutbreakPrediction[] = [
+  // Guntur
+  { area: "Tenali", probability: 82, risk: "high", expectedWeek: "W2", signal: "Cases rising + TPR spike", parentDistrict: "Guntur", areaType: "Block" },
+  { area: "Mangalagiri", probability: 70, risk: "high", expectedWeek: "W3", signal: "Climate conditions + Hospital OPD spike", parentDistrict: "Guntur", areaType: "Municipality" },
+  { area: "Amaravathi", probability: 55, risk: "moderate", expectedWeek: "W3", signal: "Historical trend + Stagnant water", parentDistrict: "Guntur", areaType: "Block" },
+  { area: "Pedakakani", probability: 28, risk: "low", expectedWeek: "W4", signal: "Low baseline", parentDistrict: "Guntur", areaType: "Block" },
+  { area: "Guntur West", probability: 18, risk: "low", expectedWeek: "W4", signal: "Declining cases", parentDistrict: "Guntur", areaType: "Block" },
+  // Visakhapatnam
+  { area: "Bheemunipatnam", probability: 85, risk: "high", expectedWeek: "W2", signal: "Cases rising + Post-rainfall breeding", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  { area: "Vizag MC", probability: 75, risk: "high", expectedWeek: "W3", signal: "Waterlogging + OPD spike", parentDistrict: "Visakhapatnam", areaType: "Municipality" },
+  { area: "Gajuwaka", probability: 60, risk: "moderate", expectedWeek: "W3", signal: "TPR spike + Construction debris", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  { area: "Pendurthi", probability: 32, risk: "moderate", expectedWeek: "W4", signal: "Moderate humidity", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  { area: "Anakapalle", probability: 15, risk: "low", expectedWeek: "W4", signal: "Stable climate", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  // Kurnool
+  { area: "Nandyal", probability: 80, risk: "high", expectedWeek: "W2", signal: "Cases rising + Historical trend", parentDistrict: "Kurnool", areaType: "Block" },
+  { area: "Adoni", probability: 65, risk: "moderate", expectedWeek: "W3", signal: "TPR increase + Climate conditions", parentDistrict: "Kurnool", areaType: "Block" },
+  { area: "Kallur", probability: 58, risk: "moderate", expectedWeek: "W3", signal: "Historical trend + Moderate case load", parentDistrict: "Kurnool", areaType: "Block" },
+  { area: "C.Belagal", probability: 20, risk: "low", expectedWeek: "W4", signal: "Low baseline", parentDistrict: "Kurnool", areaType: "Block" },
+  // Krishna
+  { area: "Vijayawada MC", probability: 78, risk: "high", expectedWeek: "W2", signal: "Hospital OPD spike + Waterlogging", parentDistrict: "Krishna", areaType: "Municipality" },
+  { area: "Machilipatnam", probability: 52, risk: "moderate", expectedWeek: "W3", signal: "Historical trend", parentDistrict: "Krishna", areaType: "Block" },
+  { area: "Gudivada", probability: 45, risk: "moderate", expectedWeek: "W3", signal: "Cases rising", parentDistrict: "Krishna", areaType: "Block" },
+  { area: "Nuzvid", probability: 20, risk: "low", expectedWeek: "W4", signal: "Low baseline", parentDistrict: "Krishna", areaType: "Block" },
+];
+
+// Block-level (village predictions)
+export const blockPredictions: OutbreakPrediction[] = [
+  // Tenali
+  { area: "Village A", probability: 88, risk: "high", expectedWeek: "W2", signal: "Cases rising + Breeding sites found", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { area: "Village B", probability: 66, risk: "moderate", expectedWeek: "W3", signal: "TPR increase + Stagnant water", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { area: "Village C", probability: 52, risk: "moderate", expectedWeek: "W4", signal: "Historical trend", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { area: "Village D", probability: 22, risk: "low", expectedWeek: "W4", signal: "Declining cases", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  // Bheemunipatnam
+  { area: "Village X", probability: 90, risk: "high", expectedWeek: "W2", signal: "Cases rising + Post-rainfall + Breeding sites", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { area: "Village Y", probability: 70, risk: "high", expectedWeek: "W3", signal: "TPR spike + Community reports", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { area: "Village Z", probability: 55, risk: "moderate", expectedWeek: "W3", signal: "Historical trend + Climate conditions", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { area: "Village W", probability: 20, risk: "low", expectedWeek: "W4", signal: "Low baseline", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  // Nandyal
+  { area: "Village N1", probability: 82, risk: "high", expectedWeek: "W2", signal: "Cases rising + Field reports", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+  { area: "Village N2", probability: 55, risk: "moderate", expectedWeek: "W3", signal: "Historical trend", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+  { area: "Village N3", probability: 42, risk: "moderate", expectedWeek: "W3", signal: "Moderate case load", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+];
+
+// Municipality-level (ward predictions)
+export const municipalityPredictions: OutbreakPrediction[] = [
+  // Vizag MC
+  { area: "Ward 12", probability: 92, risk: "high", expectedWeek: "W2", signal: "Cases rising + Waterlogging in ward", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { area: "Ward 18", probability: 68, risk: "moderate", expectedWeek: "W3", signal: "TPR spike + Construction sites", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { area: "Ward 22", probability: 50, risk: "moderate", expectedWeek: "W4", signal: "Historical trend", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { area: "Ward 3", probability: 25, risk: "low", expectedWeek: "W4", signal: "Low baseline", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  // Vijayawada MC
+  { area: "Ward 5", probability: 85, risk: "high", expectedWeek: "W2", signal: "Cases rising + Poor drainage", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { area: "Ward 11", probability: 65, risk: "moderate", expectedWeek: "W3", signal: "TPR increase + Market area breeding", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { area: "Ward 19", probability: 55, risk: "moderate", expectedWeek: "W4", signal: "Historical trend + Moderate humidity", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { area: "Ward 2", probability: 18, risk: "low", expectedWeek: "W4", signal: "Low baseline", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  // Mangalagiri
+  { area: "Ward 1", probability: 72, risk: "high", expectedWeek: "W2", signal: "Cases rising + Stagnant water", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+  { area: "Ward 4", probability: 48, risk: "moderate", expectedWeek: "W3", signal: "Historical trend", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+  { area: "Ward 8", probability: 38, risk: "moderate", expectedWeek: "W3", signal: "Construction debris + Climate", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+];
+
+// ── Get predictions based on role hierarchy ──
+export function getOutbreakPredictions(district: string, block?: string): OutbreakPrediction[] {
+  if (block && block !== "All Blocks") {
+    // Check municipality predictions first, then block
+    const muniPreds = municipalityPredictions.filter(p => p.parentBlock === block);
+    if (muniPreds.length > 0) return muniPreds.sort((a, b) => b.probability - a.probability);
+    const blockPreds = blockPredictions.filter(p => p.parentBlock === block);
+    return blockPreds.sort((a, b) => b.probability - a.probability);
+  }
+  if (district && district !== "All Districts") {
+    return districtPredictions.filter(p => p.parentDistrict === district).sort((a, b) => b.probability - a.probability);
+  }
+  return statePredictions.sort((a, b) => b.probability - a.probability);
+}
+
+// ── Hotspot data (hierarchical) ──
+export interface HotspotData {
+  area: string;
+  currentCases: number;
+  prevCases: number;
+  trend: "up" | "down" | "stable";
+  risk: "high" | "moderate" | "low";
+  parentDistrict?: string;
+  parentBlock?: string;
+}
+
+export const hotspotDistrictData: HotspotData[] = [
+  { area: "Krishna", currentCases: 49, prevCases: 32, trend: "up", risk: "high" },
+  { area: "Visakhapatnam", currentCases: 65, prevCases: 45, trend: "up", risk: "high" },
+  { area: "Guntur", currentCases: 52, prevCases: 60, trend: "down", risk: "high" },
+  { area: "East Godavari", currentCases: 47, prevCases: 44, trend: "stable", risk: "high" },
+  { area: "West Godavari", currentCases: 42, prevCases: 30, trend: "up", risk: "moderate" },
+  { area: "Kurnool", currentCases: 30, prevCases: 28, trend: "stable", risk: "moderate" },
+  { area: "Prakasam", currentCases: 31, prevCases: 35, trend: "down", risk: "low" },
+];
+
+export const hotspotSubDistrictData: HotspotData[] = [
+  // Guntur
+  { area: "Tenali", currentCases: 22, prevCases: 14, trend: "up", risk: "high", parentDistrict: "Guntur" },
+  { area: "Mangalagiri", currentCases: 15, prevCases: 10, trend: "up", risk: "high", parentDistrict: "Guntur" },
+  { area: "Amaravathi", currentCases: 10, prevCases: 12, trend: "down", risk: "moderate", parentDistrict: "Guntur" },
+  // Visakhapatnam
+  { area: "Bheemunipatnam", currentCases: 28, prevCases: 18, trend: "up", risk: "high", parentDistrict: "Visakhapatnam" },
+  { area: "Vizag MC", currentCases: 20, prevCases: 14, trend: "up", risk: "high", parentDistrict: "Visakhapatnam" },
+  { area: "Gajuwaka", currentCases: 12, prevCases: 10, trend: "stable", risk: "moderate", parentDistrict: "Visakhapatnam" },
+  // Kurnool
+  { area: "Nandyal", currentCases: 14, prevCases: 8, trend: "up", risk: "high", parentDistrict: "Kurnool" },
+  { area: "Adoni", currentCases: 9, prevCases: 10, trend: "down", risk: "moderate", parentDistrict: "Kurnool" },
+  { area: "Kallur", currentCases: 5, prevCases: 6, trend: "stable", risk: "moderate", parentDistrict: "Kurnool" },
+  // Krishna
+  { area: "Vijayawada MC", currentCases: 22, prevCases: 15, trend: "up", risk: "high", parentDistrict: "Krishna" },
+  { area: "Machilipatnam", currentCases: 14, prevCases: 10, trend: "up", risk: "moderate", parentDistrict: "Krishna" },
+];
+
+export const hotspotVillageData: HotspotData[] = [
+  // Tenali
+  { area: "Village A", currentCases: 9, prevCases: 5, trend: "up", risk: "high", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { area: "Village B", currentCases: 7, prevCases: 5, trend: "up", risk: "moderate", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { area: "Village C", currentCases: 4, prevCases: 4, trend: "stable", risk: "moderate", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  // Bheemunipatnam
+  { area: "Village X", currentCases: 12, prevCases: 7, trend: "up", risk: "high", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { area: "Village Y", currentCases: 9, prevCases: 6, trend: "up", risk: "high", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { area: "Village Z", currentCases: 5, prevCases: 4, trend: "stable", risk: "moderate", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  // Vizag MC (wards)
+  { area: "Ward 12", currentCases: 8, prevCases: 4, trend: "up", risk: "high", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { area: "Ward 18", currentCases: 5, prevCases: 4, trend: "up", risk: "moderate", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { area: "Ward 22", currentCases: 4, prevCases: 3, trend: "stable", risk: "moderate", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  // Vijayawada MC (wards)
+  { area: "Ward 5", currentCases: 9, prevCases: 5, trend: "up", risk: "high", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { area: "Ward 11", currentCases: 6, prevCases: 5, trend: "stable", risk: "moderate", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { area: "Ward 19", currentCases: 4, prevCases: 4, trend: "stable", risk: "moderate", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+];
+
+export function getFilteredHotspots(district: string, block?: string): HotspotData[] {
+  if (block && block !== "All Blocks") {
+    return hotspotVillageData.filter(h => h.parentBlock === block);
+  }
+  if (district && district !== "All Districts") {
+    return hotspotSubDistrictData.filter(h => h.parentDistrict === district);
+  }
+  return hotspotDistrictData;
+}
+
+export const hotspotAlerts = [
+  { id: 1, district: "Krishna", message: "Unusual spike in confirmed cases — 28 new cases in W3", severity: "high" as const },
+  { id: 2, district: "East Godavari", message: "TPR rising above 30% for 2 consecutive weeks", severity: "high" as const },
+  { id: 3, district: "Visakhapatnam", message: "New cluster detected in Pendurthi block", severity: "moderate" as const },
+  { id: 4, district: "Guntur", message: "Tenali block shows rapid case increase", severity: "high" as const },
+  { id: 5, district: "Kurnool", message: "Nandyal block emerging hotspot", severity: "moderate" as const },
+];
 
 // ── Risk forecast (W1–W4) ──
 export const riskForecast = [
@@ -110,6 +389,10 @@ export const lineListingData = [
   { patient: "D Umesh Reddy", gender: "Male", age: 21, subDistrict: "Guntur West", block: "Guntur West", village: "Guntur West", district: "Guntur", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-28", urbanRural: "Urban", referredBy: "MO" },
   { patient: "P Dhanalakshmi", gender: "Female", age: 39, subDistrict: "Pedakakani", block: "Pedakakani", village: "Pedakakani", district: "Guntur", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-03-30", urbanRural: "Rural", referredBy: "ANM" },
   { patient: "Salomi Ch", gender: "Female", age: 39, subDistrict: "Venkatachalam", block: "Venkatachalam", village: "Venkatachalam", district: "S.P.S. Nellore", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-01", urbanRural: "Urban", referredBy: "AWW" },
+  { patient: "Ravi Kumar", gender: "Male", age: 32, subDistrict: "Bheemunipatnam", block: "Bheemunipatnam", village: "Village X", district: "Visakhapatnam", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-02", urbanRural: "Rural", referredBy: "ASHA" },
+  { patient: "Lakshmi Devi", gender: "Female", age: 45, subDistrict: "Tenali", block: "Tenali", village: "Village A", district: "Guntur", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-04-03", urbanRural: "Rural", referredBy: "ANM" },
+  { patient: "Mohan Rao", gender: "Male", age: 28, subDistrict: "Vizag MC", block: "Vizag MC", village: "Ward 12", district: "Visakhapatnam", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-04", urbanRural: "Urban", referredBy: "MO" },
+  { patient: "Padma K", gender: "Female", age: 36, subDistrict: "Vijayawada MC", block: "Vijayawada MC", village: "Ward 5", district: "Krishna", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-05", urbanRural: "Urban", referredBy: "HW" },
 ];
 
 // ── Forecast (actual vs predicted) ──
@@ -130,39 +413,6 @@ export const forecastData = [
   { week: "W16", year: 2026, actual: null, predicted: 11, lower: 6, upper: 16, type: "Forecast" },
   { week: "W17", year: 2026, actual: null, predicted: 10, lower: 5, upper: 15, type: "Forecast" },
   { week: "W18", year: 2026, actual: null, predicted: 8, lower: 4, upper: 12, type: "Forecast" },
-];
-
-// ── Outbreak Prediction (computed-style, sorted by probability) ──
-export const outbreakPredictionData = [
-  { district: "Krishna", probability: 87, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + TPR spike + Historical trend" },
-  { district: "Visakhapatnam", probability: 82, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + Climate conditions favorable" },
-  { district: "East Godavari", probability: 74, risk: "high" as const, expectedWeek: "W3", signal: "TPR spike + High humidity corridor" },
-  { district: "West Godavari", probability: 68, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + Post-rainfall breeding" },
-  { district: "Guntur", probability: 52, risk: "moderate" as const, expectedWeek: "W2", signal: "Historical trend + Temperature in range" },
-  { district: "S.P.S. Nellore", probability: 45, risk: "moderate" as const, expectedWeek: "W2", signal: "Climate conditions + Moderate case load" },
-  { district: "Kurnool", probability: 38, risk: "moderate" as const, expectedWeek: "W3", signal: "Historical trend + Moderate humidity" },
-  { district: "Vizianagaram", probability: 30, risk: "moderate" as const, expectedWeek: "W4", signal: "Seasonal pattern" },
-  { district: "Prakasam", probability: 18, risk: "low" as const, expectedWeek: "W1", signal: "Low case load + Declining trend" },
-  { district: "Srikakulam", probability: 12, risk: "low" as const, expectedWeek: "W4", signal: "Low baseline + No climate trigger" },
-  { district: "Anakapalli", probability: 15, risk: "low" as const, expectedWeek: "W4", signal: "Declining cases + Stable climate" },
-  { district: "Eluru", probability: 10, risk: "low" as const, expectedWeek: "W4", signal: "Low baseline" },
-];
-
-// ── Hotspot data ──
-export const hotspotAlerts = [
-  { id: 1, district: "Krishna", message: "Unusual spike in confirmed cases — 28 new cases in W3", severity: "high" as const },
-  { id: 2, district: "East Godavari", message: "TPR rising above 30% for 2 consecutive weeks", severity: "high" as const },
-  { id: 3, district: "Visakhapatnam", message: "New cluster detected in Pendurthi block", severity: "moderate" as const },
-];
-
-export const hotspotTableData = [
-  { district: "Krishna", currentCases: 49, prevCases: 32, trend: "up" as const, risk: "high" as const },
-  { district: "Visakhapatnam", currentCases: 65, prevCases: 45, trend: "up" as const, risk: "high" as const },
-  { district: "East Godavari", currentCases: 47, prevCases: 44, trend: "stable" as const, risk: "high" as const },
-  { district: "West Godavari", currentCases: 42, prevCases: 30, trend: "up" as const, risk: "moderate" as const },
-  { district: "Guntur", currentCases: 52, prevCases: 60, trend: "down" as const, risk: "moderate" as const },
-  { district: "Prakasam", currentCases: 31, prevCases: 35, trend: "down" as const, risk: "low" as const },
-  { district: "Kurnool", currentCases: 30, prevCases: 28, trend: "stable" as const, risk: "moderate" as const },
 ];
 
 // ── Data quality issues ──
@@ -268,7 +518,6 @@ export const weatherForecast = [
   { week: "W22", endDate: "3 Jun", rainfall: 65.0, temp: 28.8, maxT: 34.5, minT: 23.5, humidity: 78.0 },
 ];
 
-// Combined for charts
 export const weatherData = [
   ...weatherObserved.map((w) => ({ ...w, type: "observed" as const })),
   ...weatherForecast.map((w) => ({ ...w, type: "forecast" as const })),
@@ -291,4 +540,49 @@ export const districtCoordinates: Record<string, [number, number]> = {
   "Kurnool": [15.8, 78.0],
   "Anakapalli": [17.7, 83.0],
   "Eluru": [16.7, 81.1],
+  // Sub-district coordinates
+  "Tenali": [16.24, 80.64],
+  "Mangalagiri": [16.43, 80.57],
+  "Amaravathi": [16.57, 80.36],
+  "Pedakakani": [16.25, 80.48],
+  "Guntur West": [16.31, 80.38],
+  "Bheemunipatnam": [17.89, 83.45],
+  "Vizag MC": [17.72, 83.30],
+  "Gajuwaka": [17.70, 83.22],
+  "Pendurthi": [17.76, 83.21],
+  "Anakapalle": [17.69, 83.00],
+  "Nandyal": [15.48, 78.48],
+  "Adoni": [15.63, 77.28],
+  "Kallur": [15.69, 78.05],
+  "C.Belagal": [15.70, 78.15],
+  "Vijayawada MC": [16.51, 80.65],
+  "Machilipatnam": [16.19, 81.14],
+  "Gudivada": [16.44, 81.10],
+  "Nuzvid": [16.79, 80.85],
+  // Village/ward approximate coordinates
+  "Village A": [16.22, 80.62],
+  "Village B": [16.26, 80.66],
+  "Village C": [16.23, 80.60],
+  "Village D": [16.25, 80.68],
+  "Village X": [17.91, 83.47],
+  "Village Y": [17.87, 83.43],
+  "Village Z": [17.90, 83.41],
+  "Village W": [17.85, 83.45],
+  "Village P": [17.70, 83.02],
+  "Village Q": [17.68, 82.98],
+  "Village N1": [15.50, 78.50],
+  "Village N2": [15.46, 78.46],
+  "Village N3": [15.52, 78.44],
+  "Ward 12": [17.74, 83.32],
+  "Ward 18": [17.71, 83.28],
+  "Ward 22": [17.73, 83.26],
+  "Ward 3": [17.70, 83.34],
+  "Ward 7": [17.72, 83.30],
+  "Ward 5": [16.53, 80.67],
+  "Ward 11": [16.50, 80.63],
+  "Ward 19": [16.49, 80.61],
+  "Ward 2": [16.52, 80.65],
+  "Ward 1": [16.44, 80.59],
+  "Ward 4": [16.42, 80.55],
+  "Ward 8": [16.45, 80.57],
 };

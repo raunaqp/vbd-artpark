@@ -1,6 +1,6 @@
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
 import { AlertTriangle } from "lucide-react";
-import { forecastData, outbreakPredictionData, riskForecast } from "@/data/mockData";
+import { forecastData, riskForecast, getOutbreakPredictions } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import GlobalFilters from "@/components/GlobalFilters";
@@ -9,16 +9,18 @@ export default function ForecastScreen() {
   const { isAnalyst } = useRole();
   const { appliedFilters } = useFilters();
 
-  const filteredPredictions = (appliedFilters.district === "All Districts"
-    ? outbreakPredictionData
-    : outbreakPredictionData.filter(r => r.district === appliedFilters.district)
-  ).sort((a, b) => b.probability - a.probability);
+  const predictions = getOutbreakPredictions(appliedFilters.district, appliedFilters.block);
+
+  const areaLabel = appliedFilters.block !== "All Blocks"
+    ? "Village / Ward"
+    : appliedFilters.district !== "All Districts"
+    ? "Block / Municipality"
+    : "District";
 
   return (
     <div className="space-y-6">
       <GlobalFilters />
 
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Forecast — Predicted Risk (Next 4 Weeks)</h2>
@@ -26,13 +28,11 @@ export default function ForecastScreen() {
         </div>
       </div>
 
-      {/* Missing data alert */}
       <div className="flex items-center gap-2 rounded-lg border border-risk-moderate/30 bg-risk-moderate/5 px-4 py-2.5 text-sm">
         <AlertTriangle className="h-4 w-4 text-risk-moderate flex-shrink-0" />
         <span className="text-foreground">Data missing for 2 blocks in Eluru district and 1 block in Prakasam district.</span>
       </div>
 
-      {/* W1-W4 Risk Strip */}
       <div className="grid grid-cols-4 gap-3">
         {riskForecast.map((f) => {
           const riskClass = f.risk === "high" ? "border-risk-high bg-risk-high/5 text-risk-high"
@@ -49,7 +49,6 @@ export default function ForecastScreen() {
         })}
       </div>
 
-      {/* Actual vs Predicted Chart — Analyst only */}
       {isAnalyst && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -76,23 +75,25 @@ export default function ForecastScreen() {
         </div>
       )}
 
-      {/* Outbreak Prediction Table */}
       <div className="section-card p-5">
         <h3 className="section-title mb-1">Outbreak Prediction Table</h3>
-        <p className="text-xs text-muted-foreground mb-4">Sorted by probability of outbreak · highest first</p>
+        <p className="text-xs text-muted-foreground mb-4">Sorted by probability of outbreak · highest first · Showing: {areaLabel} level</p>
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["District", "Probability (%)", "Risk Level", "Expected Week", "Signal"].map((h) => (
+                {[areaLabel, "Probability (%)", "Risk Level", "Expected Week", "Signal"].map((h) => (
                   <th key={h} className="text-left py-2.5 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filteredPredictions.map((r) => (
-                <tr key={r.district} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="py-2.5 px-3 font-medium">{r.district}</td>
+              {predictions.map((r) => (
+                <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
+                  <td className="py-2.5 px-3 font-medium">
+                    {r.area}
+                    {r.areaType && <span className="text-[10px] text-muted-foreground ml-1.5">({r.areaType})</span>}
+                  </td>
                   <td className="py-2.5 px-3">
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">

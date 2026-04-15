@@ -13,17 +13,23 @@ const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "�
 
 export default function DashboardMap({ height = "400px" }: { height?: string }) {
   const { appliedFilters } = useFilters();
-  const regions = getFilteredRegions(appliedFilters.district);
+  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
 
-  // Compute center/zoom based on filter
-  const center = appliedFilters.district !== "All Districts" && districtCoordinates[appliedFilters.district]
-    ? districtCoordinates[appliedFilters.district]
-    : mapCenter;
-  const zoom = appliedFilters.district !== "All Districts" ? 9 : mapZoom;
+  // Compute center/zoom based on filter level
+  let center = mapCenter;
+  let zoom = mapZoom;
+
+  if (appliedFilters.block !== "All Blocks" && districtCoordinates[appliedFilters.block]) {
+    center = districtCoordinates[appliedFilters.block];
+    zoom = 12;
+  } else if (appliedFilters.district !== "All Districts" && districtCoordinates[appliedFilters.district]) {
+    center = districtCoordinates[appliedFilters.district];
+    zoom = 9;
+  }
 
   return (
     <div className="section-card overflow-hidden relative" style={{ height }}>
-      <MapContainer key={`${center[0]}-${center[1]}-${zoom}`} center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+      <MapContainer key={`${center[0]}-${center[1]}-${zoom}`} center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom={true}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -35,12 +41,14 @@ export default function DashboardMap({ height = "400px" }: { height?: string }) 
             <CircleMarker
               key={r.name}
               center={coords}
-              radius={Math.max(8, r.confirmed / 3)}
+              radius={Math.max(6, Math.min(20, r.confirmed / 2))}
               pathOptions={{ fillColor: riskColor[r.risk], fillOpacity: 0.7, color: riskColor[r.risk], weight: 2 }}
             >
               <Tooltip>
                 <div className="text-xs">
-                  <strong>{r.name}</strong><br />
+                  <strong>{r.name}</strong>
+                  {r.type && r.type !== "district" && <span className="capitalize"> ({r.type})</span>}
+                  <br />
                   Cases (4 wk): {r.confirmed}<br />
                   Trend: {trendArrow[r.trend] || "→"}<br />
                   Risk: {r.risk}
@@ -50,7 +58,6 @@ export default function DashboardMap({ height = "400px" }: { height?: string }) 
           );
         })}
       </MapContainer>
-      {/* Legend */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3">
         {(["low", "moderate", "high"] as const).map((level) => (
           <div key={level} className="flex items-center gap-1.5 text-xs">

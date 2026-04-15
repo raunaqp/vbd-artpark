@@ -32,7 +32,6 @@ const defaultFilters: FilterState = {
 
 const FilterContext = createContext<FilterContextType | null>(null);
 
-// Map roles to geography preselection
 const roleGeoMap: Record<string, Partial<FilterState>> = {
   district_visakhapatnam: { district: "Visakhapatnam" },
   district_guntur: { district: "Guntur" },
@@ -40,8 +39,8 @@ const roleGeoMap: Record<string, Partial<FilterState>> = {
   block_bheemunipatnam: { district: "Visakhapatnam", block: "Bheemunipatnam" },
   block_anakapalle: { district: "Visakhapatnam", block: "Anakapalle" },
   block_tenali: { district: "Guntur", block: "Tenali" },
-  municipality_vizag: { district: "Visakhapatnam", block: "Vizag MC", areaType: "urban" },
-  municipality_vijayawada: { district: "Krishna", block: "Vijayawada MC", areaType: "urban" },
+  municipality_vizag: { district: "Visakhapatnam", block: "Vizag MC", areaType: "urban" as const },
+  municipality_vijayawada: { district: "Krishna", block: "Vijayawada MC", areaType: "urban" as const },
 };
 
 export function FilterProvider({ children }: { children: ReactNode }) {
@@ -49,7 +48,6 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const [filters, setFiltersState] = useState<FilterState>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(defaultFilters);
 
-  // Auto-preselect on role change
   useEffect(() => {
     const geo = roleGeoMap[currentRole.id];
     const next = { ...defaultFilters, ...geo };
@@ -79,8 +77,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
   const getLabel = (field: "district" | "block") => {
     if (field === "district" && isLocked("district")) return "Your District";
-    if (field === "block" && isLocked("block")) return "Your Block";
-    return field === "district" ? "District" : "Block";
+    if (field === "block" && isLocked("block")) {
+      return currentRole.scope === "municipality" ? "Your Municipality" : "Your Block";
+    }
+    return field === "district" ? "District" : "Block / Municipality";
   };
 
   return (

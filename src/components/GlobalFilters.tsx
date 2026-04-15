@@ -1,8 +1,25 @@
 import { useFilters } from "@/contexts/FilterContext";
-import { districts, blocks, wards } from "@/data/mockData";
+import { districts, subDistrictData, wardData, villageData } from "@/data/mockData";
+import { useMemo } from "react";
 
 export default function GlobalFilters() {
   const { filters, setFilters, applyFilters, resetFilters, isLocked, getLabel } = useFilters();
+
+  // Compute available blocks/municipalities based on selected district
+  const availableBlocks = useMemo(() => {
+    if (filters.district === "All Districts") return ["All Blocks"];
+    const subs = subDistrictData.filter(s => s.parentDistrict === filters.district);
+    return ["All Blocks", ...subs.map(s => s.name)];
+  }, [filters.district]);
+
+  // Compute available wards/villages based on selected block
+  const availableWards = useMemo(() => {
+    if (filters.block === "All Blocks") return ["All Wards"];
+    const villages = villageData.filter(v => v.parentBlock === filters.block);
+    const wards = wardData.filter(w => w.parentBlock === filters.block);
+    const all = [...villages, ...wards];
+    return ["All Wards", ...all.map(a => a.name)];
+  }, [filters.block]);
 
   return (
     <div className="filter-bar mb-6">
@@ -10,7 +27,7 @@ export default function GlobalFilters() {
         <label className="text-xs font-medium text-muted-foreground">{getLabel("district")}</label>
         <select
           value={filters.district}
-          onChange={(e) => setFilters({ district: e.target.value })}
+          onChange={(e) => setFilters({ district: e.target.value, block: "All Blocks", ward: "All Wards" })}
           disabled={isLocked("district")}
           className="h-9 rounded-md border border-input bg-card px-3 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
@@ -21,21 +38,21 @@ export default function GlobalFilters() {
         <label className="text-xs font-medium text-muted-foreground">{getLabel("block")}</label>
         <select
           value={filters.block}
-          onChange={(e) => setFilters({ block: e.target.value })}
+          onChange={(e) => setFilters({ block: e.target.value, ward: "All Wards" })}
           disabled={isLocked("block")}
           className="h-9 rounded-md border border-input bg-card px-3 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {blocks.map((b) => <option key={b}>{b}</option>)}
+          {availableBlocks.map((b) => <option key={b}>{b}</option>)}
         </select>
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground">Ward</label>
+        <label className="text-xs font-medium text-muted-foreground">Ward / Village</label>
         <select
           value={filters.ward}
           onChange={(e) => setFilters({ ward: e.target.value })}
           className="h-9 rounded-md border border-input bg-card px-3 text-sm"
         >
-          {wards.map((w) => <option key={w}>{w}</option>)}
+          {availableWards.map((w) => <option key={w}>{w}</option>)}
         </select>
       </div>
       <div className="flex flex-col gap-1">

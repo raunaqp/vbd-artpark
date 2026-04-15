@@ -28,14 +28,12 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
       <header className="dashboard-header px-6 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Dengue Early Warning System</h1>
           <p className="text-xs opacity-80">Department of Health · Andhra Pradesh</p>
         </div>
         <div className="flex items-center gap-4">
-          {/* Download Report */}
           <div className="relative">
             <button
               onClick={() => { setShowReportMenu(!showReportMenu); setShowRoleMenu(false); }}
@@ -56,7 +54,6 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
             )}
           </div>
 
-          {/* Role Switcher */}
           <div className="relative">
             <button
               onClick={() => { setShowRoleMenu(!showRoleMenu); setShowReportMenu(false); }}
@@ -64,7 +61,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
             >
               <User className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">
-                <span className="font-medium">Ravi Reddy</span>
+                <span className="font-medium">{currentRole.userName}</span>
                 <span className="opacity-70"> · {currentRole.roleName} · {currentRole.location}</span>
               </span>
               <ChevronDown className="h-3 w-3" />
@@ -78,7 +75,8 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
                     onClick={() => { setRole(r.id); setShowRoleMenu(false); }}
                     className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${currentRole.id === r.id ? "bg-muted font-medium text-foreground" : "text-foreground"}`}
                   >
-                    {r.label}
+                    <div>{r.label}</div>
+                    <div className="text-xs text-muted-foreground">{r.userName}</div>
                   </button>
                 ))}
               </div>
@@ -87,20 +85,22 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
         </div>
       </header>
 
-      {/* Data Quality Banner — below header, above filters */}
       {dataQualityIssues.length > 0 && (
         <div className="bg-risk-moderate/10 border-b border-risk-moderate/30 px-6 py-2">
-          <div className="flex items-center gap-2 text-sm">
-            <AlertTriangle className="h-4 w-4 text-risk-moderate flex-shrink-0" />
-            <span className="font-medium text-foreground">Data Issues:</span>
-            <span className="text-muted-foreground">
-              {dataQualityIssues.map((d) => d.message).join(" · ")}
-            </span>
+          <div className="flex items-start gap-2 text-sm">
+            <AlertTriangle className="h-4 w-4 text-risk-moderate flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-medium text-foreground">Data Issues:</span>
+              <ul className="list-disc list-inside text-muted-foreground text-xs mt-0.5">
+                {dataQualityIssues.map((d, i) => (
+                  <li key={i}>{d.message}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Tab Navigation */}
       <nav className="bg-card border-b border-border px-6 py-2">
         <div className="tab-nav inline-flex">
           {tabs.map((tab) => (
@@ -116,7 +116,6 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
         </div>
       </nav>
 
-      {/* Content */}
       <main className="flex-1 p-6 overflow-auto">
         {children}
       </main>

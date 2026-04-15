@@ -4,7 +4,7 @@ import { getFilteredRegions, getKpiFromRegions } from "@/data/mockData";
 
 export default function KpiCards() {
   const { appliedFilters } = useFilters();
-  const regions = getFilteredRegions(appliedFilters.district);
+  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
   const kpi = getKpiFromRegions(regions);
 
   const cards = [

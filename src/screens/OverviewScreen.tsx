@@ -9,8 +9,8 @@ import { getFilteredRegions, getSituationSummary } from "@/data/mockData";
 
 export default function OverviewScreen() {
   const { appliedFilters } = useFilters();
-  const regions = getFilteredRegions(appliedFilters.district);
-  const summary = getSituationSummary(regions);
+  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const summary = getSituationSummary(regions, appliedFilters.district, appliedFilters.block);
 
   const riskDistribution = {
     high: regions.filter((r) => r.risk === "high").length,
@@ -18,11 +18,16 @@ export default function OverviewScreen() {
     low: regions.filter((r) => r.risk === "low").length,
   };
 
+  const areaLabel = appliedFilters.block !== "All Blocks"
+    ? "village/ward"
+    : appliedFilters.district !== "All Districts"
+    ? "block/municipality"
+    : "district";
+
   return (
     <div>
       <GlobalFilters />
 
-      {/* Situation Summary */}
       <div className="section-card p-4 mb-6">
         <h3 className="section-title mb-2">Situation Summary</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">{summary}</p>
@@ -31,7 +36,6 @@ export default function OverviewScreen() {
       <RecommendedActions />
       <KpiCards />
 
-      {/* Risk Distribution + W1–W4 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="section-card p-4">
           <h3 className="section-title mb-3">Risk Distribution</h3>
@@ -46,7 +50,7 @@ export default function OverviewScreen() {
                   <span className={`w-3 h-3 rounded-full bg-risk-${level}`} />
                   <span className="text-sm text-foreground">{label}</span>
                 </div>
-                <span className="text-sm font-semibold text-foreground">{count} district{count !== 1 ? "s" : ""}</span>
+                <span className="text-sm font-semibold text-foreground">{count} {areaLabel}{count !== 1 ? "s" : ""}</span>
               </div>
             ))}
           </div>

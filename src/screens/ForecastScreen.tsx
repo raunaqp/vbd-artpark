@@ -55,7 +55,7 @@ export default function ForecastScreen() {
             <h3 className="section-title">Dengue Incidence — Actual vs Predicted</h3>
             <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">Analyst View</span>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">12 weeks historical, then forecast with confidence interval</p>
+          <p className="text-xs text-muted-foreground mb-4">Past weeks (W-) and forecast (W+) with confidence interval</p>
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />

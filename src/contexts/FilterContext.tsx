@@ -114,7 +114,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useFilters() {
+export function useFilters(): FilterContextType {
   const ctx = useContext(FilterContext);
   if (!ctx) throw new Error("useFilters must be used within FilterProvider");
   return ctx;

@@ -5,8 +5,10 @@ import CaseSurveillanceScreen from "@/screens/CaseSurveillanceScreen";
 import ForecastScreen from "@/screens/ForecastScreen";
 import WeatherScreen from "@/screens/WeatherScreen";
 import HotspotsScreen from "@/screens/HotspotsScreen";
+import SignalsScreen from "@/screens/SignalsScreen";
 import DataUploadScreen from "@/screens/DataUploadScreen";
 import { RoleProvider } from "@/contexts/RoleContext";
+import { FilterProvider } from "@/contexts/FilterContext";
 
 const screens: Record<TabId, React.ComponentType> = {
   overview: OverviewScreen,
@@ -14,6 +16,7 @@ const screens: Record<TabId, React.ComponentType> = {
   forecast: ForecastScreen,
   weather: WeatherScreen,
   hotspots: HotspotsScreen,
+  signals: SignalsScreen,
   upload: DataUploadScreen,
 };
 
@@ -23,9 +26,11 @@ export default function Index() {
 
   return (
     <RoleProvider>
-      <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-        <Screen />
-      </DashboardLayout>
+      <FilterProvider>
+        <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+          <Screen />
+        </DashboardLayout>
+      </FilterProvider>
     </RoleProvider>
   );
 }

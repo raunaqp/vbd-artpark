@@ -1,14 +1,18 @@
-import { useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, Info } from "lucide-react";
-import { districts, forecastData, forecastTableData, riskForecast } from "@/data/mockData";
+import { TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import { forecastData, outbreakPredictionData, riskForecast } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
+import { useFilters } from "@/contexts/FilterContext";
 
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
 
 export default function ForecastScreen() {
-  const [district, setDistrict] = useState("Krishna");
   const { isAnalyst } = useRole();
+  const { appliedFilters } = useFilters();
+
+  const filteredPredictions = appliedFilters.district === "All Districts"
+    ? outbreakPredictionData
+    : outbreakPredictionData.filter(r => r.district === appliedFilters.district);
 
   return (
     <div className="space-y-6">
@@ -17,14 +21,6 @@ export default function ForecastScreen() {
         <div>
           <h2 className="text-lg font-semibold text-foreground">Forecast — Predicted Risk</h2>
           <p className="text-xs text-muted-foreground">Forecast last updated: 07 Apr 2026 · Next update: 14 Apr 2026</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mr-2">District</label>
-            <select value={district} onChange={(e) => setDistrict(e.target.value)} className="h-9 rounded-md border border-input px-3 text-sm">
-              {districts.filter(d => d !== "All Districts").map((d) => <option key={d}>{d}</option>)}
-            </select>
-          </div>
         </div>
       </div>
 
@@ -51,35 +47,14 @@ export default function ForecastScreen() {
         })}
       </div>
 
-      {/* Risk Summary */}
-      <div className="section-card p-5">
-        <h3 className="text-lg font-semibold mb-1">{district}</h3>
-        <p className="text-xs text-muted-foreground mb-4">Forecast for W15–W18 (2026)</p>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-          {[
-            { label: "POPULATION", value: "33,95,105" },
-            { label: "RISK SCORE", value: "0.8" },
-            { label: "THRESHOLD", value: "5" },
-            { label: "OVERALL RISK", value: "MODERATE", highlight: true },
-            { label: "FORECAST (WK 18)", value: "8" },
-            { label: "IR (PER 1 LAKH)", value: "0.24" },
-          ].map((m) => (
-            <div key={m.label} className="text-center">
-              <div className={`text-lg font-bold ${m.highlight ? "text-risk-moderate" : ""}`}>{m.value}</div>
-              <div className="text-[10px] text-muted-foreground font-medium">{m.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Actual vs Predicted Chart — Analyst only */}
       {isAnalyst && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="section-title">Dengue Incidence — Actual vs Predicted (20-week)</h3>
+            <h3 className="section-title">Dengue Incidence — Actual vs Predicted</h3>
             <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">Analyst View</span>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">12 weeks historical, then forecast · {district}</p>
+          <p className="text-xs text-muted-foreground mb-4">12 weeks historical, then forecast</p>
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={forecastData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
@@ -99,33 +74,43 @@ export default function ForecastScreen() {
         </div>
       )}
 
-      {/* Decision-Ready Forecast Table */}
+      {/* Outbreak Prediction Table */}
       <div className="section-card p-5">
-        <h3 className="section-title mb-3">Forecast Table — Decision Ready</h3>
+        <h3 className="section-title mb-1">Outbreak Prediction Table</h3>
+        <p className="text-xs text-muted-foreground mb-4">Sorted by probability of outbreak · highest first</p>
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["District", "Trend", "Peak Week", "Risk", "Suggested Action"].map((h) => (
-                  <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
+                {["District", "Probability (%)", "Risk Level", "Expected Week", "Signal"].map((h) => (
+                  <th key={h} className="text-left py-2.5 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {forecastTableData.map((r) => {
-                const TrendIcon = trendIcon[r.trend];
-                return (
-                  <tr key={r.district} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="py-2 px-3 font-medium">{r.district}</td>
-                    <td className="py-2 px-3">
-                      <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
-                    </td>
-                    <td className="py-2 px-3 font-medium">{r.peakWeek}</td>
-                    <td className="py-2 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
-                    <td className="py-2 px-3 text-xs text-muted-foreground max-w-xs">{r.action}</td>
-                  </tr>
-                );
-              })}
+              {filteredPredictions.map((r) => (
+                <tr key={r.district} className="border-b border-border/50 hover:bg-muted/30">
+                  <td className="py-2.5 px-3 font-medium">{r.district}</td>
+                  <td className="py-2.5 px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            r.risk === "high" ? "bg-risk-high" :
+                            r.risk === "moderate" ? "bg-risk-moderate" :
+                            "bg-risk-low"
+                          }`}
+                          style={{ width: `${r.probability}%` }}
+                        />
+                      </div>
+                      <span className="font-semibold text-foreground">{r.probability}%</span>
+                    </div>
+                  </td>
+                  <td className="py-2.5 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
+                  <td className="py-2.5 px-3 font-medium">{r.expectedWeek}</td>
+                  <td className="py-2.5 px-3 text-xs text-muted-foreground max-w-xs">{r.signal}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

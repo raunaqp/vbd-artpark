@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
-import { hotspotAlerts, getFilteredHotspots } from "@/data/mockData";
+import { hotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
@@ -29,6 +29,12 @@ export default function HotspotsScreen() {
     ? "Blocks / Municipalities"
     : "Districts";
 
+  // Check if there are no significant cases but forecast shows high risk
+  const totalCases = displayHotspots.reduce((sum, h) => sum + h.currentCases, 0);
+  const predictions = getOutbreakPredictions(appliedFilters.district, appliedFilters.block);
+  const hasHighForecast = predictions.some(p => p.risk === "high");
+  const noCasesButHighForecast = totalCases === 0 && hasHighForecast;
+
   return (
     <div className="space-y-6">
       <GlobalFilters />
@@ -45,6 +51,16 @@ export default function HotspotsScreen() {
           <button onClick={() => setTimeRange("4weeks")} className={`tab-nav-item ${timeRange === "4weeks" ? "tab-nav-item-active" : ""}`}>4 Weeks</button>
         </div>
       </div>
+
+      {noCasesButHighForecast && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm">
+          <Info className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="text-foreground">
+            No significant cases reported in the last {timeRange === "4weeks" ? "4" : "2"} weeks.
+            <span className="text-muted-foreground ml-1">However, the Forecast tab shows high risk due to predictive signals (climate / trend / history).</span>
+          </span>
+        </div>
+      )}
 
       {filteredAlerts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -71,36 +87,42 @@ export default function HotspotsScreen() {
 
       <DashboardMap height="350px" />
 
-      <div className="section-card p-5">
-        <h3 className="section-title mb-3">Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks · {areaLabel}</h3>
-        <div className="overflow-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {["Area", "Cases", "Prev Period", "Trend", "Risk"].map((h) => (
-                  <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {displayHotspots.map((r) => {
-                const TrendIcon = trendIcon[r.trend];
-                return (
-                  <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="py-2 px-3 font-medium">{r.area}</td>
-                    <td className="py-2 px-3">{r.currentCases}</td>
-                    <td className="py-2 px-3 text-muted-foreground">{r.prevCases}</td>
-                    <td className="py-2 px-3">
-                      <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
-                    </td>
-                    <td className="py-2 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {displayHotspots.length > 0 ? (
+        <div className="section-card p-5">
+          <h3 className="section-title mb-3">Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks · {areaLabel}</h3>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  {["Area", "Cases", "Prev Period", "Trend", "Risk"].map((h) => (
+                    <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayHotspots.map((r) => {
+                  const TrendIcon = trendIcon[r.trend];
+                  return (
+                    <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="py-2 px-3 font-medium">{r.area}</td>
+                      <td className="py-2 px-3">{r.currentCases}</td>
+                      <td className="py-2 px-3 text-muted-foreground">{r.prevCases}</td>
+                      <td className="py-2 px-3">
+                        <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
+                      </td>
+                      <td className="py-2 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="section-card p-5 text-center text-muted-foreground text-sm">
+          No hotspot data available for the selected area and time range.
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight } from "lucide-react";
 import { useRole, roles } from "@/contexts/RoleContext";
 import { dataQualityIssues } from "@/data/mockData";
 import { useState } from "react";
@@ -25,6 +25,9 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const { currentRole, setRole } = useRole();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showReportMenu, setShowReportMenu] = useState(false);
+  const [dataIssuesExpanded, setDataIssuesExpanded] = useState(false);
+
+  const reportOptions = ["Weekly Report", "District Summary", "NVBDCP Format", "Line Listing"];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -45,7 +48,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
             </button>
             {showReportMenu && (
               <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
-                {["Weekly Report", "District Report", "NVBDCP Format"].map((r) => (
+                {reportOptions.map((r) => (
                   <button key={r} onClick={() => setShowReportMenu(false)} className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
                     {r}
                   </button>
@@ -87,17 +90,21 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
 
       {dataQualityIssues.length > 0 && (
         <div className="bg-risk-moderate/10 border-b border-risk-moderate/30 px-6 py-2">
-          <div className="flex items-start gap-2 text-sm">
-            <AlertTriangle className="h-4 w-4 text-risk-moderate flex-shrink-0 mt-0.5" />
-            <div>
-              <span className="font-medium text-foreground">Data Issues:</span>
-              <ul className="list-disc list-inside text-muted-foreground text-xs mt-0.5">
-                {dataQualityIssues.map((d, i) => (
-                  <li key={i}>{d.message}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          <button
+            onClick={() => setDataIssuesExpanded(!dataIssuesExpanded)}
+            className="flex items-center gap-2 text-sm w-full"
+          >
+            <AlertTriangle className="h-4 w-4 text-risk-moderate flex-shrink-0" />
+            <span className="font-medium text-foreground">⚠ Data Issues ({dataQualityIssues.length})</span>
+            <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${dataIssuesExpanded ? "rotate-90" : ""}`} />
+          </button>
+          {dataIssuesExpanded && (
+            <ul className="list-disc list-inside text-muted-foreground text-xs mt-1.5 ml-6">
+              {dataQualityIssues.map((d, i) => (
+                <li key={i}>{d.message}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

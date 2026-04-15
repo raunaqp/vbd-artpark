@@ -45,7 +45,7 @@
     --risk-low: 142 60% 40%;
     --risk-moderate: 45 90% 50%;
     --risk-high: 25 90% 50%;
-    --risk-critical: 0 72% 51%;
+    /* risk-critical removed — use only low/moderate/high */
 
     --header-bg: 215 60% 16%;
     --header-foreground: 0 0% 100%;
@@ -107,11 +107,6 @@
     @apply px-3 py-1 rounded-full text-xs font-semibold;
     background: hsl(var(--risk-high) / 0.12);
     color: hsl(var(--risk-high));
-  }
-  .risk-badge-critical {
-    @apply px-3 py-1 rounded-full text-xs font-semibold;
-    background: hsl(var(--risk-critical) / 0.12);
-    color: hsl(var(--risk-critical));
   }
   .section-card {
     @apply rounded-lg bg-card border border-border shadow-sm;

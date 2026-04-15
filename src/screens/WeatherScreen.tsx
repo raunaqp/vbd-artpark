@@ -72,7 +72,7 @@ export default function WeatherScreen() {
                   <tr key={r.week} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="py-2 px-3 font-medium">{r.week}</td>
                     <td className="py-2 px-3">{r.endDate}</td>
-                    <td className={`py-2 px-3 ${rainHigh ? "font-bold text-risk-critical" : ""}`}>{r.rainfall}</td>
+                    <td className={`py-2 px-3 ${rainHigh ? "font-bold text-risk-high" : ""}`}>{r.rainfall}</td>
                     <td className={`py-2 px-3 ${tempInRange ? "font-bold text-chart-temperature" : ""}`}>{r.temp}</td>
                     <td className="py-2 px-3">{r.maxT}</td>
                     <td className="py-2 px-3">{r.minT}</td>

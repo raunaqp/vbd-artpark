@@ -1,4 +1,5 @@
-// Mock data for Dengue EWS Dashboard — Hierarchical Role-Based
+// Mock data for Vector-Borne Disease EWS Dashboard — Hierarchical Role-Based
+// Disease multipliers are applied via getDiseaseRegions / getDiseaseKpi etc.
 
 // ── Geography hierarchy ──
 export const districts = ["All Districts", "East Godavari", "Krishna", "Guntur", "Kurnool", "Visakhapatnam", "Prakasam", "S.P.S. Nellore", "Srikakulam", "Vizianagaram", "West Godavari", "Anakapalli", "Eluru"];
@@ -132,7 +133,19 @@ export function getKpiFromRegions(regions: RegionData[]) {
   };
 }
 
-export function getSituationSummary(regions: RegionData[], district?: string, block?: string) {
+// Apply disease multiplier to region data
+export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number): RegionData[] {
+  if (multiplier === 1) return regions;
+  return regions.map(r => ({
+    ...r,
+    suspected: Math.round(r.suspected * multiplier),
+    tested: Math.round(r.tested * multiplier),
+    confirmed: Math.round(r.confirmed * multiplier),
+    deaths: Math.round(r.deaths * multiplier),
+  }));
+}
+
+export function getSituationSummary(regions: RegionData[], diseaseName: string, district?: string, block?: string) {
   const kpi = getKpiFromRegions(regions);
   const highRisk = regions.filter(r => r.risk === "high");
   const highNames = highRisk.map(r => r.name).join(", ");
@@ -144,9 +157,9 @@ export function getSituationSummary(regions: RegionData[], district?: string, bl
 
   if (regions.length === 1) {
     const r = regions[0];
-    return `${r.name} has recorded ${kpi.confirmed} confirmed dengue cases with ${kpi.deaths} death(s). Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
+    return `${r.name} has recorded ${kpi.confirmed} confirmed ${diseaseName} cases with ${kpi.deaths} death(s). Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
   }
-  return `${kpi.confirmed} confirmed dengue cases across ${regions.length} ${areaLabel} with ${kpi.deaths} deaths. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W+2 to W+3.`;
+  return `${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel} with ${kpi.deaths} deaths. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W+2 to W+3.`;
 }
 
 // ── Outbreak Prediction Data (role-specific) ──

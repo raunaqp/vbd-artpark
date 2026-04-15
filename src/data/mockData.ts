@@ -14,21 +14,21 @@ export const kpiData = {
 export const riskForecast = [
   { week: "W1", risk: "moderate" as const, cases: 45, label: "Apr 7–13" },
   { week: "W2", risk: "high" as const, cases: 68, label: "Apr 14–20" },
-  { week: "W3", risk: "critical" as const, cases: 92, label: "Apr 21–27" },
-  { week: "W4", risk: "high" as const, cases: 71, label: "Apr 28–May 4" },
+  { week: "W3", risk: "high" as const, cases: 92, label: "Apr 21–27" },
+  { week: "W4", risk: "moderate" as const, cases: 71, label: "Apr 28–May 4" },
 ];
 
 export const regionData = [
-  { name: "East Godavari", suspected: 340, tested: 212, confirmed: 47, deaths: 1, risk: "high" as const },
-  { name: "Krishna", suspected: 548, tested: 512, confirmed: 49, deaths: 1, risk: "critical" as const },
-  { name: "S.P.S. Nellore", suspected: 420, tested: 398, confirmed: 38, deaths: 0, risk: "moderate" as const },
-  { name: "Prakasam", suspected: 312, tested: 290, confirmed: 31, deaths: 0, risk: "moderate" as const },
-  { name: "Srikakulam", suspected: 198, tested: 180, confirmed: 22, deaths: 0, risk: "low" as const },
-  { name: "Visakhapatnam", suspected: 620, tested: 580, confirmed: 65, deaths: 2, risk: "high" as const },
-  { name: "Vizianagaram", suspected: 245, tested: 230, confirmed: 28, deaths: 0, risk: "moderate" as const },
-  { name: "West Godavari", suspected: 380, tested: 355, confirmed: 42, deaths: 1, risk: "high" as const },
-  { name: "Guntur", suspected: 490, tested: 460, confirmed: 52, deaths: 1, risk: "high" as const },
-  { name: "Kurnool", suspected: 275, tested: 258, confirmed: 30, deaths: 0, risk: "moderate" as const },
+  { name: "East Godavari", suspected: 340, tested: 212, confirmed: 47, deaths: 1, risk: "high" as const, trend: "up" as const },
+  { name: "Krishna", suspected: 548, tested: 512, confirmed: 49, deaths: 1, risk: "high" as const, trend: "up" as const },
+  { name: "S.P.S. Nellore", suspected: 420, tested: 398, confirmed: 38, deaths: 0, risk: "moderate" as const, trend: "stable" as const },
+  { name: "Prakasam", suspected: 312, tested: 290, confirmed: 31, deaths: 0, risk: "moderate" as const, trend: "down" as const },
+  { name: "Srikakulam", suspected: 198, tested: 180, confirmed: 22, deaths: 0, risk: "low" as const, trend: "stable" as const },
+  { name: "Visakhapatnam", suspected: 620, tested: 580, confirmed: 65, deaths: 2, risk: "high" as const, trend: "up" as const },
+  { name: "Vizianagaram", suspected: 245, tested: 230, confirmed: 28, deaths: 0, risk: "moderate" as const, trend: "stable" as const },
+  { name: "West Godavari", suspected: 380, tested: 355, confirmed: 42, deaths: 1, risk: "high" as const, trend: "up" as const },
+  { name: "Guntur", suspected: 490, tested: 460, confirmed: 52, deaths: 1, risk: "high" as const, trend: "down" as const },
+  { name: "Kurnool", suspected: 275, tested: 258, confirmed: 30, deaths: 0, risk: "moderate" as const, trend: "stable" as const },
 ];
 
 export const weeklyTimeSeries = [
@@ -106,14 +106,14 @@ export const forecastData = [
 ];
 
 export const forecastTableData = [
-  { district: "East Godavari", w1: 12, w2: 15, w3: 18, w4: 14, risk: "high" as const },
-  { district: "Krishna", w1: 18, w2: 22, w3: 28, w4: 25, risk: "critical" as const },
-  { district: "Visakhapatnam", w1: 10, w2: 14, w3: 16, w4: 12, risk: "high" as const },
-  { district: "Guntur", w1: 8, w2: 11, w3: 14, w4: 10, risk: "moderate" as const },
-  { district: "Kurnool", w1: 5, w2: 6, w3: 8, w4: 7, risk: "moderate" as const },
-  { district: "Prakasam", w1: 4, w2: 5, w3: 7, w4: 5, risk: "low" as const },
-  { district: "S.P.S. Nellore", w1: 6, w2: 9, w3: 11, w4: 8, risk: "moderate" as const },
-  { district: "West Godavari", w1: 7, w2: 10, w3: 13, w4: 9, risk: "high" as const },
+  { district: "Krishna", trend: "up" as const, peakWeek: "W3", risk: "high" as const, action: "Intensive fogging in affected wards; deploy rapid response teams" },
+  { district: "Visakhapatnam", trend: "up" as const, peakWeek: "W3", risk: "high" as const, action: "Door-to-door fever surveys; eliminate breeding sites" },
+  { district: "East Godavari", trend: "stable" as const, peakWeek: "W3", risk: "high" as const, action: "Fogging in hotspots; increase testing camps" },
+  { district: "West Godavari", trend: "up" as const, peakWeek: "W3", risk: "high" as const, action: "Larval surveys; community awareness drives" },
+  { district: "Guntur", trend: "down" as const, peakWeek: "W2", risk: "moderate" as const, action: "Fogging alternate days; increase testing camps" },
+  { district: "S.P.S. Nellore", trend: "stable" as const, peakWeek: "W2", risk: "moderate" as const, action: "Larval surveys in parks, construction sites" },
+  { district: "Kurnool", trend: "stable" as const, peakWeek: "W3", risk: "moderate" as const, action: "Community awareness drives; increase testing" },
+  { district: "Prakasam", trend: "down" as const, peakWeek: "W1", risk: "low" as const, action: "Routine surveillance; preventive messaging" },
 ];
 
 export const weatherData = [
@@ -132,18 +132,47 @@ export const weatherData = [
 ];
 
 export const hotspotAlerts = [
-  { id: 1, district: "Krishna", message: "Unusual spike in confirmed cases — 28 new cases in W3", severity: "critical" as const },
+  { id: 1, district: "Krishna", message: "Unusual spike in confirmed cases — 28 new cases in W3", severity: "high" as const },
   { id: 2, district: "East Godavari", message: "TPR rising above 30% for 2 consecutive weeks", severity: "high" as const },
-  { id: 3, district: "Visakhapatnam", message: "New cluster detected in Pendurthi block", severity: "high" as const },
+  { id: 3, district: "Visakhapatnam", message: "New cluster detected in Pendurthi block", severity: "moderate" as const },
 ];
 
 export const hotspotTableData = [
-  { district: "Krishna", currentCases: 49, trend: "up" as const, w1: 18, w2: 22, w3: 28, w4: 25, risk: "critical" as const },
-  { district: "Visakhapatnam", currentCases: 65, trend: "up" as const, w1: 10, w2: 14, w3: 16, w4: 12, risk: "high" as const },
-  { district: "East Godavari", currentCases: 47, trend: "stable" as const, w1: 12, w2: 15, w3: 18, w4: 14, risk: "high" as const },
-  { district: "West Godavari", currentCases: 42, trend: "up" as const, w1: 7, w2: 10, w3: 13, w4: 9, risk: "high" as const },
-  { district: "Guntur", currentCases: 52, trend: "down" as const, w1: 8, w2: 11, w3: 14, w4: 10, risk: "moderate" as const },
+  { district: "Krishna", currentCases: 49, trend: "up" as const, risk: "high" as const },
+  { district: "Visakhapatnam", currentCases: 65, trend: "up" as const, risk: "high" as const },
+  { district: "East Godavari", currentCases: 47, trend: "stable" as const, risk: "high" as const },
+  { district: "West Godavari", currentCases: 42, trend: "up" as const, risk: "moderate" as const },
+  { district: "Guntur", currentCases: 52, trend: "down" as const, risk: "moderate" as const },
+  { district: "Prakasam", currentCases: 31, trend: "down" as const, risk: "low" as const },
+  { district: "Kurnool", currentCases: 30, trend: "stable" as const, risk: "moderate" as const },
 ];
+
+export const dataQualityIssues = [
+  { type: "missing_reports", message: "3 blocks have not reported in last 7 days", severity: "high" as const },
+  { type: "missing_lab", message: "1 district missing lab confirmation data", severity: "moderate" as const },
+  { type: "delayed", message: "Eluru district data delayed by 3 days", severity: "moderate" as const },
+];
+
+export const recommendedActions = {
+  high: [
+    "Intensive fogging in affected wards (daily)",
+    "Door-to-door fever surveys",
+    "Deploy rapid response teams",
+    "Eliminate breeding sites (stagnant water, containers)",
+    "Increase hospital preparedness",
+  ],
+  moderate: [
+    "Fogging in hotspots (alternate days)",
+    "Larval surveys in parks, construction sites",
+    "Increase testing camps",
+    "Community awareness drives",
+  ],
+  low: [
+    "Routine surveillance",
+    "Preventive messaging",
+    "Monitor trends",
+  ],
+};
 
 export const mapCenter: [number, number] = [15.9129, 79.74];
 export const mapZoom = 7;

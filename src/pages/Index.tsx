@@ -6,6 +6,7 @@ import ForecastScreen from "@/screens/ForecastScreen";
 import WeatherScreen from "@/screens/WeatherScreen";
 import HotspotsScreen from "@/screens/HotspotsScreen";
 import DataUploadScreen from "@/screens/DataUploadScreen";
+import { RoleProvider } from "@/contexts/RoleContext";
 
 const screens: Record<TabId, React.ComponentType> = {
   overview: OverviewScreen,
@@ -21,8 +22,10 @@ export default function Index() {
   const Screen = screens[activeTab];
 
   return (
-    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-      <Screen />
-    </DashboardLayout>
+    <RoleProvider>
+      <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+        <Screen />
+      </DashboardLayout>
+    </RoleProvider>
   );
 }

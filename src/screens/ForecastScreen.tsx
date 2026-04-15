@@ -3,11 +3,13 @@ import { AlertTriangle } from "lucide-react";
 import { forecastData, riskForecast, getOutbreakPredictions } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
+import { useDisease } from "@/contexts/DiseaseContext";
 import GlobalFilters from "@/components/GlobalFilters";
 
 export default function ForecastScreen() {
   const { isAnalyst } = useRole();
   const { appliedFilters } = useFilters();
+  const { diseaseName } = useDisease();
 
   const predictions = getOutbreakPredictions(appliedFilters.district, appliedFilters.block);
 
@@ -23,7 +25,7 @@ export default function ForecastScreen() {
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Forecast — Predicted Risk (Next 4 Weeks)</h2>
+          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Forecast — Predicted Risk (Next 4 Weeks)</h2>
           <p className="text-xs text-muted-foreground">Forecast last updated: 07 Apr 2026 · Next update: 14 Apr 2026</p>
         </div>
       </div>
@@ -31,7 +33,7 @@ export default function ForecastScreen() {
       {predictions.length > 0 && predictions.every(p => p.risk === "high" || p.risk === "moderate") && (
         <div className="flex items-center gap-2 rounded-lg border border-risk-high/30 bg-risk-high/5 px-4 py-2.5 text-sm">
           <AlertTriangle className="h-4 w-4 text-risk-high flex-shrink-0" />
-          <span className="text-foreground">High risk detected due to predictive signals (climate conditions / rising trend / historical patterns).</span>
+          <span className="text-foreground">High {diseaseName.toLowerCase()} risk detected due to predictive signals (climate conditions / rising trend / historical patterns).</span>
         </div>
       )}
 
@@ -54,7 +56,7 @@ export default function ForecastScreen() {
       {isAnalyst && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="section-title">Dengue Incidence — Actual vs Predicted</h3>
+            <h3 className="section-title">{diseaseName} Incidence — Actual vs Predicted</h3>
             <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">Analyst View</span>
           </div>
           <p className="text-xs text-muted-foreground mb-4">Past weeks (W-) and forecast (W+) with confidence interval</p>
@@ -78,7 +80,7 @@ export default function ForecastScreen() {
       )}
 
       <div className="section-card p-5">
-        <h3 className="section-title mb-1">Outbreak Prediction Table</h3>
+        <h3 className="section-title mb-1">{diseaseName} Outbreak Prediction Table</h3>
         <p className="text-xs text-muted-foreground mb-4">Sorted by probability of outbreak · highest first · Showing: {areaLabel} level</p>
         <div className="overflow-auto">
           <table className="w-full text-sm">

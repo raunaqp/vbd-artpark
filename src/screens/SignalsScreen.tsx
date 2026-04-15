@@ -2,6 +2,7 @@ import { Newspaper, MapPin, AlertTriangle } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import { newsAlerts, geoTaggedAlerts, mapCenter } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
+import { useDisease } from "@/contexts/DiseaseContext";
 import GlobalFilters from "@/components/GlobalFilters";
 
 const severityColor: Record<string, string> = {
@@ -12,6 +13,7 @@ const severityColor: Record<string, string> = {
 
 export default function SignalsScreen() {
   const { appliedFilters } = useFilters();
+  const { diseaseName } = useDisease();
 
   const filteredNews = appliedFilters.district === "All Districts"
     ? newsAlerts
@@ -26,19 +28,18 @@ export default function SignalsScreen() {
       <GlobalFilters />
 
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Signals / Field Intelligence</h2>
+        <h2 className="text-lg font-semibold text-foreground">{diseaseName} Signals / Field Intelligence</h2>
         <p className="text-xs text-muted-foreground">External signals to complement model predictions and ground reality</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* News / Media Alerts */}
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <Newspaper className="h-4 w-4 text-muted-foreground" />
             <h3 className="section-title">News / Media Alerts</h3>
           </div>
           {filteredNews.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No alerts for selected district</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">No {diseaseName.toLowerCase()} alerts for selected district</p>
           ) : (
             <div className="space-y-3">
               {filteredNews.map((alert) => (
@@ -61,7 +62,6 @@ export default function SignalsScreen() {
           )}
         </div>
 
-        {/* Geo-tagged Alerts Map */}
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -102,7 +102,6 @@ export default function SignalsScreen() {
         </div>
       </div>
 
-      {/* Future */}
       <div className="section-card p-4 border-dashed">
         <div className="flex items-center gap-2 text-muted-foreground">
           <AlertTriangle className="h-4 w-4" />

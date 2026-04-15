@@ -2,95 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 20% 98%;
+    --foreground: 220 20% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 20% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 20% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 215 60% 22%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 30% 96%;
+    --secondary-foreground: 220 20% 10%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 15% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 215 60% 22%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 215 60% 22%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Dashboard-specific tokens */
+    --kpi-suspected: 220 70% 50%;
+    --kpi-tested: 30 90% 50%;
+    --kpi-confirmed: 142 60% 40%;
+    --kpi-deaths: 0 72% 51%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --risk-low: 142 60% 40%;
+    --risk-moderate: 45 90% 50%;
+    --risk-high: 25 90% 50%;
+    --risk-critical: 0 72% 51%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --header-bg: 215 60% 16%;
+    --header-foreground: 0 0% 100%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --chart-actual: 215 60% 40%;
+    --chart-predicted: 25 90% 50%;
+    --chart-rainfall: 215 70% 55%;
+    --chart-temperature: 25 90% 50%;
+    --chart-humidity: 142 50% 45%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 10%;
+    --sidebar-primary: 215 60% 22%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 215 60% 95%;
+    --sidebar-accent-foreground: 215 60% 22%;
+    --sidebar-border: 214 20% 90%;
+    --sidebar-ring: 215 60% 22%;
   }
 }
 
@@ -98,8 +71,68 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+@layer components {
+  .kpi-card {
+    @apply rounded-lg bg-card p-5 border border-border shadow-sm;
+  }
+  .kpi-card-suspected {
+    border-left: 4px solid hsl(var(--kpi-suspected));
+  }
+  .kpi-card-tested {
+    border-left: 4px solid hsl(var(--kpi-tested));
+  }
+  .kpi-card-confirmed {
+    border-left: 4px solid hsl(var(--kpi-confirmed));
+  }
+  .kpi-card-deaths {
+    border-left: 4px solid hsl(var(--kpi-deaths));
+  }
+  .risk-badge-low {
+    @apply px-3 py-1 rounded-full text-xs font-semibold;
+    background: hsl(var(--risk-low) / 0.12);
+    color: hsl(var(--risk-low));
+  }
+  .risk-badge-moderate {
+    @apply px-3 py-1 rounded-full text-xs font-semibold;
+    background: hsl(var(--risk-moderate) / 0.12);
+    color: hsl(var(--risk-moderate));
+  }
+  .risk-badge-high {
+    @apply px-3 py-1 rounded-full text-xs font-semibold;
+    background: hsl(var(--risk-high) / 0.12);
+    color: hsl(var(--risk-high));
+  }
+  .risk-badge-critical {
+    @apply px-3 py-1 rounded-full text-xs font-semibold;
+    background: hsl(var(--risk-critical) / 0.12);
+    color: hsl(var(--risk-critical));
+  }
+  .section-card {
+    @apply rounded-lg bg-card border border-border shadow-sm;
+  }
+  .section-title {
+    @apply text-sm font-semibold text-foreground tracking-wide;
+  }
+  .filter-bar {
+    @apply flex flex-wrap gap-3 items-end p-4 bg-card rounded-lg border border-border shadow-sm;
+  }
+  .dashboard-header {
+    background: hsl(var(--header-bg));
+    color: hsl(var(--header-foreground));
+  }
+  .tab-nav {
+    @apply flex gap-1 bg-muted rounded-lg p-1;
+  }
+  .tab-nav-item {
+    @apply px-4 py-2 text-sm font-medium rounded-md cursor-pointer transition-colors text-muted-foreground;
+  }
+  .tab-nav-item-active {
+    @apply bg-card text-foreground shadow-sm;
   }
 }

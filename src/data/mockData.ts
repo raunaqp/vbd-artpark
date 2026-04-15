@@ -1,8 +1,8 @@
 // Mock data for Dengue EWS Dashboard
 
 export const districts = ["All Districts", "East Godavari", "Krishna", "Guntur", "Kurnool", "Visakhapatnam", "Prakasam", "S.P.S. Nellore", "Srikakulam", "Vizianagaram", "West Godavari", "Anakapalli", "Eluru"];
-export const blocks = ["All Blocks", "Block A", "Block B", "Block C"];
-export const wards = ["All Wards", "Ward 1", "Ward 2", "Ward 3"];
+export const blocks = ["All Blocks", "Bheemunipatnam", "Anakapalle", "Tenali", "Vizag MC", "Vijayawada MC", "Block A", "Block B", "Block C"];
+export const wards = ["All Wards", "Ward 1", "Ward 2", "Ward 3", "Ward 4", "Ward 5"];
 
 export const kpiData = {
   suspected: 14890,
@@ -76,14 +76,14 @@ export const genderDistribution = [
 ];
 
 export const lineListingData = [
-  { patient: "Afrid", gender: "Male", age: 10, subDistrict: "Kallur", block: "Kallur", village: "Kallur", district: "Kurnool", diagnosis: "Dengue" },
-  { patient: "Thowdamma B", gender: "Female", age: 53, subDistrict: "Nellimarla", block: "Nellimarla", village: "Nellimarla", district: "Vizianagaram", diagnosis: "Dengue" },
-  { patient: "Ganthakarla Srinu", gender: "Male", age: 48, subDistrict: "Devarapalli", block: "Devarapalli", village: "Devarapalli", district: "Anakapalli", diagnosis: "Dengue" },
-  { patient: "Suresh", gender: "Male", age: 15, subDistrict: "C.Belagal", block: "C.Belagal", village: "C.Belagal", district: "Kurnool", diagnosis: "Dengue" },
-  { patient: "Vani Nethala", gender: "Female", age: 19, subDistrict: "Eluru Urban", block: "Eluru Urban", village: "Eluru Urban", district: "Eluru", diagnosis: "Dengue" },
-  { patient: "D Umesh Reddy", gender: "Male", age: 21, subDistrict: "Guntur West", block: "Guntur West", village: "Guntur West", district: "Guntur", diagnosis: "Dengue" },
-  { patient: "P Dhanalakshmi", gender: "Female", age: 39, subDistrict: "Pedakakani", block: "Pedakakani", village: "Pedakakani", district: "Guntur", diagnosis: "Dengue" },
-  { patient: "Salomi Ch", gender: "Female", age: 39, subDistrict: "Venkatachalam", block: "Venkatachalam", village: "Venkatachalam", district: "S.P.S. Nellore", diagnosis: "Dengue" },
+  { patient: "Afrid", gender: "Male", age: 10, subDistrict: "Kallur", block: "Kallur", village: "Kallur", district: "Kurnool", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-15", urbanRural: "Rural", referredBy: "ASHA" },
+  { patient: "Thowdamma B", gender: "Female", age: 53, subDistrict: "Nellimarla", block: "Nellimarla", village: "Nellimarla", district: "Vizianagaram", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-03-18", urbanRural: "Rural", referredBy: "ANM" },
+  { patient: "Ganthakarla Srinu", gender: "Male", age: 48, subDistrict: "Devarapalli", block: "Devarapalli", village: "Devarapalli", district: "Anakapalli", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-20", urbanRural: "Rural", referredBy: "MO" },
+  { patient: "Suresh", gender: "Male", age: 15, subDistrict: "C.Belagal", block: "C.Belagal", village: "C.Belagal", district: "Kurnool", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-03-22", urbanRural: "Rural", referredBy: "ASHA" },
+  { patient: "Vani Nethala", gender: "Female", age: 19, subDistrict: "Eluru Urban", block: "Eluru Urban", village: "Eluru Urban", district: "Eluru", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-25", urbanRural: "Urban", referredBy: "HW" },
+  { patient: "D Umesh Reddy", gender: "Male", age: 21, subDistrict: "Guntur West", block: "Guntur West", village: "Guntur West", district: "Guntur", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-28", urbanRural: "Urban", referredBy: "MO" },
+  { patient: "P Dhanalakshmi", gender: "Female", age: 39, subDistrict: "Pedakakani", block: "Pedakakani", village: "Pedakakani", district: "Guntur", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-03-30", urbanRural: "Rural", referredBy: "ANM" },
+  { patient: "Salomi Ch", gender: "Female", age: 39, subDistrict: "Venkatachalam", block: "Venkatachalam", village: "Venkatachalam", district: "S.P.S. Nellore", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-01", urbanRural: "Urban", referredBy: "AWW" },
 ];
 
 export const forecastData = [
@@ -105,30 +105,18 @@ export const forecastData = [
   { week: "W18", year: 2026, actual: null, predicted: 8, lower: 4, upper: 12, type: "Forecast" },
 ];
 
-export const forecastTableData = [
-  { district: "Krishna", trend: "up" as const, peakWeek: "W3", risk: "high" as const, action: "Intensive fogging in affected wards; deploy rapid response teams" },
-  { district: "Visakhapatnam", trend: "up" as const, peakWeek: "W3", risk: "high" as const, action: "Door-to-door fever surveys; eliminate breeding sites" },
-  { district: "East Godavari", trend: "stable" as const, peakWeek: "W3", risk: "high" as const, action: "Fogging in hotspots; increase testing camps" },
-  { district: "West Godavari", trend: "up" as const, peakWeek: "W3", risk: "high" as const, action: "Larval surveys; community awareness drives" },
-  { district: "Guntur", trend: "down" as const, peakWeek: "W2", risk: "moderate" as const, action: "Fogging alternate days; increase testing camps" },
-  { district: "S.P.S. Nellore", trend: "stable" as const, peakWeek: "W2", risk: "moderate" as const, action: "Larval surveys in parks, construction sites" },
-  { district: "Kurnool", trend: "stable" as const, peakWeek: "W3", risk: "moderate" as const, action: "Community awareness drives; increase testing" },
-  { district: "Prakasam", trend: "down" as const, peakWeek: "W1", risk: "low" as const, action: "Routine surveillance; preventive messaging" },
-];
-
-export const weatherData = [
-  { week: "W3", endDate: "21 Jan", rainfall: 0.2, temp: 19.0, maxT: 28.1, minT: 10.6, humidity: 59.7 },
-  { week: "W4", endDate: "28 Jan", rainfall: 2.2, temp: 19.9, maxT: 27.5, minT: 13.8, humidity: 63.0 },
-  { week: "W5", endDate: "4 Feb", rainfall: 1.6, temp: 18.9, maxT: 27.3, minT: 10.6, humidity: 72.2 },
-  { week: "W6", endDate: "11 Feb", rainfall: 0.0, temp: 20.6, maxT: 29.2, minT: 13.4, humidity: 59.2 },
-  { week: "W7", endDate: "18 Feb", rainfall: 0.6, temp: 22.8, maxT: 30.1, minT: 15.8, humidity: 47.7 },
-  { week: "W8", endDate: "25 Feb", rainfall: 1.3, temp: 22.3, maxT: 31.3, minT: 15.9, humidity: 53.6 },
-  { week: "W9", endDate: "4 Mar", rainfall: 0.0, temp: 25.5, maxT: 34.1, minT: 17.5, humidity: 37.0 },
-  { week: "W10", endDate: "11 Mar", rainfall: 0.0, temp: 28.0, maxT: 36.8, minT: 19.5, humidity: 28.8 },
-  { week: "W11", endDate: "18 Mar", rainfall: 0.0, temp: 28.8, maxT: 37.0, minT: 20.8, humidity: 20.9 },
-  { week: "W12", endDate: "25 Mar", rainfall: 3.4, temp: 25.7, maxT: 34.8, minT: 16.9, humidity: 39.7 },
-  { week: "W13", endDate: "1 Apr", rainfall: 3.3, temp: 29.9, maxT: 37.0, minT: 21.8, humidity: 32.1 },
-  { week: "W14", endDate: "8 Apr", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
+// Outbreak Prediction Table (replaces decision-ready table)
+export const outbreakPredictionData = [
+  { district: "Krishna", probability: 87, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + TPR spike + Historical trend" },
+  { district: "Visakhapatnam", probability: 82, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + Climate conditions favorable" },
+  { district: "East Godavari", probability: 74, risk: "high" as const, expectedWeek: "W3", signal: "TPR spike + High humidity corridor" },
+  { district: "West Godavari", probability: 68, risk: "high" as const, expectedWeek: "W3", signal: "Cases rising + Post-rainfall breeding" },
+  { district: "Guntur", probability: 52, risk: "moderate" as const, expectedWeek: "W2", signal: "Historical trend + Temperature in range" },
+  { district: "S.P.S. Nellore", probability: 45, risk: "moderate" as const, expectedWeek: "W2", signal: "Climate conditions + Moderate case load" },
+  { district: "Kurnool", probability: 38, risk: "moderate" as const, expectedWeek: "W3", signal: "Historical trend + Moderate humidity" },
+  { district: "Vizianagaram", probability: 30, risk: "moderate" as const, expectedWeek: "W4", signal: "Seasonal pattern" },
+  { district: "Prakasam", probability: 18, risk: "low" as const, expectedWeek: "W1", signal: "Low case load + Declining trend" },
+  { district: "Srikakulam", probability: 12, risk: "low" as const, expectedWeek: "W4", signal: "Low baseline + No climate trigger" },
 ];
 
 export const hotspotAlerts = [
@@ -153,6 +141,7 @@ export const dataQualityIssues = [
   { type: "delayed", message: "Eluru district data delayed by 3 days", severity: "moderate" as const },
 ];
 
+// Location-specific recommended actions
 export const recommendedActions = {
   high: [
     "Intensive fogging in affected wards (daily)",
@@ -173,6 +162,94 @@ export const recommendedActions = {
     "Monitor trends",
   ],
 };
+
+// Granular actions by geography level
+export const actionsByScope: Record<string, { district: string[]; block: string[]; ward: string[] }> = {
+  high: {
+    district: [
+      "Deploy rapid response teams to affected blocks",
+      "Increase hospital preparedness — stock IV fluids, platelets",
+      "Activate district-level RRT with epidemiologist",
+      "Issue public health advisory for the district",
+    ],
+    block: [
+      "Intensive fogging in all affected wards (daily)",
+      "Conduct larval surveys in identified clusters",
+      "Set up temporary fever screening camps",
+      "Deploy entomological team for vector assessment",
+    ],
+    ward: [
+      "Remove stagnant water from all containers and tyres",
+      "Door-to-door fever surveys — identify unreported cases",
+      "Source reduction by ASHA / ANM workers",
+      "Community mobilisation and IEC activities",
+    ],
+  },
+  moderate: {
+    district: [
+      "Fogging in hotspot blocks (alternate days)",
+      "Increase testing camps at PHCs",
+      "Share advisory with block medical officers",
+    ],
+    block: [
+      "Larval surveys in parks, construction sites, water bodies",
+      "Strengthen syndromic surveillance at sub-centres",
+      "Community awareness drives at schools and markets",
+    ],
+    ward: [
+      "Anti-larval measures in public areas",
+      "Monitor fever cases at ASHA level",
+      "Distribute mosquito nets to vulnerable households",
+    ],
+  },
+  low: {
+    district: ["Routine surveillance and data review", "Preventive messaging via IEC"],
+    block: ["Monitor weekly case trends", "Ensure timely data reporting"],
+    ward: ["Routine environmental sanitation", "Awareness posters at community centres"],
+  },
+};
+
+// Signals / Field Intelligence data
+export const newsAlerts = [
+  { id: 1, headline: "Dengue cases rise sharply in Vijayawada hospitals", source: "The Hindu", date: "2026-04-10", district: "Krishna", severity: "high" as const },
+  { id: 2, headline: "Water-logging after rains creates breeding grounds in Vizag", source: "Deccan Chronicle", date: "2026-04-08", district: "Visakhapatnam", severity: "high" as const },
+  { id: 3, headline: "Health dept ramps up fumigation drives in East Godavari", source: "Eenadu", date: "2026-04-07", district: "East Godavari", severity: "moderate" as const },
+  { id: 4, headline: "Guntur hospitals report increasing OPD for fever cases", source: "Andhra Jyothy", date: "2026-04-06", district: "Guntur", severity: "moderate" as const },
+  { id: 5, headline: "Community health workers report poor sanitation in Kurnool villages", source: "Field Report", date: "2026-04-05", district: "Kurnool", severity: "low" as const },
+  { id: 6, headline: "Construction debris piling up in Nellore outskirts — potential breeding sites", source: "Local Report", date: "2026-04-04", district: "S.P.S. Nellore", severity: "moderate" as const },
+];
+
+export const geoTaggedAlerts = [
+  { id: 1, lat: 16.52, lng: 80.63, message: "Hospital OPD spike — 40+ fever cases in 2 days", district: "Krishna", severity: "high" as const },
+  { id: 2, lat: 17.72, lng: 83.30, message: "Waterlogging reported in 3 wards post-rain", district: "Visakhapatnam", severity: "high" as const },
+  { id: 3, lat: 17.0, lng: 81.78, message: "Fumigation drive underway — 8 wards covered", district: "East Godavari", severity: "moderate" as const },
+  { id: 4, lat: 16.30, lng: 80.44, message: "Fever screening camp set up at Guntur bus station", district: "Guntur", severity: "moderate" as const },
+  { id: 5, lat: 15.83, lng: 78.04, message: "ASHA reports increased fever in 2 villages", district: "Kurnool", severity: "low" as const },
+];
+
+// Upload format templates
+export const uploadFormats = [
+  { id: "nvbdcp_linelist", name: "NVBDCP Line List", description: "Standard NVBDCP line listing format with patient details, test type, and results", columns: ["SL. NO", "SS Name", "Date of Testing", "Name of Patient", "Sex", "Age", "Address", "Mobile No", "District", "CHC", "SC", "Village", "Travel History", "Urban/Rural", "Referred By", "Test Type (IgM/NS1)", "Dengue Positive (Y/N)", "Death (Y/N)"] },
+  { id: "nvbdcp_daily", name: "NVBDCP Daily Report", description: "Proforma for daily reporting of dengue cases/deaths by sentinel site", columns: ["Sl No", "Sentinel Site", "NS1 Tested", "IgM Tested", "Total Tested", "NS1 Positive", "IgM Positive", "Total Positive", "Urban", "Rural", "Others", "Deaths"] },
+  { id: "msu_format", name: "MSU / UMSU Format", description: "Municipal surveillance unit reporting format", columns: ["SL. NO", "SS Name", "Date of Testing", "Name of Patient", "Sex", "Age", "Address", "Mobile No", "District", "CHC", "SC", "Village", "Travel History", "Urban/Rural", "Referred By", "Test Type", "Positive (Y/N)"] },
+  { id: "lab_report", name: "Lab Reporting", description: "Laboratory test results with NS1/IgM breakdown", columns: ["Sample ID", "Patient Name", "Age", "Gender", "District", "Date Collected", "Date Tested", "NS1 Result", "IgM Result", "Final Result"] },
+  { id: "survey_data", name: "Survey Data", description: "Field survey and entomological data", columns: ["Date", "District", "Block", "Ward/Village", "Houses Surveyed", "Containers Found", "Containers Positive", "Breeding Index", "Surveyor Name"] },
+];
+
+export const weatherData = [
+  { week: "W3", endDate: "21 Jan", rainfall: 0.2, temp: 19.0, maxT: 28.1, minT: 10.6, humidity: 59.7 },
+  { week: "W4", endDate: "28 Jan", rainfall: 2.2, temp: 19.9, maxT: 27.5, minT: 13.8, humidity: 63.0 },
+  { week: "W5", endDate: "4 Feb", rainfall: 1.6, temp: 18.9, maxT: 27.3, minT: 10.6, humidity: 72.2 },
+  { week: "W6", endDate: "11 Feb", rainfall: 0.0, temp: 20.6, maxT: 29.2, minT: 13.4, humidity: 59.2 },
+  { week: "W7", endDate: "18 Feb", rainfall: 0.6, temp: 22.8, maxT: 30.1, minT: 15.8, humidity: 47.7 },
+  { week: "W8", endDate: "25 Feb", rainfall: 1.3, temp: 22.3, maxT: 31.3, minT: 15.9, humidity: 53.6 },
+  { week: "W9", endDate: "4 Mar", rainfall: 0.0, temp: 25.5, maxT: 34.1, minT: 17.5, humidity: 37.0 },
+  { week: "W10", endDate: "11 Mar", rainfall: 0.0, temp: 28.0, maxT: 36.8, minT: 19.5, humidity: 28.8 },
+  { week: "W11", endDate: "18 Mar", rainfall: 0.0, temp: 28.8, maxT: 37.0, minT: 20.8, humidity: 20.9 },
+  { week: "W12", endDate: "25 Mar", rainfall: 3.4, temp: 25.7, maxT: 34.8, minT: 16.9, humidity: 39.7 },
+  { week: "W13", endDate: "1 Apr", rainfall: 3.3, temp: 29.9, maxT: 37.0, minT: 21.8, humidity: 32.1 },
+  { week: "W14", endDate: "8 Apr", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
+];
 
 export const mapCenter: [number, number] = [15.9129, 79.74];
 export const mapZoom = 7;

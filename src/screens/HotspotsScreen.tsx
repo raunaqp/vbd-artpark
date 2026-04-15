@@ -2,11 +2,21 @@ import { useState } from "react";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import DashboardMap from "@/components/DashboardMap";
 import { hotspotAlerts, hotspotTableData } from "@/data/mockData";
+import { useFilters } from "@/contexts/FilterContext";
 
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
 
 export default function HotspotsScreen() {
   const [timeRange, setTimeRange] = useState<"2weeks" | "4weeks">("4weeks");
+  const { appliedFilters } = useFilters();
+
+  const filteredHotspots = appliedFilters.district === "All Districts"
+    ? hotspotTableData
+    : hotspotTableData.filter(r => r.district === appliedFilters.district);
+
+  const filteredAlerts = appliedFilters.district === "All Districts"
+    ? hotspotAlerts
+    : hotspotAlerts.filter(a => a.district === appliedFilters.district);
 
   return (
     <div className="space-y-6">
@@ -14,7 +24,7 @@ export default function HotspotsScreen() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Hotspots — Past Data</h2>
-          <p className="text-xs text-muted-foreground">Based on confirmed cases in last {timeRange === "4weeks" ? "4" : "2"} weeks</p>
+          <p className="text-xs text-muted-foreground">Based on confirmed cases in last {timeRange === "4weeks" ? "4" : "2"} weeks · No forecast data shown here</p>
         </div>
         <div className="tab-nav">
           <button onClick={() => setTimeRange("2weeks")} className={`tab-nav-item ${timeRange === "2weeks" ? "tab-nav-item-active" : ""}`}>2 Weeks</button>
@@ -23,25 +33,35 @@ export default function HotspotsScreen() {
       </div>
 
       {/* Alerts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {hotspotAlerts.map((a) => (
-          <div key={a.id} className={`section-card p-4 border-l-4 border-risk-${a.severity} bg-risk-${a.severity}/5`}>
-            <div className="flex items-center gap-2 mb-1">
-              <AlertTriangle className={`h-4 w-4 text-risk-${a.severity}`} />
-              <span className="font-semibold text-sm">{a.district}</span>
-              <span className={`risk-badge-${a.severity} ml-auto`}>{a.severity}</span>
+      {filteredAlerts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {filteredAlerts.map((a) => (
+            <div key={a.id} className={`section-card p-4 border-l-4 ${
+              a.severity === "high" ? "border-risk-high bg-risk-high/5" :
+              a.severity === "moderate" ? "border-risk-moderate bg-risk-moderate/5" :
+              "border-risk-low bg-risk-low/5"
+            }`}>
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className={`h-4 w-4 ${
+                  a.severity === "high" ? "text-risk-high" :
+                  a.severity === "moderate" ? "text-risk-moderate" :
+                  "text-risk-low"
+                }`} />
+                <span className="font-semibold text-sm">{a.district}</span>
+                <span className={`risk-badge-${a.severity} ml-auto`}>{a.severity}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{a.message}</p>
             </div>
-            <p className="text-xs text-muted-foreground">{a.message}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Map */}
       <DashboardMap height="350px" />
 
       {/* Hotspot Table — Past Only */}
       <div className="section-card p-5">
-        <h3 className="section-title mb-3">Hotspot Analysis</h3>
+        <h3 className="section-title mb-3">Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks</h3>
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
@@ -52,7 +72,7 @@ export default function HotspotsScreen() {
               </tr>
             </thead>
             <tbody>
-              {hotspotTableData.map((r) => {
+              {filteredHotspots.map((r) => {
                 const TrendIcon = trendIcon[r.trend];
                 return (
                   <tr key={r.district} className="border-b border-border/50 hover:bg-muted/30">

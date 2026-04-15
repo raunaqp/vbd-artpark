@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio } from "lucide-react";
 import { useRole, roles } from "@/contexts/RoleContext";
 import { dataQualityIssues } from "@/data/mockData";
 import { useState } from "react";
@@ -9,6 +9,7 @@ const tabs = [
   { id: "forecast", label: "Forecast", icon: TrendingUp },
   { id: "weather", label: "Weather", icon: CloudRain },
   { id: "hotspots", label: "Hotspots", icon: MapPin },
+  { id: "signals", label: "Signals", icon: Radio },
   { id: "upload", label: "Data Upload", icon: Upload },
 ] as const;
 
@@ -37,7 +38,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
           {/* Download Report */}
           <div className="relative">
             <button
-              onClick={() => setShowReportMenu(!showReportMenu)}
+              onClick={() => { setShowReportMenu(!showReportMenu); setShowRoleMenu(false); }}
               className="flex items-center gap-1.5 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
             >
               <Download className="h-3.5 w-3.5" />
@@ -58,7 +59,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
           {/* Role Switcher */}
           <div className="relative">
             <button
-              onClick={() => setShowRoleMenu(!showRoleMenu)}
+              onClick={() => { setShowRoleMenu(!showRoleMenu); setShowReportMenu(false); }}
               className="flex items-center gap-2 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
             >
               <User className="h-3.5 w-3.5" />
@@ -86,7 +87,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
         </div>
       </header>
 
-      {/* Data Quality Banner */}
+      {/* Data Quality Banner — below header, above filters */}
       {dataQualityIssues.length > 0 && (
         <div className="bg-risk-moderate/10 border-b border-risk-moderate/30 px-6 py-2">
           <div className="flex items-center gap-2 text-sm">

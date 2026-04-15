@@ -3,6 +3,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import { weeklyTimeSeries, dailyTimeSeries, monthlyTimeSeries, ageDistribution, genderDistribution, lineListingData } from "@/data/mockData";
+import { useFilters } from "@/contexts/FilterContext";
 import { Download } from "lucide-react";
 
 type TimeRange = "daily" | "weekly" | "monthly";
@@ -11,13 +12,17 @@ const GENDER_COLORS = ["hsl(215, 60%, 40%)", "hsl(25, 90%, 50%)"];
 export default function CaseSurveillanceScreen() {
   const [timeRange, setTimeRange] = useState<TimeRange>("weekly");
   const [search, setSearch] = useState("");
+  const { appliedFilters } = useFilters();
 
   const timeData = (timeRange === "weekly" ? weeklyTimeSeries : timeRange === "daily" ? dailyTimeSeries : monthlyTimeSeries) as any[];
   const xKey = timeRange === "weekly" ? "date" : timeRange === "daily" ? "date" : "month";
 
-  const filteredListing = lineListingData.filter((r) =>
-    Object.values(r).some((v) => String(v).toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredListing = lineListingData.filter((r) => {
+    const matchesSearch = Object.values(r).some((v) => String(v).toLowerCase().includes(search.toLowerCase()));
+    const matchesDistrict = appliedFilters.district === "All Districts" || r.district === appliedFilters.district;
+    const matchesArea = appliedFilters.areaType === "all" || r.urbanRural.toLowerCase() === appliedFilters.areaType;
+    return matchesSearch && matchesDistrict && matchesArea;
+  });
 
   return (
     <div>
@@ -47,7 +52,7 @@ export default function CaseSurveillanceScreen() {
         </ResponsiveContainer>
       </div>
 
-      {/* Demographics — only Age + Gender, removed Urban/Rural 100% card */}
+      {/* Demographics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="section-card p-5">
           <h3 className="section-title mb-4">Age Distribution</h3>
@@ -81,7 +86,7 @@ export default function CaseSurveillanceScreen() {
         <DashboardMap height="350px" />
       </div>
 
-      {/* Line Listing */}
+      {/* Line Listing — NVBDCP format columns */}
       <div className="section-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="section-title">Line Listing</h3>
@@ -101,8 +106,8 @@ export default function CaseSurveillanceScreen() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["Patient", "Gender", "Age", "Sub District", "Block", "Village / MC", "District", "Diagnosis"].map((h) => (
-                  <th key={h} className="text-left py-2 px-2 text-xs font-medium text-muted-foreground">{h}</th>
+                {["Patient", "Gender", "Age", "District", "Block", "Village / MC", "Test Type", "Result", "Date", "Urban/Rural", "Referred By"].map((h) => (
+                  <th key={h} className="text-left py-2 px-2 text-xs font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -112,11 +117,14 @@ export default function CaseSurveillanceScreen() {
                   <td className="py-2 px-2">{r.patient}</td>
                   <td className="py-2 px-2">{r.gender}</td>
                   <td className="py-2 px-2">{r.age}</td>
-                  <td className="py-2 px-2">{r.subDistrict}</td>
+                  <td className="py-2 px-2">{r.district}</td>
                   <td className="py-2 px-2">{r.block}</td>
                   <td className="py-2 px-2">{r.village}</td>
-                  <td className="py-2 px-2">{r.district}</td>
-                  <td className="py-2 px-2">{r.diagnosis}</td>
+                  <td className="py-2 px-2">{r.testType}</td>
+                  <td className="py-2 px-2">{r.testResult}</td>
+                  <td className="py-2 px-2 whitespace-nowrap">{r.dateOfTesting}</td>
+                  <td className="py-2 px-2">{r.urbanRural}</td>
+                  <td className="py-2 px-2">{r.referredBy}</td>
                 </tr>
               ))}
             </tbody>

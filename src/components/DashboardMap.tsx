@@ -1,5 +1,6 @@
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import { mapCenter, mapZoom, districtCoordinates, regionData } from "@/data/mockData";
+import { mapCenter, mapZoom, districtCoordinates, getFilteredRegions } from "@/data/mockData";
+import { useFilters } from "@/contexts/FilterContext";
 import "leaflet/dist/leaflet.css";
 
 const riskColor: Record<string, string> = {
@@ -11,14 +12,23 @@ const riskColor: Record<string, string> = {
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
 
 export default function DashboardMap({ height = "400px" }: { height?: string }) {
+  const { appliedFilters } = useFilters();
+  const regions = getFilteredRegions(appliedFilters.district);
+
+  // Compute center/zoom based on filter
+  const center = appliedFilters.district !== "All Districts" && districtCoordinates[appliedFilters.district]
+    ? districtCoordinates[appliedFilters.district]
+    : mapCenter;
+  const zoom = appliedFilters.district !== "All Districts" ? 9 : mapZoom;
+
   return (
-    <div className="section-card overflow-hidden" style={{ height }}>
-      <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+    <div className="section-card overflow-hidden relative" style={{ height }}>
+      <MapContainer key={`${center[0]}-${center[1]}-${zoom}`} center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
-        {regionData.map((r) => {
+        {regions.map((r) => {
           const coords = districtCoordinates[r.name];
           if (!coords) return null;
           return (

@@ -1,10 +1,13 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { regionData } from "@/data/mockData";
+import { getFilteredRegions } from "@/data/mockData";
+import { useFilters } from "@/contexts/FilterContext";
 
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
 
 export default function RegionTable() {
-  const highRiskAreas = regionData.filter((r) => r.risk === "high" || r.risk === "moderate").slice(0, 5);
+  const { appliedFilters } = useFilters();
+  const regions = getFilteredRegions(appliedFilters.district);
+  const sorted = [...regions].sort((a, b) => b.confirmed - a.confirmed);
 
   return (
     <div className="section-card p-4">
@@ -23,7 +26,7 @@ export default function RegionTable() {
             </tr>
           </thead>
           <tbody>
-            {highRiskAreas.map((r) => {
+            {sorted.map((r) => {
               const TrendIcon = trendIcon[r.trend];
               return (
                 <tr key={r.name} className="border-b border-border/50 hover:bg-muted/30">

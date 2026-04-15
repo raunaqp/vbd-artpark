@@ -1,6 +1,7 @@
 import { Shield, AlertTriangle, Info } from "lucide-react";
-import { actionsByScope, regionData } from "@/data/mockData";
+import { actionsByScope, getFilteredRegions } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
+import { useFilters } from "@/contexts/FilterContext";
 
 const riskIcons = { high: AlertTriangle, moderate: Shield, low: Info };
 const riskHeadings: Record<string, string> = {
@@ -11,17 +12,19 @@ const riskHeadings: Record<string, string> = {
 
 export default function RecommendedActions() {
   const { currentRole } = useRole();
-  
-  const scopeLevel = currentRole.scope === "state" || currentRole.scope === "district" 
-    ? "district" 
-    : currentRole.scope === "municipality" 
-    ? "ward" 
+  const { appliedFilters } = useFilters();
+  const regions = getFilteredRegions(appliedFilters.district);
+
+  const scopeLevel = currentRole.scope === "state" || currentRole.scope === "district"
+    ? "district"
+    : currentRole.scope === "municipality"
+    ? "ward"
     : "block";
 
   const grouped = {
-    high: regionData.filter((r) => r.risk === "high"),
-    moderate: regionData.filter((r) => r.risk === "moderate"),
-    low: regionData.filter((r) => r.risk === "low"),
+    high: regions.filter((r) => r.risk === "high"),
+    moderate: regions.filter((r) => r.risk === "moderate"),
+    low: regions.filter((r) => r.risk === "low"),
   };
 
   return (

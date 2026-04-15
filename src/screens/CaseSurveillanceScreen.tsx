@@ -13,7 +13,7 @@ export default function CaseSurveillanceScreen() {
   const [areaType, setAreaType] = useState<"all" | "urban" | "rural">("all");
   const [search, setSearch] = useState("");
 
-  const timeData = timeRange === "weekly" ? weeklyTimeSeries : timeRange === "daily" ? dailyTimeSeries : monthlyTimeSeries;
+  const timeData = (timeRange === "weekly" ? weeklyTimeSeries : timeRange === "daily" ? dailyTimeSeries : monthlyTimeSeries) as any[];
   const xKey = timeRange === "weekly" ? "date" : timeRange === "daily" ? "date" : "month";
 
   const filteredListing = lineListingData.filter((r) =>

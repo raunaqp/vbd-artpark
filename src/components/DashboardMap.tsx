@@ -156,13 +156,16 @@ function MapViewUpdater({ center, zoom, bounds, viewKey }: { center: [number, nu
   return null;
 }
 
-export default function DashboardMap({ height = "400px", mode = "current" }: DashboardMapProps) {
+export default function DashboardMap({ height = "400px", mode = "current", hotspotLookbackWeeks = 4 }: DashboardMapProps) {
   const { appliedFilters, drillDown, breadcrumb, isLocked, dateWindow } = useFilters();
   const { stateId } = useStateSelection();
 
   const regions = getFilteredRegions(appliedFilters);
   const predictions = mode === "forecast" ? getOutbreakPredictions(appliedFilters) : [];
   const predByArea = useMemo(() => new Map(predictions.map((p) => [p.area, p])), [predictions]);
+  // Hotspot mode → state-level hotspot list, same source the hotspot table reads from.
+  const hotspotsForMap = mode === "hotspot" ? getFilteredHotspots({ ...appliedFilters, district: "All Districts", block: "All Blocks", ward: "All Wards" }, hotspotLookbackWeeks) : [];
+  const hotspotByArea = useMemo(() => new Map(hotspotsForMap.map((h) => [h.area, h])), [hotspotsForMap]);
 
   // Build a quick-lookup map: normalized district name → region
   const districtRiskByName = useMemo(() => {

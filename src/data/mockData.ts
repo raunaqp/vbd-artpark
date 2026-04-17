@@ -1207,16 +1207,71 @@ function getStateBaseConfirmed(bundle: StateBundle) {
   return bundle.regionData.reduce((sum, region) => sum + region.confirmed, 0);
 }
 
+// Synthesize a child region for a district that has no explicit children, so drill-down never
+// returns "no data" for any selectable / map-visible geography.
+function synthesizeDistrictChildren(bundle: StateBundle, districtName: string): RegionData[] {
+  const districtRow = bundle.regionData.find((r) => r.name === districtName);
+  // If the district itself isn't in regionData (e.g. boundary-only district from GeoJSON), synth a row
+  const baseConfirmed = districtRow?.confirmed ?? Math.max(8, (hashSeed(`${bundle.id}:${districtName}`) % 40) + 6);
+  const baseSuspected = districtRow?.suspected ?? Math.round(baseConfirmed * 7.2);
+  const baseTested = districtRow?.tested ?? Math.round(baseConfirmed * 6.4);
+  const trend = districtRow?.trend ?? (hashSeed(`${districtName}:trend`) % 3 === 0 ? "up" : hashSeed(`${districtName}:trend2`) % 2 === 0 ? "stable" : "down");
+  const split = [
+    { suffix: "Sadar", weight: 0.46, type: "block" as const, mode: "rural" },
+    { suffix: "Town", weight: 0.34, type: "municipality" as const, mode: "urban" },
+    { suffix: "Rural", weight: 0.20, type: "block" as const, mode: "rural" },
+  ];
+  return split.map(({ suffix, weight, type }) => ({
+    name: `${districtName} ${suffix}`,
+    suspected: Math.max(0, Math.round(baseSuspected * weight)),
+    tested: Math.max(0, Math.round(baseTested * weight)),
+    confirmed: Math.max(0, Math.round(baseConfirmed * weight)),
+    risk: districtRow?.risk ?? "moderate",
+    trend,
+    type,
+    parentDistrict: districtName,
+  }));
+}
+
+// Ensures any district visible on the map (even ones not in regionData) has a row.
+function getOrSynthesizeDistrictRow(bundle: StateBundle, districtName: string): RegionData {
+  const existing = bundle.regionData.find((r) => r.name === districtName);
+  if (existing) return existing;
+  const seed = hashSeed(`${bundle.id}:${districtName}`);
+  const confirmed = 6 + (seed % 36);
+  return {
+    name: districtName,
+    suspected: Math.round(confirmed * 7.2),
+    tested: Math.round(confirmed * 6.4),
+    confirmed,
+    risk: confirmed >= 36 ? "high" : confirmed >= 18 ? "moderate" : "low",
+    trend: seed % 3 === 0 ? "up" : seed % 3 === 1 ? "stable" : "down",
+    type: "district",
+  };
+}
+
 function getBaseRegionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const villages = bundle.villageData.filter((item) => item.parentBlock === filters.block);
     const wardsInBlock = bundle.wardData.filter((item) => item.parentBlock === filters.block);
     const leafNodes = [...villages, ...wardsInBlock];
     if (filters.ward !== "All Wards") return leafNodes.filter((item) => item.name === filters.ward);
-    return leafNodes.length > 0 ? leafNodes : bundle.subDistrictData.filter((item) => item.name === filters.block);
+    if (leafNodes.length > 0) return leafNodes;
+    // Fallback: synth two villages for the block so drill-down never goes blank
+    const blockRow = bundle.subDistrictData.find((item) => item.name === filters.block);
+    if (blockRow) {
+      const base = blockRow.confirmed;
+      return [
+        { ...blockRow, name: `${filters.block} Village A`, type: "village" as const, parentBlock: filters.block, confirmed: Math.round(base * 0.6), suspected: Math.round(blockRow.suspected * 0.6), tested: Math.round(blockRow.tested * 0.6) },
+        { ...blockRow, name: `${filters.block} Village B`, type: "village" as const, parentBlock: filters.block, confirmed: Math.round(base * 0.4), suspected: Math.round(blockRow.suspected * 0.4), tested: Math.round(blockRow.tested * 0.4) },
+      ];
+    }
+    return [];
   }
   if (filters.district !== "All Districts") {
-    return bundle.subDistrictData.filter((item) => item.parentDistrict === filters.district);
+    const children = bundle.subDistrictData.filter((item) => item.parentDistrict === filters.district);
+    if (children.length > 0) return children;
+    return synthesizeDistrictChildren(bundle, filters.district);
   }
   return bundle.regionData;
 }
@@ -1307,12 +1362,27 @@ function transformRegion(bundle: StateBundle, profile: TemporalProfile, filters:
   };
 }
 
+function synthesizeDistrictHotspotChildren(districtName: string, parentRow: HotspotData | undefined): HotspotData[] {
+  const base = parentRow?.currentCases ?? Math.max(6, hashSeed(`${districtName}:hot`) % 30);
+  const prev = parentRow?.prevCases ?? Math.round(base * 0.78);
+  return [
+    { area: `${districtName} Sadar`, currentCases: Math.round(base * 0.5), prevCases: Math.round(prev * 0.5), trend: "up", risk: "moderate", parentDistrict: districtName },
+    { area: `${districtName} Town`, currentCases: Math.round(base * 0.32), prevCases: Math.round(prev * 0.32), trend: "stable", risk: "moderate", parentDistrict: districtName },
+    { area: `${districtName} Rural`, currentCases: Math.round(base * 0.18), prevCases: Math.round(prev * 0.18), trend: "stable", risk: "low", parentDistrict: districtName },
+  ];
+}
+
 function getBaseHotspotsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const leafHotspots = bundle.hotspotVillageData.filter((item) => item.parentBlock === filters.block);
     return filters.ward !== "All Wards" ? leafHotspots.filter((item) => item.area === filters.ward) : leafHotspots;
   }
-  if (filters.district !== "All Districts") return bundle.hotspotSubDistrictData.filter((item) => item.parentDistrict === filters.district);
+  if (filters.district !== "All Districts") {
+    const found = bundle.hotspotSubDistrictData.filter((item) => item.parentDistrict === filters.district);
+    if (found.length > 0) return found;
+    const parent = bundle.hotspotDistrictData.find((h) => h.area === filters.district);
+    return synthesizeDistrictHotspotChildren(filters.district, parent);
+  }
   return bundle.hotspotDistrictData;
 }
 
@@ -1341,6 +1411,15 @@ function transformHotspot(bundle: StateBundle, profile: TemporalProfile, filters
   };
 }
 
+function synthesizeDistrictPredictions(districtName: string, parentPred: OutbreakPrediction | undefined): OutbreakPrediction[] {
+  const baseProb = parentPred?.probability ?? Math.max(20, hashSeed(`${districtName}:pred`) % 70);
+  return [
+    { area: `${districtName} Sadar`, probability: clamp(baseProb + 4, 5, 99), risk: parentPred?.risk ?? "moderate", expectedWeek: "W+2", signal: parentPred?.signal ?? `${districtName} sub-district risk based on district aggregate.`, parentDistrict: districtName, areaType: "Block" },
+    { area: `${districtName} Town`, probability: clamp(baseProb - 6, 5, 99), risk: "moderate", expectedWeek: "W+3", signal: `${districtName} urban-area risk projection.`, parentDistrict: districtName, areaType: "Municipality" },
+    { area: `${districtName} Rural`, probability: clamp(baseProb - 18, 5, 99), risk: "low", expectedWeek: "W+4", signal: `${districtName} rural baseline projection.`, parentDistrict: districtName, areaType: "Block" },
+  ];
+}
+
 function getBasePredictionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const wardPredictions = bundle.municipalityPredictions.filter((item) => item.parentBlock === filters.block);
@@ -1348,7 +1427,12 @@ function getBasePredictionsForScope(bundle: StateBundle, filters: DashboardFilte
     const source = wardPredictions.length > 0 ? wardPredictions : blockPredictions;
     return filters.ward !== "All Wards" ? source.filter((item) => item.area === filters.ward) : source;
   }
-  if (filters.district !== "All Districts") return bundle.districtPredictions.filter((item) => item.parentDistrict === filters.district);
+  if (filters.district !== "All Districts") {
+    const found = bundle.districtPredictions.filter((item) => item.parentDistrict === filters.district);
+    if (found.length > 0) return found;
+    const parent = bundle.statePredictions.find((p) => p.area === filters.district);
+    return synthesizeDistrictPredictions(filters.district, parent);
+  }
   return bundle.statePredictions;
 }
 
@@ -1704,6 +1788,59 @@ export const getForecastData = (input?: DashboardFiltersLike | string, legacyBlo
 export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherObserved;
 export const getWeatherForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherForecast;
 export const getDataQualityIssues = (input?: DashboardFiltersLike | string, legacyBlock?: string): DataIssue[] => buildDerivedDashboardData(input, legacyBlock).dataQualityIssues;
+
+// ──────────────── QA / consistency report (debug-only) ────────────────
+export interface QAReport {
+  state: string;
+  windowLabel: string;
+  forecastLabel: string;
+  stateTotalConfirmed: number;
+  sumOfDistrictConfirmed: number;
+  cases_diff: number;
+  stateForecastSum: number;
+  sumOfDistrictForecastSum: number;
+  forecast_diff: number;
+  perDistrict: Array<{ district: string; confirmed: number; forecastSum: number; childRows: number }>;
+}
+
+export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
+  const bundle = S();
+  const baseFilters: DashboardFiltersLike = { ...resolveFilters(input), district: "All Districts", block: "All Blocks", ward: "All Wards" };
+  const window = getDateWindow(baseFilters);
+  const stateRegions = buildDerivedDashboardData(baseFilters).regions;
+  const statePredictions = buildDerivedDashboardData(baseFilters).predictions;
+
+  const stateTotalConfirmed = stateRegions.reduce((s, r) => s + r.confirmed, 0);
+  const stateForecastSum = statePredictions.reduce((s, p) => s + p.probability, 0);
+
+  const perDistrict = stateRegions.map((district) => {
+    const dFilters: DashboardFiltersLike = { ...baseFilters, district: district.name };
+    const childRegions = buildDerivedDashboardData(dFilters).regions;
+    const childPreds = buildDerivedDashboardData(dFilters).predictions;
+    return {
+      district: district.name,
+      confirmed: childRegions.reduce((s, r) => s + r.confirmed, 0),
+      forecastSum: childPreds.reduce((s, p) => s + p.probability, 0),
+      childRows: childRegions.length,
+    };
+  });
+
+  const sumOfDistrictConfirmed = perDistrict.reduce((s, d) => s + d.confirmed, 0);
+  const sumOfDistrictForecastSum = perDistrict.reduce((s, d) => s + d.forecastSum, 0);
+
+  return {
+    state: bundle.label,
+    windowLabel: `${format(window.from, "d MMM yyyy")} – ${format(window.to, "d MMM yyyy")}`,
+    forecastLabel: `${format(window.forecastStart, "d MMM yyyy")} – ${format(window.forecastEnd, "d MMM yyyy")}`,
+    stateTotalConfirmed,
+    sumOfDistrictConfirmed,
+    cases_diff: sumOfDistrictConfirmed - stateTotalConfirmed,
+    stateForecastSum,
+    sumOfDistrictForecastSum,
+    forecast_diff: sumOfDistrictForecastSum - stateForecastSum,
+    perDistrict,
+  };
+}
 
 // Backwards-compatible live proxies (default state slice with current 3-month window)
 export const riskForecast = liveArrayProxy(() => getRiskForecast());

@@ -3,7 +3,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { getDataQualityIssues } from "@/data/mockData";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -31,12 +31,14 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [showDiseaseMenu, setShowDiseaseMenu] = useState(false);
   const [showStateMenu, setShowStateMenu] = useState(false);
+  const [pendingStateId, setPendingStateId] = useState(stateId);
   const [dataIssuesExpanded, setDataIssuesExpanded] = useState(false);
 
   const reportOptions = ["Weekly Report", "District Summary", "NVBDCP Format", "Line Listing"];
   const currentStateLabel = stateOptions.find((s) => s.id === stateId)?.label || "State";
   const dataQualityIssues = getDataQualityIssues();
   void stateId; // re-evaluate on state change
+  useEffect(() => { setPendingStateId(stateId); }, [stateId]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -57,17 +59,33 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
               <ChevronDown className="h-3 w-3" />
             </button>
             {showStateMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+              <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
                 <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">Select State</div>
                 {stateOptions.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => { setStateId(s.id); setShowStateMenu(false); }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${stateId === s.id ? "bg-muted font-medium text-foreground" : "text-foreground"}`}
+                    onClick={() => setPendingStateId(s.id)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors flex items-center justify-between ${pendingStateId === s.id ? "bg-muted font-medium text-foreground" : "text-foreground"}`}
                   >
-                    {s.label}
+                    <span>{s.label}</span>
+                    {pendingStateId === s.id && <span className="text-xs text-primary">●</span>}
                   </button>
                 ))}
+                <div className="px-2 pt-2 pb-1 border-t border-border mt-1 flex gap-2">
+                  <button
+                    onClick={() => { setPendingStateId(stateId); setShowStateMenu(false); }}
+                    className="flex-1 text-xs px-2 py-1.5 rounded-md border border-input text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { setStateId(pendingStateId); setShowStateMenu(false); }}
+                    disabled={pendingStateId === stateId}
+                    className="flex-1 text-xs px-2 py-1.5 rounded-md bg-primary text-primary-foreground font-medium disabled:opacity-50"
+                  >
+                    Apply
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
+import { AlertTriangle, ArrowUp, ArrowDown, ArrowRight, Info } from "lucide-react";
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
 import TablePagination from "@/components/TablePagination";
@@ -7,7 +7,7 @@ import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 
-const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
 
 export default function HotspotsScreen() {

@@ -1,7 +1,8 @@
 import { Newspaper, MapPin, AlertTriangle } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import { newsAlerts, geoTaggedAlerts, mapCenter } from "@/data/mockData";
+import { getNewsAlerts, getGeoTaggedAlerts, getMapCenter } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
+import { useStateSelection } from "@/contexts/StateContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import GlobalFilters from "@/components/GlobalFilters";
 
@@ -14,14 +15,11 @@ const severityColor: Record<string, string> = {
 export default function SignalsScreen() {
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
-
-  const filteredNews = appliedFilters.district === "All Districts"
-    ? newsAlerts
-    : newsAlerts.filter((a) => a.district === appliedFilters.district);
-
-  const filteredGeo = appliedFilters.district === "All Districts"
-    ? geoTaggedAlerts
-    : geoTaggedAlerts.filter((a) => a.district === appliedFilters.district);
+  const { stateId } = useStateSelection();
+  void stateId;
+  const filteredNews = getNewsAlerts(appliedFilters);
+  const filteredGeo = getGeoTaggedAlerts(appliedFilters);
+  const mapCenter = getMapCenter();
 
   return (
     <div className="space-y-6">

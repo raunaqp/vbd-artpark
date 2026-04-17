@@ -15,9 +15,9 @@ export default function ForecastScreen() {
   const { stateId } = useStateSelection();
   void stateId;
 
-  const riskForecast = getRiskForecast();
-  const forecastData = getForecastData();
-  const predictions = getOutbreakPredictions(appliedFilters.district, appliedFilters.block);
+  const riskForecast = getRiskForecast(appliedFilters);
+  const forecastData = getForecastData(appliedFilters);
+  const predictions = getOutbreakPredictions(appliedFilters);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
     ? "Village / Ward"

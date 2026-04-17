@@ -1,11 +1,15 @@
 import { useFilters } from "@/contexts/FilterContext";
-import { districts, subDistrictData, villageData, wardData } from "@/data/mockData";
+import { districts, subDistrictData, villageData, wardData, getDateWindow } from "@/data/mockData";
+import { useStateSelection } from "@/contexts/StateContext";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function GlobalFilters() {
   const { filters, setFilters, applyFilters, resetFilters, isLocked, getLabel } = useFilters();
+  const { stateId } = useStateSelection();
+  void stateId; // re-render on state change so cascading lists refresh
   const [collapsed, setCollapsed] = useState(false);
+  const window = getDateWindow(filters);
 
   const availableBlocks = useMemo(() => {
     if (filters.district === "All Districts") return ["All Blocks"];
@@ -78,11 +82,17 @@ export default function GlobalFilters() {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">From</label>
-            <input type="date" value={filters.fromDate} onChange={(e) => setFilters({ fromDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
+            <input type="date" min={window.minDate} max={filters.toDate || window.maxDate} value={filters.fromDate} onChange={(e) => setFilters({ fromDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">To</label>
-            <input type="date" value={filters.toDate} onChange={(e) => setFilters({ toDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
+            <input type="date" min={filters.fromDate || window.minDate} max={window.maxDate} value={filters.toDate} onChange={(e) => setFilters({ toDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
+          </div>
+          <div className="flex flex-col gap-1 min-w-[180px]">
+            <label className="text-xs font-medium text-muted-foreground">Forecast (next 4 weeks)</label>
+            <div className="h-9 px-3 rounded-md border border-dashed border-border bg-muted/30 text-xs flex items-center text-muted-foreground">
+              {window.forecastStartDate} → {window.forecastEndDate}
+            </div>
           </div>
           <div className="flex gap-2 self-end">
             <button onClick={applyFilters} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium">Apply</button>

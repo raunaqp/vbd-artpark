@@ -1,5 +1,7 @@
-import { riskForecast } from "@/data/mockData";
+import { getRiskForecast } from "@/data/mockData";
 import { useDisease } from "@/contexts/DiseaseContext";
+import { useFilters } from "@/contexts/FilterContext";
+import { useStateSelection } from "@/contexts/StateContext";
 
 const riskColors: Record<string, string> = {
   low: "bg-risk-low/10 border-risk-low text-risk-low",
@@ -9,6 +11,10 @@ const riskColors: Record<string, string> = {
 
 export default function RiskStrip() {
   const { diseaseName } = useDisease();
+  const { appliedFilters } = useFilters();
+  const { stateId } = useStateSelection();
+  void stateId;
+  const riskForecast = getRiskForecast(appliedFilters);
 
   return (
     <div>

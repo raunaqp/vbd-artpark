@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useRole } from "./RoleContext";
 import { useStateSelection } from "./StateContext";
+import { getDefaultHistoricalDateRange, getDateWindow } from "@/data/mockData";
 
 interface FilterState {
   district: string;
@@ -21,16 +22,20 @@ interface FilterContextType {
   getLabel: (field: "district" | "block") => string;
   drillDown: (area: string, level: "district" | "block") => void;
   breadcrumb: string[];
+  dateWindow: ReturnType<typeof getDateWindow>;
 }
 
-const defaultFilters: FilterState = {
-  district: "All Districts",
-  block: "All Blocks",
-  ward: "All Wards",
-  areaType: "all",
-  fromDate: "2026-02-01",
-  toDate: "2026-04-07",
-};
+function buildDefaultFilters(): FilterState {
+  const { fromDate, toDate } = getDefaultHistoricalDateRange();
+  return {
+    district: "All Districts",
+    block: "All Blocks",
+    ward: "All Wards",
+    areaType: "all",
+    fromDate,
+    toDate,
+  };
+}
 
 const FilterContext = createContext<FilterContextType | null>(null);
 
@@ -43,13 +48,13 @@ const stateLabels: Record<string, string> = {
 export function FilterProvider({ children }: { children: ReactNode }) {
   const { currentRole } = useRole();
   const { stateId } = useStateSelection();
-  const [filters, setFiltersState] = useState<FilterState>(defaultFilters);
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>(defaultFilters);
+  const [filters, setFiltersState] = useState<FilterState>(() => buildDefaultFilters());
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(() => buildDefaultFilters());
 
   // Reset filters whenever state OR role changes — geo bindings flow from role
   useEffect(() => {
     const next: FilterState = {
-      ...defaultFilters,
+      ...buildDefaultFilters(),
       district: currentRole.district || "All Districts",
       block: currentRole.block || "All Blocks",
       areaType: currentRole.areaType || "all",
@@ -65,7 +70,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const applyFilters = () => setAppliedFilters({ ...filters });
   const resetFilters = () => {
     const next: FilterState = {
-      ...defaultFilters,
+      ...buildDefaultFilters(),
       district: currentRole.district || "All Districts",
       block: currentRole.block || "All Blocks",
       areaType: currentRole.areaType || "all",
@@ -106,8 +111,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   if (appliedFilters.district !== "All Districts") breadcrumb.push(appliedFilters.district);
   if (appliedFilters.block !== "All Blocks") breadcrumb.push(appliedFilters.block);
 
+  const dateWindow = getDateWindow(appliedFilters);
+
   return (
-    <FilterContext.Provider value={{ filters, setFilters, applyFilters, resetFilters, appliedFilters, isLocked, getLabel, drillDown, breadcrumb }}>
+    <FilterContext.Provider value={{ filters, setFilters, applyFilters, resetFilters, appliedFilters, isLocked, getLabel, drillDown, breadcrumb, dateWindow }}>
       {children}
     </FilterContext.Provider>
   );

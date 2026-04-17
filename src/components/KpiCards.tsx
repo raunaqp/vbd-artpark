@@ -6,7 +6,7 @@ import { getFilteredRegions, getKpiFromRegions, applyDiseaseMultiplier } from "@
 export default function KpiCards() {
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
-  const rawRegions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const rawRegions = getFilteredRegions(appliedFilters);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
   const kpi = getKpiFromRegions(regions);
   const highRiskAreas = regions.filter((r) => r.risk === "high").length;

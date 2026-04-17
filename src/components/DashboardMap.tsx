@@ -86,11 +86,15 @@ interface DashboardMapProps {
 }
 
 // Helper: imperatively update the map view when center/zoom inputs change.
-function MapViewUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
+function MapViewUpdater({ center, zoom, bounds }: { center: [number, number]; zoom: number; bounds?: LatLngBounds | null }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom, { animate: true });
-  }, [center[0], center[1], zoom, map]);
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [24, 24], animate: true });
+    } else {
+      map.setView(center, zoom, { animate: true });
+    }
+  }, [center[0], center[1], zoom, bounds, map]);
   return null;
 }
 

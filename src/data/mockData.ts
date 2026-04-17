@@ -1362,12 +1362,27 @@ function transformRegion(bundle: StateBundle, profile: TemporalProfile, filters:
   };
 }
 
+function synthesizeDistrictHotspotChildren(districtName: string, parentRow: HotspotData | undefined): HotspotData[] {
+  const base = parentRow?.currentCases ?? Math.max(6, hashSeed(`${districtName}:hot`) % 30);
+  const prev = parentRow?.prevCases ?? Math.round(base * 0.78);
+  return [
+    { area: `${districtName} Sadar`, currentCases: Math.round(base * 0.5), prevCases: Math.round(prev * 0.5), trend: "up", risk: "moderate", parentDistrict: districtName },
+    { area: `${districtName} Town`, currentCases: Math.round(base * 0.32), prevCases: Math.round(prev * 0.32), trend: "stable", risk: "moderate", parentDistrict: districtName },
+    { area: `${districtName} Rural`, currentCases: Math.round(base * 0.18), prevCases: Math.round(prev * 0.18), trend: "stable", risk: "low", parentDistrict: districtName },
+  ];
+}
+
 function getBaseHotspotsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const leafHotspots = bundle.hotspotVillageData.filter((item) => item.parentBlock === filters.block);
     return filters.ward !== "All Wards" ? leafHotspots.filter((item) => item.area === filters.ward) : leafHotspots;
   }
-  if (filters.district !== "All Districts") return bundle.hotspotSubDistrictData.filter((item) => item.parentDistrict === filters.district);
+  if (filters.district !== "All Districts") {
+    const found = bundle.hotspotSubDistrictData.filter((item) => item.parentDistrict === filters.district);
+    if (found.length > 0) return found;
+    const parent = bundle.hotspotDistrictData.find((h) => h.area === filters.district);
+    return synthesizeDistrictHotspotChildren(filters.district, parent);
+  }
   return bundle.hotspotDistrictData;
 }
 

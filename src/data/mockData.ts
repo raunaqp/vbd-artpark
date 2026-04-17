@@ -681,6 +681,9 @@ const ODISHA: StateBundle = {
     { type: "delayed", message: "Ganjam — PHC submissions delayed (>3 days)", severity: "moderate" },
     { type: "incomplete", message: "Sambalpur — incomplete entomological survey data", severity: "moderate" },
   ],
+  // Odisha intentionally has partial coverage — boundary-only districts render
+  // grey ("Data not available") rather than synthesized colors.
+  coversAllDistricts: false,
 };
 
 // ──────────────── KARNATAKA ────────────────

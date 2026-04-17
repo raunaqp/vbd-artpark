@@ -5,6 +5,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import GlobalFilters from "@/components/GlobalFilters";
+import DashboardMap from "@/components/DashboardMap";
 
 export default function ForecastScreen() {
   const { isAnalyst } = useRole();

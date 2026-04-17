@@ -390,7 +390,7 @@ const AP: StateBundle = {
 const ODISHA: StateBundle = {
   id: "odisha", label: "Odisha",
   districts: ["All Districts", "Khurda", "Cuttack", "Puri", "Angul", "Balasore", "Ganjam", "Sambalpur", "Sundargarh"],
-  blocks: ["All Blocks", "Brahmagiri", "Talcher", "Nilgiri", "Bhubaneswar MC", "Cuttack MC", "Rourkela MC", "Sambalpur MC"],
+  blocks: ["All Blocks", "Brahmagiri", "Talcher", "Nilgiri", "Bhubaneswar MC", "Cuttack MC", "Puri MC", "Rourkela MC", "Sambalpur MC"],
   regionData: [
     { name: "Balasore", suspected: 720, tested: 680, confirmed: 95, risk: "high", trend: "up", type: "district" },
     { name: "Khurda", suspected: 540, tested: 510, confirmed: 58, risk: "high", trend: "up", type: "district" },
@@ -413,6 +413,7 @@ const ODISHA: StateBundle = {
     { name: "Cuttack MC", suspected: 240, tested: 225, confirmed: 28, risk: "high", trend: "up", type: "municipality", parentDistrict: "Cuttack" },
     { name: "Salepur", suspected: 100, tested: 95, confirmed: 10, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Cuttack" },
     { name: "Niali", suspected: 80, tested: 75, confirmed: 8, risk: "moderate", trend: "up", type: "block", parentDistrict: "Cuttack" },
+    { name: "Puri MC", suspected: 130, tested: 122, confirmed: 14, risk: "moderate", trend: "up", type: "municipality", parentDistrict: "Puri" },
     { name: "Brahmagiri", suspected: 60, tested: 56, confirmed: 6, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Puri" },
     { name: "Puri Sadar", suspected: 80, tested: 76, confirmed: 7, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Puri" },
     { name: "Satyabadi", suspected: 50, tested: 47, confirmed: 4, risk: "low", trend: "stable", type: "block", parentDistrict: "Puri" },

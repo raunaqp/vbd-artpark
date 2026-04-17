@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useRole } from "./RoleContext";
-import { districts, subDistrictData, villageData, wardData } from "@/data/mockData";
+import { useStateSelection } from "./StateContext";
 
 interface FilterState {
   district: string;
@@ -34,28 +34,29 @@ const defaultFilters: FilterState = {
 
 const FilterContext = createContext<FilterContextType | null>(null);
 
-const roleGeoMap: Record<string, Partial<FilterState>> = {
-  district_visakhapatnam: { district: "Visakhapatnam" },
-  district_guntur: { district: "Guntur" },
-  district_kurnool: { district: "Kurnool" },
-  block_bheemunipatnam: { district: "Visakhapatnam", block: "Bheemunipatnam" },
-  block_anakapalle: { district: "Visakhapatnam", block: "Anakapalle" },
-  block_tenali: { district: "Guntur", block: "Tenali" },
-  municipality_vizag: { district: "Visakhapatnam", block: "Vizag MC", areaType: "urban" as const },
-  municipality_vijayawada: { district: "Krishna", block: "Vijayawada MC", areaType: "urban" as const },
+const stateLabels: Record<string, string> = {
+  andhra_pradesh: "Andhra Pradesh",
+  odisha: "Odisha",
+  karnataka: "Karnataka",
 };
 
 export function FilterProvider({ children }: { children: ReactNode }) {
   const { currentRole } = useRole();
+  const { stateId } = useStateSelection();
   const [filters, setFiltersState] = useState<FilterState>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(defaultFilters);
 
+  // Reset filters whenever state OR role changes — geo bindings flow from role
   useEffect(() => {
-    const geo = roleGeoMap[currentRole.id];
-    const next = { ...defaultFilters, ...geo };
+    const next: FilterState = {
+      ...defaultFilters,
+      district: currentRole.district || "All Districts",
+      block: currentRole.block || "All Blocks",
+      areaType: currentRole.areaType || "all",
+    };
     setFiltersState(next);
     setAppliedFilters(next);
-  }, [currentRole.id]);
+  }, [currentRole.id, stateId]);
 
   const setFilters = (partial: Partial<FilterState>) => {
     setFiltersState((prev) => ({ ...prev, ...partial }));
@@ -63,8 +64,12 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
   const applyFilters = () => setAppliedFilters({ ...filters });
   const resetFilters = () => {
-    const geo = roleGeoMap[currentRole.id];
-    const next = { ...defaultFilters, ...geo };
+    const next: FilterState = {
+      ...defaultFilters,
+      district: currentRole.district || "All Districts",
+      block: currentRole.block || "All Blocks",
+      areaType: currentRole.areaType || "all",
+    };
     setFiltersState(next);
     setAppliedFilters(next);
   };
@@ -85,7 +90,6 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     return field === "district" ? "District" : "Block / Municipality";
   };
 
-  // Drill-down: click a district or block on the map
   const drillDown = (area: string, level: "district" | "block") => {
     if (level === "district") {
       const next = { ...filters, district: area, block: "All Blocks", ward: "All Wards" };
@@ -98,14 +102,9 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Build breadcrumb from applied filters
-  const breadcrumb: string[] = ["Andhra Pradesh"];
-  if (appliedFilters.district !== "All Districts") {
-    breadcrumb.push(appliedFilters.district);
-  }
-  if (appliedFilters.block !== "All Blocks") {
-    breadcrumb.push(appliedFilters.block);
-  }
+  const breadcrumb: string[] = [stateLabels[stateId] || "State"];
+  if (appliedFilters.district !== "All Districts") breadcrumb.push(appliedFilters.district);
+  if (appliedFilters.block !== "All Blocks") breadcrumb.push(appliedFilters.block);
 
   return (
     <FilterContext.Provider value={{ filters, setFilters, applyFilters, resetFilters, appliedFilters, isLocked, getLabel, drillDown, breadcrumb }}>

@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import { mapCenter, mapZoom, districtCoordinates, getFilteredRegions, getOutbreakPredictions } from "@/data/mockData";
+import { getMapCenter, getMapZoom, districtCoordinates, getFilteredRegions, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
+import { useStateSelection } from "@/contexts/StateContext";
 import "leaflet/dist/leaflet.css";
 
 const riskColor: Record<string, string> = {

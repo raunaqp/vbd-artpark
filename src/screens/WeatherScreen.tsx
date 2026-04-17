@@ -1,8 +1,9 @@
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, ReferenceLine } from "recharts";
-import { weatherObserved, weatherForecast } from "@/data/mockData";
+import { getWeatherObserved, getWeatherForecast, type WeatherPoint } from "@/data/mockData";
+import { useStateSelection } from "@/contexts/StateContext";
 import GlobalFilters from "@/components/GlobalFilters";
 
-function WeatherTable({ data, label }: { data: typeof weatherObserved; label: string }) {
+function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) {
   return (
     <div className="section-card p-5">
       <h3 className="section-title mb-3">{label}</h3>
@@ -40,6 +41,10 @@ function WeatherTable({ data, label }: { data: typeof weatherObserved; label: st
 }
 
 export default function WeatherScreen() {
+  const { stateId } = useStateSelection();
+  void stateId; // re-render on state change
+  const weatherObserved = getWeatherObserved();
+  const weatherForecast = getWeatherForecast();
   return (
     <div className="space-y-6">
       <GlobalFilters />

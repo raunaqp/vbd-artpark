@@ -1,7 +1,8 @@
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Tooltip, useMap } from "react-leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Layer, PathOptions } from "leaflet";
+import L, { type Layer, type LatLngBounds, type PathOptions } from "leaflet";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import { RotateCcw } from "lucide-react";
 import {
   getMapCenter,
   getMapZoom,

@@ -281,8 +281,19 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
         </div>
       )}
 
+      {/* Reset to State View */}
+      {(isDistrictLevel || isBlockLevel) && (
+        <button
+          onClick={() => !isLocked("district") && drillDown("All Districts", "district")}
+          className="absolute top-3 right-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
+          title="Reset to state view"
+        >
+          <RotateCcw className="h-3 w-3" /> Reset to State
+        </button>
+      )}
+
       <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-        <MapViewUpdater center={center} zoom={zoom} />
+        <MapViewUpdater center={center} zoom={zoom} bounds={selectionBounds} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -321,21 +332,20 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
                   : {}
               }
             >
-              <Tooltip>
-                <div className="text-xs">
-                  <strong>{r.name}</strong>
-                  {r.type && <span className="capitalize"> ({r.type})</span>}
-                  <br />
-                  {mode === "forecast" && pred ? (
-                    <>
-                      Forecast risk: <strong>{pred.risk}</strong><br />
-                      Probability: {pred.probability}% · {pred.expectedWeek}
-                    </>
-                  ) : (
-                    <>
-                      Cases: {r.confirmed} {trendArrow[r.trend] || ""}<br />
-                      Risk: {r.risk}
-                    </>
+              <Tooltip sticky>
+                <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                    {r.name}{r.type ? ` (${r.type})` : ""}
+                  </div>
+                  <div>Risk: <strong>{(displayRisk || "unknown").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                  <div>
+                    Cases: <strong>
+                      {mode === "forecast" && pred ? `${pred.probability}% (forecast)` : `${r.confirmed} ${trendArrow[r.trend] || ""}`}
+                    </strong>
+                  </div>
+                  <div style={{ opacity: 0.8 }}>Date: {tooltipDateRange}</div>
+                  {mode === "forecast" && pred && (
+                    <div style={{ opacity: 0.7, marginTop: 2 }}>{pred.expectedWeek}</div>
                   )}
                 </div>
               </Tooltip>

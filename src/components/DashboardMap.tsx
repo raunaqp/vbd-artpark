@@ -396,8 +396,9 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
               </Tooltip>
             </CircleMarker>
           );
-        })}
-      </MapContainer>
+          })}
+        </MapContainer>
+      )}
 
       {/* Legend */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3 items-center">

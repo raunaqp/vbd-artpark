@@ -130,8 +130,14 @@ function getFeatureDistrictName(feature: Feature): string {
 // ──────────────── Component ────────────────
 interface DashboardMapProps {
   height?: string;
-  /** "current" colors by past-cases risk, "forecast" colors by predicted outbreak risk */
-  mode?: "current" | "forecast";
+  /**
+   * "current"  → color polygons by past-cases risk (RegionData)
+   * "forecast" → color polygons by predicted outbreak risk (OutbreakPrediction)
+   * "hotspot"  → color polygons by hotspot data (HotspotData) — same source as the hotspot table
+   */
+  mode?: "current" | "forecast" | "hotspot";
+  /** Hotspot lookback window. Only used when mode === "hotspot". */
+  hotspotLookbackWeeks?: 2 | 4;
 }
 
 // Helper: imperatively update the map view when center/zoom inputs change.

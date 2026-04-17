@@ -13,7 +13,7 @@ import { DiseaseProvider } from "@/contexts/DiseaseContext";
 import { StateProvider } from "@/contexts/StateContext";
 import QADebugPanel from "@/components/QADebugPanel";
 
-const screens: Record<TabId, React.ComponentType> = {
+const screens: Record<TabId, React.ComponentType<{ onNavigate?: (tab: TabId) => void }>> = {
   overview: OverviewScreen,
   surveillance: CaseSurveillanceScreen,
   forecast: ForecastScreen,
@@ -33,7 +33,7 @@ export default function Index() {
         <DiseaseProvider>
           <FilterProvider>
             <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-              <Screen />
+              <Screen onNavigate={setActiveTab} />
             </DashboardLayout>
             <QADebugPanel />
           </FilterProvider>

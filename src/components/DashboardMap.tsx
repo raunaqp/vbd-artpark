@@ -281,8 +281,19 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
         </div>
       )}
 
+      {/* Reset to State View */}
+      {(isDistrictLevel || isBlockLevel) && (
+        <button
+          onClick={() => !isLocked("district") && drillDown("All Districts", "district")}
+          className="absolute top-3 right-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
+          title="Reset to state view"
+        >
+          <RotateCcw className="h-3 w-3" /> Reset to State
+        </button>
+      )}
+
       <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-        <MapViewUpdater center={center} zoom={zoom} />
+        <MapViewUpdater center={center} zoom={zoom} bounds={selectionBounds} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"

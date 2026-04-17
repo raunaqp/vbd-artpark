@@ -11,9 +11,9 @@ import { getFilteredRegions, getSituationSummary, applyDiseaseMultiplier } from 
 export default function OverviewScreen() {
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
-  const rawRegions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const rawRegions = getFilteredRegions(appliedFilters);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
-  const summary = getSituationSummary(regions, diseaseName, appliedFilters.district, appliedFilters.block);
+  const summary = getSituationSummary(regions, diseaseName, appliedFilters);
 
   const riskDistribution = {
     high: regions.filter((r) => r.risk === "high").length,

@@ -3,7 +3,7 @@ import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveC
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
-import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, lineListingData } from "@/data/mockData";
+import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -19,15 +19,12 @@ export default function CaseSurveillanceScreen() {
   const { stateId } = useStateSelection();
   void stateId;
 
-  const timeData = (timeRange === "weekly" ? getWeeklyTimeSeries() : timeRange === "daily" ? getDailyTimeSeries() : getMonthlyTimeSeries()) as any[];
+  const timeData = (timeRange === "weekly" ? getWeeklyTimeSeries(appliedFilters) : timeRange === "daily" ? getDailyTimeSeries(appliedFilters) : getMonthlyTimeSeries(appliedFilters)) as any[];
   const xKey = timeRange === "weekly" ? "date" : timeRange === "daily" ? "date" : "month";
 
-  const filteredListing = lineListingData.filter((r) => {
-    const matchesSearch = Object.values(r).some((v) => String(v).toLowerCase().includes(search.toLowerCase()));
-    const matchesDistrict = appliedFilters.district === "All Districts" || r.district === appliedFilters.district;
-    const matchesBlock = appliedFilters.block === "All Blocks" || r.block === appliedFilters.block;
-    const matchesArea = appliedFilters.areaType === "all" || r.urbanRural.toLowerCase() === appliedFilters.areaType;
-    return matchesSearch && matchesDistrict && matchesBlock && matchesArea;
+  const filteredListing = getLineListing(appliedFilters).filter((r) => {
+    if (!search) return true;
+    return Object.values(r).some((v) => String(v).toLowerCase().includes(search.toLowerCase()));
   });
 
   return (

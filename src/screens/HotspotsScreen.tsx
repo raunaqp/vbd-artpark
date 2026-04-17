@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
-import { hotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
+import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 
@@ -13,16 +13,13 @@ export default function HotspotsScreen() {
   const { appliedFilters } = useFilters();
   const { diseaseName, currentDisease } = useDisease();
 
-  const hotspots = getFilteredHotspots(appliedFilters.district, appliedFilters.block);
-
-  const filteredAlerts = appliedFilters.district === "All Districts"
-    ? hotspotAlerts
-    : hotspotAlerts.filter(a => a.district === appliedFilters.district);
+  const hotspots = getFilteredHotspots(appliedFilters, timeRange === "2weeks" ? 2 : 4);
+  const filteredAlerts = getHotspotAlerts(appliedFilters);
 
   const displayHotspots = hotspots.map((r) => ({
     ...r,
-    currentCases: Math.round((timeRange === "2weeks" ? r.currentCases * 0.55 : r.currentCases) * currentDisease.caseMultiplier),
-    prevCases: Math.round((timeRange === "2weeks" ? r.prevCases * 0.55 : r.prevCases) * currentDisease.caseMultiplier),
+    currentCases: Math.round(r.currentCases * currentDisease.caseMultiplier),
+    prevCases: Math.round(r.prevCases * currentDisease.caseMultiplier),
   }));
 
   const areaLabel = appliedFilters.block !== "All Blocks"
@@ -32,7 +29,7 @@ export default function HotspotsScreen() {
     : "Districts";
 
   const totalCases = displayHotspots.reduce((sum, h) => sum + h.currentCases, 0);
-  const predictions = getOutbreakPredictions(appliedFilters.district, appliedFilters.block);
+  const predictions = getOutbreakPredictions(appliedFilters);
   const hasHighForecast = predictions.some(p => p.risk === "high");
   const noCasesButHighForecast = totalCases === 0 && hasHighForecast;
 

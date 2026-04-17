@@ -6,7 +6,7 @@ const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
 
 export default function RegionTable() {
   const { appliedFilters } = useFilters();
-  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const regions = getFilteredRegions(appliedFilters);
   const sorted = [...regions].sort((a, b) => b.confirmed - a.confirmed);
 
   const areaLabel = appliedFilters.block !== "All Blocks"

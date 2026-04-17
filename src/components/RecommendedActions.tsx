@@ -15,7 +15,7 @@ export default function RecommendedActions() {
   const { currentRole } = useRole();
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
-  const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const regions = getFilteredRegions(appliedFilters);
 
   const scopeLevel = appliedFilters.block !== "All Blocks"
     ? "ward"

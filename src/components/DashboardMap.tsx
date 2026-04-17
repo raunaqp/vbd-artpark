@@ -251,9 +251,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     const [y, m, d] = iso.split("-");
     return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   };
-  const tooltipDateRange = mode === "forecast"
-    ? `${fmtShort(dateWindow.forecastStartDate)} - ${fmtFull(dateWindow.forecastEndDate)}`
-    : `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
+  void dateWindow; // used inside tooltips below
 
   // ─── Polygon style + behavior ───
   // SINGLE SOURCE OF TRUTH:

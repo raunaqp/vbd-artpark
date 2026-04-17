@@ -1462,7 +1462,8 @@ function transformPrediction(bundle: StateBundle, profile: TemporalProfile, filt
   const futureFactor = getAverageRelativeCaseFactor(profile, window.forecastStart, window.forecastEnd);
   const adjustment = Math.round((futureFactor - currentFactor) * 20 + seededBetween(`${bundle.id}:${item.area}:prediction`, -5, 6) - (share < 1 ? 6 : 0));
   const probability = clamp(Math.round(item.probability + adjustment), 5, 99);
-  const risk: OutbreakPrediction["risk"] = probability >= 70 ? "high" : probability >= 40 ? "moderate" : "low";
+  // Standardised probability → risk mapping (>75 High, 50–75 Moderate, <50 Low)
+  const risk: OutbreakPrediction["risk"] = probability > 75 ? "high" : probability >= 50 ? "moderate" : "low";
 
   // Convert "W+N" to actual date range based on forecast window
   const match = /W\+(\d+)/.exec(item.expectedWeek || "");

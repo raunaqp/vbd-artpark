@@ -11,6 +11,7 @@ import { RoleProvider } from "@/contexts/RoleContext";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { DiseaseProvider } from "@/contexts/DiseaseContext";
 import { StateProvider } from "@/contexts/StateContext";
+import QADebugPanel from "@/components/QADebugPanel";
 
 const screens: Record<TabId, React.ComponentType> = {
   overview: OverviewScreen,
@@ -34,6 +35,7 @@ export default function Index() {
             <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
               <Screen />
             </DashboardLayout>
+            <QADebugPanel />
           </FilterProvider>
         </DiseaseProvider>
       </RoleProvider>

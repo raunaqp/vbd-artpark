@@ -477,7 +477,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                     </div>
                     <div>Outbreak Probability: <strong>{pred.probability}%</strong></div>
                     <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Week: {tooltipDateRange}</div>
+                    <div style={{ opacity: 0.8 }}>Week: {pred.expectedWeek}</div>
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>

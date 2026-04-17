@@ -23,6 +23,10 @@ export default function ForecastScreen() {
   const forecastData = getForecastData(appliedFilters);
   const predictions = getOutbreakPredictions(appliedFilters);
 
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
+  const visiblePredictions = predictions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const areaLabel = appliedFilters.block !== "All Blocks"
     ? "Village / Ward"
     : appliedFilters.district !== "All Districts"

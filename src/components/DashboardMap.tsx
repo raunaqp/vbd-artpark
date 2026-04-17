@@ -200,17 +200,32 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     : `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
 
   // ─── Polygon style + behavior ───
+  // Resolve risk for a polygon. If the GeoJSON district isn't in the current
+  // regions slice (e.g. user has drilled into another district), fall back to
+  // the deterministic per-state synthesis so every visible polygon stays
+  // consistent with the outer map color.
+  const resolveDistrictRisk = (name: string | null): { risk: "high" | "moderate" | "low" | null; cases: string } => {
+    if (!name) return { risk: null, cases: "—" };
+    const norm = normalize(name);
+    const region = districtRiskByName.get(norm);
+    if (mode === "forecast") {
+      const pred = predByArea.get(name);
+      if (pred) return { risk: pred.risk, cases: `${pred.probability}% (forecast)` };
+    }
+    if (region) return { risk: region.risk, cases: `${region.confirmed}` };
+    // Fallback so outer/inner views never contradict.
+    const fb = getDistrictRiskFallback(name);
+    return { risk: fb.risk, cases: `${fb.confirmed}` };
+  };
+
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
-    const norm = name ? normalize(name) : "";
-    const region = districtRiskByName.get(norm);
-    const pred = name ? predByArea.get(name) : undefined;
-    const risk = mode === "forecast" && pred ? pred.risk : region?.risk;
+    const { risk } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
-      fillOpacity: isSelected ? 0.75 : risk ? 0.55 : 0.3,
+      fillOpacity: isSelected ? 0.78 : risk ? 0.6 : 0.3,
       color: isSelected ? "#0f172a" : "#475569",
       weight: isSelected ? 3 : 1,
       opacity: 1,
@@ -219,11 +234,7 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
 
   const onEachFeature = (feature: Feature<Geometry>, layer: Layer) => {
     const name = featureToMockName(feature);
-    const norm = name ? normalize(name) : "";
-    const region = districtRiskByName.get(norm);
-    const pred = name ? predByArea.get(name) : undefined;
-    const risk = mode === "forecast" && pred ? pred.risk : region?.risk;
-    const cases = mode === "forecast" && pred ? `${pred.probability}% (forecast)` : region ? `${region.confirmed}` : "—";
+    const { risk, cases } = resolveDistrictRisk(name);
     const riskLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "Unknown";
 
     const tooltip = `
@@ -237,7 +248,7 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     layer.bindTooltip(tooltip, { sticky: true });
 
     layer.on({
-      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.8 }); },
+      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.85 }); },
       mouseout: (e) => { (e.target as any).setStyle(styleFeature(feature)); },
       click: () => {
         if (isStateLevel && !isLocked("district") && name) {

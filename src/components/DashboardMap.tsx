@@ -2,14 +2,16 @@ import { MapContainer, TileLayer, GeoJSON, CircleMarker, Tooltip, useMap } from 
 import { useEffect, useMemo, useRef, useState } from "react";
 import L, { type Layer, type LatLngBounds, type PathOptions } from "leaflet";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Crosshair } from "lucide-react";
 import {
   getMapCenter,
   getMapZoom,
   districtCoordinates,
   getFilteredRegions,
   getOutbreakPredictions,
+  getDistrictRiskFallback,
 } from "@/data/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import "leaflet/dist/leaflet.css";

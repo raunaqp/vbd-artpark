@@ -1,13 +1,23 @@
+import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { getFilteredRegions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
+import TablePagination from "@/components/TablePagination";
 
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+const PAGE_SIZE = 20;
 
 export default function RegionTable() {
   const { appliedFilters } = useFilters();
   const regions = getFilteredRegions(appliedFilters);
   const sorted = [...regions].sort((a, b) => b.confirmed - a.confirmed);
+
+  const [page, setPage] = useState(1);
+  // Reset to page 1 when filtered set changes.
+  useEffect(() => { setPage(1); }, [appliedFilters.state, appliedFilters.district, appliedFilters.block]);
+
+  const start = (page - 1) * PAGE_SIZE;
+  const visible = sorted.slice(start, start + PAGE_SIZE);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
     ? "Villages / Wards"
@@ -32,7 +42,7 @@ export default function RegionTable() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((r) => {
+            {visible.map((r) => {
               const TrendIcon = trendIcon[r.trend];
               return (
                 <tr key={r.name} className="border-b border-border/50 hover:bg-muted/30">
@@ -53,6 +63,7 @@ export default function RegionTable() {
           </tbody>
         </table>
       </div>
+      <TablePagination page={page} pageSize={PAGE_SIZE} total={sorted.length} onPageChange={setPage} />
     </div>
   );
 }

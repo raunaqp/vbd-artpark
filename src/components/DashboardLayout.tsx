@@ -3,7 +3,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { getDataQualityIssues } from "@/data/mockData";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },

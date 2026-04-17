@@ -7,17 +7,20 @@ import TablePagination from "@/components/TablePagination";
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
 const PAGE_SIZE = 20;
 
-export default function RegionTable() {
+interface Props { maxRows?: number }
+
+export default function RegionTable({ maxRows }: Props = {}) {
   const { appliedFilters } = useFilters();
   const regions = getFilteredRegions(appliedFilters);
   const sorted = [...regions].sort((a, b) => b.confirmed - a.confirmed);
+  const limited = maxRows ? sorted.slice(0, maxRows) : sorted;
 
   const [page, setPage] = useState(1);
   // Reset to page 1 when filtered set changes.
   useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
 
   const start = (page - 1) * PAGE_SIZE;
-  const visible = sorted.slice(start, start + PAGE_SIZE);
+  const visible = maxRows ? limited : sorted.slice(start, start + PAGE_SIZE);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
     ? "Villages / Wards"

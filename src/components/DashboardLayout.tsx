@@ -2,7 +2,7 @@ import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, Alert
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
-import { dataQualityIssues } from "@/data/mockData";
+import { getDataQualityIssues } from "@/data/mockData";
 import { useState } from "react";
 
 const tabs = [
@@ -35,6 +35,8 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
 
   const reportOptions = ["Weekly Report", "District Summary", "NVBDCP Format", "Line Listing"];
   const currentStateLabel = stateOptions.find((s) => s.id === stateId)?.label || "State";
+  const dataQualityIssues = getDataQualityIssues();
+  void stateId; // re-evaluate on state change
 
   return (
     <div className="min-h-screen flex flex-col">

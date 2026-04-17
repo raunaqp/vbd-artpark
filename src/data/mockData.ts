@@ -1250,7 +1250,19 @@ function getOrSynthesizeDistrictRow(bundle: StateBundle, districtName: string): 
   };
 }
 
-function getBaseRegionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
+/**
+ * Public helper: every map polygon (even ones not present in regionData) gets a
+ * deterministic risk + cases value so outer↔inner views never contradict.
+ * Looks up the current filtered region first; falls back to a deterministic
+ * synthesis seeded by `${activeStateId}:${districtName}`.
+ */
+export function getDistrictRiskFallback(districtName: string): { risk: RegionData["risk"]; confirmed: number; trend: RegionData["trend"]; synthesized: boolean } {
+  const bundle = S();
+  const existing = bundle.regionData.find((r) => r.name === districtName);
+  if (existing) return { risk: existing.risk, confirmed: existing.confirmed, trend: existing.trend, synthesized: false };
+  const row = getOrSynthesizeDistrictRow(bundle, districtName);
+  return { risk: row.risk, confirmed: row.confirmed, trend: row.trend, synthesized: true };
+}
   if (filters.block !== "All Blocks") {
     const villages = bundle.villageData.filter((item) => item.parentBlock === filters.block);
     const wardsInBlock = bundle.wardData.filter((item) => item.parentBlock === filters.block);

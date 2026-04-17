@@ -301,42 +301,61 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
         </div>
       )}
 
-      {loadingGeo && !geoData && (
-        <div className="absolute top-3 right-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground">
-          Loading boundaries…
+      {/* Map controls (top-right): Recenter + Reset to State */}
+      {geoReady && (
+        <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+          <button
+            onClick={() => setRecenterTick((t) => t + 1)}
+            className="bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
+            title="Recenter on current selection"
+          >
+            <Crosshair className="h-3 w-3" /> Recenter
+          </button>
+          {(isDistrictLevel || isBlockLevel) && !isLocked("district") && (
+            <button
+              onClick={() => drillDown("All Districts", "district")}
+              className="bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
+              title="Reset to state view"
+            >
+              <RotateCcw className="h-3 w-3" /> Reset to State
+            </button>
+          )}
         </div>
       )}
 
-      {/* Reset to State View */}
-      {(isDistrictLevel || isBlockLevel) && (
-        <button
-          onClick={() => !isLocked("district") && drillDown("All Districts", "district")}
-          className="absolute top-3 right-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
-          title="Reset to state view"
-        >
-          <RotateCcw className="h-3 w-3" /> Reset to State
-        </button>
+      {/* Loading skeleton — shown until geometry for the active state is ready. */}
+      {!geoReady && (
+        <div className="absolute inset-0 z-[500] flex flex-col items-center justify-center bg-muted/30 backdrop-blur-sm">
+          <Skeleton className="h-full w-full absolute inset-0 opacity-60" />
+          <div className="relative z-10 text-xs text-muted-foreground bg-card/90 border border-border rounded-md px-3 py-1.5">
+            Loading {stateId.replace("_", " ")} boundaries…
+          </div>
+        </div>
       )}
 
-      <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-        <MapViewUpdater center={center} zoom={zoom} bounds={selectionBounds} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        />
+      {geoReady && (
+        <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+          <MapViewUpdater
+            center={center}
+            zoom={zoom}
+            bounds={selectionBounds}
+            viewKey={`${stateId}-${appliedFilters.district}-${appliedFilters.block}-${recenterTick}`}
+          />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
 
-        {/* Primary layer: district choropleth */}
-        {geoData && (
+          {/* Primary layer: district choropleth */}
           <GeoJSON
             key={geoKey}
-            data={geoData}
+            data={geoData!}
             style={styleFeature as any}
             onEachFeature={onEachFeature}
           />
-        )}
 
-        {/* Child markers (blocks, wards, villages) at lower levels */}
-        {childPoints.map((r) => {
+          {/* Child markers (blocks, wards, villages) at lower levels */}
+          {childPoints.map((r) => {
           const coords = districtCoordinates[r.name];
           if (!coords) return null;
           const pred = predByArea.get(r.name);

@@ -346,11 +346,10 @@ export function getFilteredHotspots(district: string, block?: string): HotspotDa
 }
 
 export const hotspotAlerts = [
-  { id: 1, district: "Krishna", message: "Unusual spike in confirmed cases — 28 new cases in W-1", severity: "high" as const },
-  { id: 2, district: "East Godavari", message: "TPR rising above 30% for 2 consecutive weeks", severity: "high" as const },
-  { id: 3, district: "Visakhapatnam", message: "New cluster detected in Pendurthi block", severity: "moderate" as const },
-  { id: 4, district: "Guntur", message: "Tenali block shows rapid case increase", severity: "high" as const },
-  { id: 5, district: "Kurnool", message: "Nandyal block emerging hotspot", severity: "moderate" as const },
+  { id: 1, district: "Visakhapatnam", message: "Clustering of fever cases reported in Visakhapatnam urban wards (MVP Colony, Gajuwaka)", severity: "high" as const },
+  { id: 2, district: "Guntur", message: "Increased mosquito breeding observed along canal networks in Guntur district", severity: "high" as const },
+  { id: 3, district: "Krishna", message: "Urban clustering reported in Vijayawada wards — drainage-linked breeding suspected", severity: "high" as const },
+  { id: 4, district: "Kurnool", message: "Rural blocks in Kurnool reporting gradual increase in fever cases", severity: "moderate" as const },
 ];
 
 // ── Risk forecast (W+1 to W+4) with date ranges ──

@@ -1207,16 +1207,71 @@ function getStateBaseConfirmed(bundle: StateBundle) {
   return bundle.regionData.reduce((sum, region) => sum + region.confirmed, 0);
 }
 
+// Synthesize a child region for a district that has no explicit children, so drill-down never
+// returns "no data" for any selectable / map-visible geography.
+function synthesizeDistrictChildren(bundle: StateBundle, districtName: string): RegionData[] {
+  const districtRow = bundle.regionData.find((r) => r.name === districtName);
+  // If the district itself isn't in regionData (e.g. boundary-only district from GeoJSON), synth a row
+  const baseConfirmed = districtRow?.confirmed ?? Math.max(8, (hashSeed(`${bundle.id}:${districtName}`) % 40) + 6);
+  const baseSuspected = districtRow?.suspected ?? Math.round(baseConfirmed * 7.2);
+  const baseTested = districtRow?.tested ?? Math.round(baseConfirmed * 6.4);
+  const trend = districtRow?.trend ?? (hashSeed(`${districtName}:trend`) % 3 === 0 ? "up" : hashSeed(`${districtName}:trend2`) % 2 === 0 ? "stable" : "down");
+  const split = [
+    { suffix: "Sadar", weight: 0.46, type: "block" as const, mode: "rural" },
+    { suffix: "Town", weight: 0.34, type: "municipality" as const, mode: "urban" },
+    { suffix: "Rural", weight: 0.20, type: "block" as const, mode: "rural" },
+  ];
+  return split.map(({ suffix, weight, type }) => ({
+    name: `${districtName} ${suffix}`,
+    suspected: Math.max(0, Math.round(baseSuspected * weight)),
+    tested: Math.max(0, Math.round(baseTested * weight)),
+    confirmed: Math.max(0, Math.round(baseConfirmed * weight)),
+    risk: districtRow?.risk ?? "moderate",
+    trend,
+    type,
+    parentDistrict: districtName,
+  }));
+}
+
+// Ensures any district visible on the map (even ones not in regionData) has a row.
+function getOrSynthesizeDistrictRow(bundle: StateBundle, districtName: string): RegionData {
+  const existing = bundle.regionData.find((r) => r.name === districtName);
+  if (existing) return existing;
+  const seed = hashSeed(`${bundle.id}:${districtName}`);
+  const confirmed = 6 + (seed % 36);
+  return {
+    name: districtName,
+    suspected: Math.round(confirmed * 7.2),
+    tested: Math.round(confirmed * 6.4),
+    confirmed,
+    risk: confirmed >= 36 ? "high" : confirmed >= 18 ? "moderate" : "low",
+    trend: seed % 3 === 0 ? "up" : seed % 3 === 1 ? "stable" : "down",
+    type: "district",
+  };
+}
+
 function getBaseRegionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const villages = bundle.villageData.filter((item) => item.parentBlock === filters.block);
     const wardsInBlock = bundle.wardData.filter((item) => item.parentBlock === filters.block);
     const leafNodes = [...villages, ...wardsInBlock];
     if (filters.ward !== "All Wards") return leafNodes.filter((item) => item.name === filters.ward);
-    return leafNodes.length > 0 ? leafNodes : bundle.subDistrictData.filter((item) => item.name === filters.block);
+    if (leafNodes.length > 0) return leafNodes;
+    // Fallback: synth two villages for the block so drill-down never goes blank
+    const blockRow = bundle.subDistrictData.find((item) => item.name === filters.block);
+    if (blockRow) {
+      const base = blockRow.confirmed;
+      return [
+        { ...blockRow, name: `${filters.block} Village A`, type: "village" as const, parentBlock: filters.block, confirmed: Math.round(base * 0.6), suspected: Math.round(blockRow.suspected * 0.6), tested: Math.round(blockRow.tested * 0.6) },
+        { ...blockRow, name: `${filters.block} Village B`, type: "village" as const, parentBlock: filters.block, confirmed: Math.round(base * 0.4), suspected: Math.round(blockRow.suspected * 0.4), tested: Math.round(blockRow.tested * 0.4) },
+      ];
+    }
+    return [];
   }
   if (filters.district !== "All Districts") {
-    return bundle.subDistrictData.filter((item) => item.parentDistrict === filters.district);
+    const children = bundle.subDistrictData.filter((item) => item.parentDistrict === filters.district);
+    if (children.length > 0) return children;
+    return synthesizeDistrictChildren(bundle, filters.district);
   }
   return bundle.regionData;
 }

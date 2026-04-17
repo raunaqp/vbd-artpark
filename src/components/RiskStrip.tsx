@@ -11,20 +11,28 @@ const riskColors: Record<string, string> = {
 
 export default function RiskStrip() {
   const { diseaseName } = useDisease();
-  const { appliedFilters } = useFilters();
+  const { appliedFilters, dateWindow } = useFilters();
   const { stateId } = useStateSelection();
   void stateId;
   const riskForecast = getRiskForecast(appliedFilters);
 
+  // Format forecast window header e.g. "01 Feb – 28 Feb 2026"
+  const fmt = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    const date = new Date(Number(y), Number(m) - 1, Number(d));
+    return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+  const headerRange = `${fmt(dateWindow.forecastStartDate)} – ${fmt(dateWindow.forecastEndDate)}`;
+
   return (
     <div>
-      <h3 className="section-title mb-3">{diseaseName} Weekly Forecast (W+1 to W+4)</h3>
+      <h3 className="section-title mb-3">{diseaseName} Weekly Forecast ({headerRange})</h3>
       <div className="grid grid-cols-4 gap-3">
         {riskForecast.map((f) => (
           <div key={f.week} className={`rounded-lg border-2 p-3 text-center ${riskColors[f.risk] || riskColors.moderate}`}>
-            <div className="text-xs font-semibold uppercase">{f.week}</div>
+            <div className="text-xs font-semibold uppercase">{f.label}</div>
             <div className="text-lg font-bold">{f.cases}</div>
-            <div className="text-xs opacity-80">{f.label}</div>
+            <div className="text-xs opacity-80">cases (predicted)</div>
             <div className="mt-1">
               <span className={`risk-badge-${f.risk}`}>{f.risk}</span>
             </div>

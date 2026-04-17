@@ -1808,6 +1808,34 @@ export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacy
 export const getWeatherForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherForecast;
 export const getDataQualityIssues = (input?: DashboardFiltersLike | string, legacyBlock?: string): DataIssue[] => buildDerivedDashboardData(input, legacyBlock).dataQualityIssues;
 
+/**
+ * Single-sentence interpretation of state-vs-local forecast risk.
+ * Used below forecast cards on Home + Forecast tab.
+ */
+export function getStateLocalRiskNote(input?: DashboardFiltersLike | string): string {
+  const filters = resolveFilters(input);
+  const stateFilters: DashboardFiltersLike = { ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" };
+  const { riskForecast, predictions } = buildDerivedDashboardData(stateFilters);
+  const stateHasHigh = riskForecast.some((r) => r.risk === "high");
+  const stateHasMod = riskForecast.some((r) => r.risk === "moderate");
+  const localHigh = predictions.filter((p) => p.risk === "high").length;
+  const localMod = predictions.filter((p) => p.risk === "moderate").length;
+
+  if (!stateHasHigh && !stateHasMod && localHigh > 0) {
+    return "Overall state burden is low, but localized clustering indicates elevated outbreak risk in select districts/blocks.";
+  }
+  if (!stateHasHigh && localHigh > 0) {
+    return `Low overall state burden expected; ${localHigh} district${localHigh > 1 ? "s" : ""} show elevated localized outbreak risk.`;
+  }
+  if (stateHasHigh) {
+    return `Elevated state-level risk expected; high-risk localized clusters in ${localHigh} district${localHigh === 1 ? "" : "s"}.`;
+  }
+  if (stateHasMod || localMod > 0) {
+    return "Moderate localized risk expected in select districts; overall state burden remains contained.";
+  }
+  return "Low overall state burden expected over the next 4 weeks with no major localized clusters.";
+}
+
 // ──────────────── QA / consistency report (debug-only) ────────────────
 export interface QAReport {
   state: string;

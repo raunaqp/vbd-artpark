@@ -88,12 +88,7 @@ export default function GlobalFilters() {
             <label className="text-xs font-medium text-muted-foreground">To</label>
             <input type="date" min={filters.fromDate || window.minDate} max={window.maxDate} value={filters.toDate} onChange={(e) => setFilters({ toDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
           </div>
-          <div className="flex flex-col gap-1 min-w-[180px]">
-            <label className="text-xs font-medium text-muted-foreground">Forecast (next 4 weeks)</label>
-            <div className="h-9 px-3 rounded-md border border-dashed border-border bg-muted/30 text-xs flex items-center text-muted-foreground">
-              {window.forecastStartDate} → {window.forecastEndDate}
-            </div>
-          </div>
+          {/* Forecast date chip intentionally removed from global filter bar — only shown inside Forecast tab. */}
           <div className="flex gap-2 self-end">
             <button onClick={applyFilters} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium">Apply</button>
             <button onClick={resetFilters} className="h-9 px-4 rounded-md border border-input text-sm font-medium text-muted-foreground">Reset</button>

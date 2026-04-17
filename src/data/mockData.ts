@@ -390,7 +390,7 @@ const AP: StateBundle = {
 const ODISHA: StateBundle = {
   id: "odisha", label: "Odisha",
   districts: ["All Districts", "Khurda", "Cuttack", "Puri", "Angul", "Balasore", "Ganjam", "Sambalpur", "Sundargarh"],
-  blocks: ["All Blocks", "Brahmagiri", "Talcher", "Nilgiri", "Bhubaneswar MC", "Cuttack MC", "Rourkela MC", "Sambalpur MC"],
+  blocks: ["All Blocks", "Brahmagiri", "Talcher", "Nilgiri", "Bhubaneswar MC", "Cuttack MC", "Puri MC", "Rourkela MC", "Sambalpur MC"],
   regionData: [
     { name: "Balasore", suspected: 720, tested: 680, confirmed: 95, risk: "high", trend: "up", type: "district" },
     { name: "Khurda", suspected: 540, tested: 510, confirmed: 58, risk: "high", trend: "up", type: "district" },
@@ -413,6 +413,7 @@ const ODISHA: StateBundle = {
     { name: "Cuttack MC", suspected: 240, tested: 225, confirmed: 28, risk: "high", trend: "up", type: "municipality", parentDistrict: "Cuttack" },
     { name: "Salepur", suspected: 100, tested: 95, confirmed: 10, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Cuttack" },
     { name: "Niali", suspected: 80, tested: 75, confirmed: 8, risk: "moderate", trend: "up", type: "block", parentDistrict: "Cuttack" },
+    { name: "Puri MC", suspected: 130, tested: 122, confirmed: 14, risk: "moderate", trend: "up", type: "municipality", parentDistrict: "Puri" },
     { name: "Brahmagiri", suspected: 60, tested: 56, confirmed: 6, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Puri" },
     { name: "Puri Sadar", suspected: 80, tested: 76, confirmed: 7, risk: "moderate", trend: "stable", type: "block", parentDistrict: "Puri" },
     { name: "Satyabadi", suspected: 50, tested: 47, confirmed: 4, risk: "low", trend: "stable", type: "block", parentDistrict: "Puri" },
@@ -444,6 +445,9 @@ const ODISHA: StateBundle = {
     { name: "Saheed Nagar", suspected: 55, tested: 52, confirmed: 8, risk: "high", trend: "up", type: "ward", parentDistrict: "Khurda", parentBlock: "Bhubaneswar MC" },
     { name: "Patia", suspected: 45, tested: 42, confirmed: 6, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Khurda", parentBlock: "Bhubaneswar MC" },
     { name: "Chandrasekharpur", suspected: 35, tested: 32, confirmed: 4, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Khurda", parentBlock: "Bhubaneswar MC" },
+    { name: "Bada Danda", suspected: 50, tested: 47, confirmed: 7, risk: "high", trend: "up", type: "ward", parentDistrict: "Puri", parentBlock: "Puri MC" },
+    { name: "Chakratirtha", suspected: 40, tested: 37, confirmed: 5, risk: "moderate", trend: "up", type: "ward", parentDistrict: "Puri", parentBlock: "Puri MC" },
+    { name: "Sea Beach Road", suspected: 30, tested: 28, confirmed: 3, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Puri", parentBlock: "Puri MC" },
     { name: "Buxi Bazaar", suspected: 60, tested: 56, confirmed: 9, risk: "high", trend: "up", type: "ward", parentDistrict: "Cuttack", parentBlock: "Cuttack MC" },
     { name: "Mangalabag", suspected: 45, tested: 42, confirmed: 6, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Cuttack", parentBlock: "Cuttack MC" },
     { name: "Bidanasi", suspected: 30, tested: 28, confirmed: 3, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Cuttack", parentBlock: "Cuttack MC" },
@@ -476,6 +480,7 @@ const ODISHA: StateBundle = {
     { area: "Cuttack MC", probability: 80, risk: "high", expectedWeek: "W+2", signal: "Old-city drainage issues + Buxi Bazaar ward clustering + OPD surge", parentDistrict: "Cuttack", areaType: "Municipality" },
     { area: "Salepur", probability: 48, risk: "moderate", expectedWeek: "W+3", signal: "Riverine humidity + moderate baseline", parentDistrict: "Cuttack", areaType: "Block" },
     { area: "Niali", probability: 42, risk: "moderate", expectedWeek: "W+3", signal: "Cases rising in semi-urban pockets", parentDistrict: "Cuttack", areaType: "Block" },
+    { area: "Puri MC", probability: 86, risk: "high", expectedWeek: "W+2", signal: "Tourist influx + coastal urban density — sharpest forecast for Puri municipality", parentDistrict: "Puri", areaType: "Municipality" },
     { area: "Brahmagiri", probability: 78, risk: "high", expectedWeek: "W+2", signal: "Tourist influx + coastal humidity — high forecast despite low current cases", parentDistrict: "Puri", areaType: "Block" },
     { area: "Puri Sadar", probability: 82, risk: "high", expectedWeek: "W+2", signal: "Tourist mobility + religious gathering season — vector exposure rising", parentDistrict: "Puri", areaType: "Block" },
     { area: "Satyabadi", probability: 35, risk: "moderate", expectedWeek: "W+4", signal: "Coastal humidity + low baseline", parentDistrict: "Puri", areaType: "Block" },
@@ -535,6 +540,7 @@ const ODISHA: StateBundle = {
     { area: "Jatni", currentCases: 12, prevCases: 10, trend: "stable", risk: "moderate", parentDistrict: "Khurda" },
     { area: "Cuttack MC", currentCases: 28, prevCases: 18, trend: "up", risk: "high", parentDistrict: "Cuttack" },
     { area: "Salepur", currentCases: 10, prevCases: 9, trend: "stable", risk: "moderate", parentDistrict: "Cuttack" },
+    { area: "Puri MC", currentCases: 14, prevCases: 9, trend: "up", risk: "moderate", parentDistrict: "Puri" },
     { area: "Brahmagiri", currentCases: 6, prevCases: 7, trend: "stable", risk: "moderate", parentDistrict: "Puri" },
     { area: "Puri Sadar", currentCases: 7, prevCases: 8, trend: "stable", risk: "moderate", parentDistrict: "Puri" },
     { area: "Rourkela MC", currentCases: 28, prevCases: 16, trend: "up", risk: "high", parentDistrict: "Sundargarh" },
@@ -600,7 +606,8 @@ const ODISHA: StateBundle = {
     "Nilgiri": [21.46, 86.78], "Soro": [21.28, 86.69], "Balasore Sadar": [21.49, 86.93], "Basta": [21.66, 86.97],
     "Bhubaneswar MC": [20.27, 85.84], "Jatni": [20.17, 85.70], "Banapur": [19.78, 85.16], "Begunia": [20.21, 85.36],
     "Cuttack MC": [20.46, 85.88], "Salepur": [20.55, 86.07], "Niali": [20.30, 85.93],
-    "Brahmagiri": [19.85, 85.63], "Puri Sadar": [19.81, 85.83], "Satyabadi": [19.87, 85.71],
+    "Brahmagiri": [19.85, 85.63], "Puri Sadar": [19.81, 85.83], "Satyabadi": [19.87, 85.71], "Puri MC": [19.81, 85.83],
+    "Bada Danda": [19.81, 85.82], "Chakratirtha": [19.80, 85.83], "Sea Beach Road": [19.79, 85.84],
     "Rourkela MC": [22.22, 84.86], "Bonai": [21.83, 85.14], "Rajgangpur": [22.19, 84.59],
     "Talcher": [20.95, 85.22], "Angul Sadar": [20.84, 85.10], "Kaniha": [21.10, 85.18],
     "Sambalpur MC": [21.47, 83.97], "Maneswar": [21.45, 83.92],
@@ -1417,8 +1424,13 @@ function transformRegion(bundle: StateBundle, profile: TemporalProfile, filters:
   const previousStart = addDays(previousEnd, -(durationDays - 1));
   const bias = seededBetween(`${bundle.id}:${item.name}:region`, 0.92, 1.12) * (item.trend === "up" ? 1.08 : item.trend === "down" ? 0.93 : 1) * (item.risk === "high" ? 1.06 : item.risk === "low" ? 0.94 : 1);
 
+  // Per-region asymmetry between current vs previous so trend varies across districts
+  // (without it, every district shares the same currentScalar/previousScalar ratio).
+  const trendBias = item.trend === "up" ? 1.18 : item.trend === "down" ? 0.82 : 1.0;
+  const prevPerturb = seededBetween(`${bundle.id}:${item.name}:region:prev`, 0.85, 1.15);
+
   const currentScalar = getRangeScalar(profile, window.from, window.to) * bias * share;
-  const previousScalar = getRangeScalar(profile, previousStart, previousEnd) * bias * share;
+  const previousScalar = getRangeScalar(profile, previousStart, previousEnd) * bias * share * prevPerturb / trendBias;
 
   const suspected = Math.max(0, Math.round(item.suspected * currentScalar));
   const tested = Math.max(0, Math.round(item.tested * currentScalar));

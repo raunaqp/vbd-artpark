@@ -124,19 +124,29 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
 
   // ─── Fetch GeoJSON for active state (cached) ───
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
-  const [loadingGeo, setLoadingGeo] = useState(false);
+  const [loadingGeo, setLoadingGeo] = useState(true);
+  const [geoStateId, setGeoStateId] = useState<string | null>(null);
+  // Bumped on Recenter button to force map refit.
+  const [recenterTick, setRecenterTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoadingGeo(true);
+    // Drop stale geometry immediately so we never paint the previous state's boundaries.
+    setGeoData(null);
+    setGeoStateId(null);
     fetchStateGeoJSON(stateId).then((data) => {
       if (!cancelled) {
         setGeoData(data);
+        setGeoStateId(stateId);
         setLoadingGeo(false);
       }
     });
     return () => { cancelled = true; };
   }, [stateId]);
+
+  // Geo data must match the active state before we render anything.
+  const geoReady = !!geoData && geoStateId === stateId;
 
   // ─── Hierarchy & view computation ───
   const isStateLevel = appliedFilters.district === "All Districts";

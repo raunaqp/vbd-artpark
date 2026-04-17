@@ -24,25 +24,52 @@ interface Props {
 }
 
 export default function DashboardLayout({ activeTab, onTabChange, children }: Props) {
-  const { currentRole, setRole } = useRole();
+  const { currentRole, setRole, availableRoles } = useRole();
   const { currentDisease, setDisease } = useDisease();
+  const { stateId, setStateId, options: stateOptions } = useStateSelection();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [showDiseaseMenu, setShowDiseaseMenu] = useState(false);
+  const [showStateMenu, setShowStateMenu] = useState(false);
   const [dataIssuesExpanded, setDataIssuesExpanded] = useState(false);
 
   const reportOptions = ["Weekly Report", "District Summary", "NVBDCP Format", "Line Listing"];
-
-  const closeAll = () => { setShowRoleMenu(false); setShowReportMenu(false); setShowDiseaseMenu(false); };
+  const currentStateLabel = stateOptions.find((s) => s.id === stateId)?.label || "State";
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="dashboard-header px-6 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Early Warning System for Vector-Borne Diseases</h1>
-          <p className="text-xs opacity-80">Department of Health · Andhra Pradesh</p>
+          <p className="text-xs opacity-80">Department of Health · {currentStateLabel}</p>
         </div>
         <div className="flex items-center gap-3">
+          {/* State Selector */}
+          <div className="relative">
+            <button
+              onClick={() => { setShowStateMenu(!showStateMenu); setShowRoleMenu(false); setShowReportMenu(false); setShowDiseaseMenu(false); }}
+              className="flex items-center gap-1.5 text-xs bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-md px-3 py-1.5 transition-colors"
+            >
+              <MapPinned className="h-3.5 w-3.5" />
+              {currentStateLabel}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showStateMenu && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+                <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">Select State</div>
+                {stateOptions.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => { setStateId(s.id); setShowStateMenu(false); }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${stateId === s.id ? "bg-muted font-medium text-foreground" : "text-foreground"}`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Disease Selector */}
           <div className="relative">
             <button
@@ -106,7 +133,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
             {showRoleMenu && (
               <div className="absolute right-0 top-full mt-1 w-64 bg-card border border-border rounded-lg shadow-lg z-50 py-1 max-h-80 overflow-auto">
                 <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">Switch Role</div>
-                {roles.map((r) => (
+                {availableRoles.map((r) => (
                   <button
                     key={r.id}
                     onClick={() => { setRole(r.id); setShowRoleMenu(false); }}

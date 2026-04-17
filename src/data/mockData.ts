@@ -496,20 +496,20 @@ export const actionsByScope: Record<string, { district: string[]; block: string[
 
 // ── Signals / Field Intelligence ──
 export const newsAlerts = [
-  { id: 1, headline: "Dengue cases rise sharply in Vijayawada hospitals", source: "The Hindu", date: "2026-04-10", district: "Krishna", severity: "high" as const },
-  { id: 2, headline: "Water-logging after rains creates breeding grounds in Vizag", source: "Deccan Chronicle", date: "2026-04-08", district: "Visakhapatnam", severity: "high" as const },
-  { id: 3, headline: "Health dept ramps up fumigation drives in East Godavari", source: "Eenadu", date: "2026-04-07", district: "East Godavari", severity: "moderate" as const },
-  { id: 4, headline: "Guntur hospitals report increasing OPD for fever cases", source: "Andhra Jyothy", date: "2026-04-06", district: "Guntur", severity: "moderate" as const },
-  { id: 5, headline: "Community health workers report poor sanitation in Kurnool villages", source: "Field Report", date: "2026-04-05", district: "Kurnool", severity: "low" as const },
+  { id: 1, headline: "Clustering of fever cases reported in Visakhapatnam urban wards", source: "The Hindu", date: "2026-04-10", district: "Visakhapatnam", severity: "high" as const },
+  { id: 2, headline: "Increased mosquito breeding observed along canal networks in Guntur district", source: "Eenadu", date: "2026-04-09", district: "Guntur", severity: "high" as const },
+  { id: 3, headline: "Urban clustering and drainage issues drive case rise in Vijayawada wards", source: "Deccan Chronicle", date: "2026-04-08", district: "Krishna", severity: "high" as const },
+  { id: 4, headline: "Rural blocks in Kurnool reporting gradual increase in fever cases", source: "Andhra Jyothy", date: "2026-04-07", district: "Kurnool", severity: "moderate" as const },
+  { id: 5, headline: "Post-rainfall breeding sites flagged in East Godavari delta", source: "Field Report", date: "2026-04-06", district: "East Godavari", severity: "moderate" as const },
   { id: 6, headline: "Construction debris piling up in Nellore outskirts — potential breeding sites", source: "Local Report", date: "2026-04-04", district: "S.P.S. Nellore", severity: "moderate" as const },
 ];
 
 export const geoTaggedAlerts = [
-  { id: 1, lat: 16.52, lng: 80.63, message: "Hospital OPD spike — 40+ fever cases in 2 days", district: "Krishna", severity: "high" as const },
-  { id: 2, lat: 17.72, lng: 83.30, message: "Waterlogging reported in 3 wards post-rain", district: "Visakhapatnam", severity: "high" as const },
-  { id: 3, lat: 17.0, lng: 81.78, message: "Fumigation drive underway — 8 wards covered", district: "East Godavari", severity: "moderate" as const },
-  { id: 4, lat: 16.30, lng: 80.44, message: "Fever screening camp set up at Guntur bus station", district: "Guntur", severity: "moderate" as const },
-  { id: 5, lat: 15.83, lng: 78.04, message: "ASHA reports increased fever in 2 villages", district: "Kurnool", severity: "low" as const },
+  { id: 1, lat: 17.74, lng: 83.32, message: "Urban ward clustering — MVP Colony fever cluster reported", district: "Visakhapatnam", severity: "high" as const },
+  { id: 2, lat: 16.24, lng: 80.64, message: "Canal-side breeding sites confirmed in Tenali villages", district: "Guntur", severity: "high" as const },
+  { id: 3, lat: 16.53, lng: 80.67, message: "Drainage-linked breeding + OPD spike near Benz Circle", district: "Krishna", severity: "high" as const },
+  { id: 4, lat: 15.48, lng: 78.48, message: "ASHA reports gradual fever rise in Nandyal rural pockets", district: "Kurnool", severity: "moderate" as const },
+  { id: 5, lat: 17.0, lng: 81.78, message: "Post-rainfall breeding flagged in delta region", district: "East Godavari", severity: "moderate" as const },
 ];
 
 // ── Upload formats ──

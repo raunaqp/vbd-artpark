@@ -1,6 +1,7 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug } from "lucide-react";
-import { useRole, roles } from "@/contexts/RoleContext";
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned } from "lucide-react";
+import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
+import { useStateSelection } from "@/contexts/StateContext";
 import { dataQualityIssues } from "@/data/mockData";
 import { useState } from "react";
 

@@ -42,6 +42,7 @@ export default function QADebugPanel() {
           <div className="text-muted-foreground">
             <div>Window: {report.windowLabel}</div>
             <div>Forecast: {report.forecastLabel}</div>
+            <div>State: {report.state}</div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <Stat label="State cases" value={report.stateTotalConfirmed} />
@@ -50,6 +51,16 @@ export default function QADebugPanel() {
             <Stat label="State fcst" value={report.stateForecastSum} />
             <Stat label="Σ dist fcst" value={report.sumOfDistrictForecastSum} />
             <Stat label="Δ" value={report.forecast_diff} highlight={report.forecast_diff !== 0} />
+            <Stat label="High p" value={report.probabilityBands.high} />
+            <Stat label="Mod p" value={report.probabilityBands.moderate} />
+            <Stat label="Low p" value={report.probabilityBands.low} />
+            <Stat label="Band check" value={report.bandConsistencyOk ? 1 : 0} highlight={!report.bandConsistencyOk} />
+            <Stat label="Missing data" value={report.missingDataDistricts} highlight={report.missingDataDistricts > 0} />
+            <Stat label="# districts" value={report.perDistrict.length} />
+          </div>
+          <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[11px] leading-snug">
+            <div className="text-muted-foreground mb-0.5">State vs local interpretation</div>
+            <div className="text-foreground">{report.stateLocalNote}</div>
           </div>
           <table className="w-full">
             <thead className="text-muted-foreground">

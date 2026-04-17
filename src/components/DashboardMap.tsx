@@ -88,7 +88,9 @@ interface DashboardMapProps {
 }
 
 // Helper: imperatively update the map view when center/zoom inputs change.
-function MapViewUpdater({ center, zoom, bounds }: { center: [number, number]; zoom: number; bounds?: LatLngBounds | null }) {
+// `viewKey` forces a re-fit even if values are referentially equal across renders
+// (e.g. after a state change resets to the same default zoom).
+function MapViewUpdater({ center, zoom, bounds, viewKey }: { center: [number, number]; zoom: number; bounds?: LatLngBounds | null; viewKey: string }) {
   const map = useMap();
   useEffect(() => {
     if (bounds) {
@@ -96,7 +98,8 @@ function MapViewUpdater({ center, zoom, bounds }: { center: [number, number]; zo
     } else {
       map.setView(center, zoom, { animate: true });
     }
-  }, [center[0], center[1], zoom, bounds, map]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewKey]);
   return null;
 }
 

@@ -1250,6 +1250,20 @@ function getOrSynthesizeDistrictRow(bundle: StateBundle, districtName: string): 
   };
 }
 
+/**
+ * Public helper: every map polygon (even ones not present in regionData) gets a
+ * deterministic risk + cases value so outer↔inner views never contradict.
+ * Looks up the current filtered region first; falls back to a deterministic
+ * synthesis seeded by `${activeStateId}:${districtName}`.
+ */
+export function getDistrictRiskFallback(districtName: string): { risk: RegionData["risk"]; confirmed: number; trend: RegionData["trend"]; synthesized: boolean } {
+  const bundle = S();
+  const existing = bundle.regionData.find((r) => r.name === districtName);
+  if (existing) return { risk: existing.risk, confirmed: existing.confirmed, trend: existing.trend, synthesized: false };
+  const row = getOrSynthesizeDistrictRow(bundle, districtName);
+  return { risk: row.risk, confirmed: row.confirmed, trend: row.trend, synthesized: true };
+}
+
 function getBaseRegionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const villages = bundle.villageData.filter((item) => item.parentBlock === filters.block);
@@ -1365,10 +1379,14 @@ function transformRegion(bundle: StateBundle, profile: TemporalProfile, filters:
 function synthesizeDistrictHotspotChildren(districtName: string, parentRow: HotspotData | undefined): HotspotData[] {
   const base = parentRow?.currentCases ?? Math.max(6, hashSeed(`${districtName}:hot`) % 30);
   const prev = parentRow?.prevCases ?? Math.round(base * 0.78);
+  // Inherit parent district risk so inner drill-down never contradicts outer map color.
+  const parentRisk: HotspotData["risk"] = parentRow?.risk ?? (base >= 30 ? "high" : base >= 12 ? "moderate" : "low");
+  const secondaryRisk: HotspotData["risk"] = parentRisk === "high" ? "moderate" : parentRisk === "moderate" ? "moderate" : "low";
+  const tertiaryRisk: HotspotData["risk"] = parentRisk === "high" ? "moderate" : "low";
   return [
-    { area: `${districtName} Sadar`, currentCases: Math.round(base * 0.5), prevCases: Math.round(prev * 0.5), trend: "up", risk: "moderate", parentDistrict: districtName },
-    { area: `${districtName} Town`, currentCases: Math.round(base * 0.32), prevCases: Math.round(prev * 0.32), trend: "stable", risk: "moderate", parentDistrict: districtName },
-    { area: `${districtName} Rural`, currentCases: Math.round(base * 0.18), prevCases: Math.round(prev * 0.18), trend: "stable", risk: "low", parentDistrict: districtName },
+    { area: `${districtName} Sadar`, currentCases: Math.round(base * 0.5), prevCases: Math.round(prev * 0.5), trend: "up", risk: parentRisk, parentDistrict: districtName },
+    { area: `${districtName} Town`, currentCases: Math.round(base * 0.32), prevCases: Math.round(prev * 0.32), trend: "stable", risk: secondaryRisk, parentDistrict: districtName },
+    { area: `${districtName} Rural`, currentCases: Math.round(base * 0.18), prevCases: Math.round(prev * 0.18), trend: "stable", risk: tertiaryRisk, parentDistrict: districtName },
   ];
 }
 

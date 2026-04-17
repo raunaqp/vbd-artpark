@@ -2,14 +2,16 @@ import { MapContainer, TileLayer, GeoJSON, CircleMarker, Tooltip, useMap } from 
 import { useEffect, useMemo, useRef, useState } from "react";
 import L, { type Layer, type LatLngBounds, type PathOptions } from "leaflet";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Crosshair } from "lucide-react";
 import {
   getMapCenter,
   getMapZoom,
   districtCoordinates,
   getFilteredRegions,
   getOutbreakPredictions,
+  getDistrictRiskFallback,
 } from "@/data/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import "leaflet/dist/leaflet.css";
@@ -86,7 +88,9 @@ interface DashboardMapProps {
 }
 
 // Helper: imperatively update the map view when center/zoom inputs change.
-function MapViewUpdater({ center, zoom, bounds }: { center: [number, number]; zoom: number; bounds?: LatLngBounds | null }) {
+// `viewKey` forces a re-fit even if values are referentially equal across renders
+// (e.g. after a state change resets to the same default zoom).
+function MapViewUpdater({ center, zoom, bounds, viewKey }: { center: [number, number]; zoom: number; bounds?: LatLngBounds | null; viewKey: string }) {
   const map = useMap();
   useEffect(() => {
     if (bounds) {
@@ -94,7 +98,8 @@ function MapViewUpdater({ center, zoom, bounds }: { center: [number, number]; zo
     } else {
       map.setView(center, zoom, { animate: true });
     }
-  }, [center[0], center[1], zoom, bounds, map]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewKey]);
   return null;
 }
 
@@ -119,19 +124,29 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
 
   // ─── Fetch GeoJSON for active state (cached) ───
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
-  const [loadingGeo, setLoadingGeo] = useState(false);
+  const [loadingGeo, setLoadingGeo] = useState(true);
+  const [geoStateId, setGeoStateId] = useState<string | null>(null);
+  // Bumped on Recenter button to force map refit.
+  const [recenterTick, setRecenterTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoadingGeo(true);
+    // Drop stale geometry immediately so we never paint the previous state's boundaries.
+    setGeoData(null);
+    setGeoStateId(null);
     fetchStateGeoJSON(stateId).then((data) => {
       if (!cancelled) {
         setGeoData(data);
+        setGeoStateId(stateId);
         setLoadingGeo(false);
       }
     });
     return () => { cancelled = true; };
   }, [stateId]);
+
+  // Geo data must match the active state before we render anything.
+  const geoReady = !!geoData && geoStateId === stateId;
 
   // ─── Hierarchy & view computation ───
   const isStateLevel = appliedFilters.district === "All Districts";
@@ -185,17 +200,32 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     : `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
 
   // ─── Polygon style + behavior ───
+  // Resolve risk for a polygon. If the GeoJSON district isn't in the current
+  // regions slice (e.g. user has drilled into another district), fall back to
+  // the deterministic per-state synthesis so every visible polygon stays
+  // consistent with the outer map color.
+  const resolveDistrictRisk = (name: string | null): { risk: "high" | "moderate" | "low" | null; cases: string } => {
+    if (!name) return { risk: null, cases: "—" };
+    const norm = normalize(name);
+    const region = districtRiskByName.get(norm);
+    if (mode === "forecast") {
+      const pred = predByArea.get(name);
+      if (pred) return { risk: pred.risk, cases: `${pred.probability}% (forecast)` };
+    }
+    if (region) return { risk: region.risk, cases: `${region.confirmed}` };
+    // Fallback so outer/inner views never contradict.
+    const fb = getDistrictRiskFallback(name);
+    return { risk: fb.risk, cases: `${fb.confirmed}` };
+  };
+
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
-    const norm = name ? normalize(name) : "";
-    const region = districtRiskByName.get(norm);
-    const pred = name ? predByArea.get(name) : undefined;
-    const risk = mode === "forecast" && pred ? pred.risk : region?.risk;
+    const { risk } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
-      fillOpacity: isSelected ? 0.75 : risk ? 0.55 : 0.3,
+      fillOpacity: isSelected ? 0.78 : risk ? 0.6 : 0.3,
       color: isSelected ? "#0f172a" : "#475569",
       weight: isSelected ? 3 : 1,
       opacity: 1,
@@ -204,11 +234,7 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
 
   const onEachFeature = (feature: Feature<Geometry>, layer: Layer) => {
     const name = featureToMockName(feature);
-    const norm = name ? normalize(name) : "";
-    const region = districtRiskByName.get(norm);
-    const pred = name ? predByArea.get(name) : undefined;
-    const risk = mode === "forecast" && pred ? pred.risk : region?.risk;
-    const cases = mode === "forecast" && pred ? `${pred.probability}% (forecast)` : region ? `${region.confirmed}` : "—";
+    const { risk, cases } = resolveDistrictRisk(name);
     const riskLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "Unknown";
 
     const tooltip = `
@@ -222,7 +248,7 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     layer.bindTooltip(tooltip, { sticky: true });
 
     layer.on({
-      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.8 }); },
+      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.85 }); },
       mouseout: (e) => { (e.target as any).setStyle(styleFeature(feature)); },
       click: () => {
         if (isStateLevel && !isLocked("district") && name) {
@@ -275,42 +301,61 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
         </div>
       )}
 
-      {loadingGeo && !geoData && (
-        <div className="absolute top-3 right-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground">
-          Loading boundaries…
+      {/* Map controls (top-right): Recenter + Reset to State */}
+      {geoReady && (
+        <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+          <button
+            onClick={() => setRecenterTick((t) => t + 1)}
+            className="bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
+            title="Recenter on current selection"
+          >
+            <Crosshair className="h-3 w-3" /> Recenter
+          </button>
+          {(isDistrictLevel || isBlockLevel) && !isLocked("district") && (
+            <button
+              onClick={() => drillDown("All Districts", "district")}
+              className="bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
+              title="Reset to state view"
+            >
+              <RotateCcw className="h-3 w-3" /> Reset to State
+            </button>
+          )}
         </div>
       )}
 
-      {/* Reset to State View */}
-      {(isDistrictLevel || isBlockLevel) && (
-        <button
-          onClick={() => !isLocked("district") && drillDown("All Districts", "district")}
-          className="absolute top-3 right-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-xs flex items-center gap-1.5 hover:bg-card transition-colors"
-          title="Reset to state view"
-        >
-          <RotateCcw className="h-3 w-3" /> Reset to State
-        </button>
+      {/* Loading skeleton — shown until geometry for the active state is ready. */}
+      {!geoReady && (
+        <div className="absolute inset-0 z-[500] flex flex-col items-center justify-center bg-muted/30 backdrop-blur-sm">
+          <Skeleton className="h-full w-full absolute inset-0 opacity-60" />
+          <div className="relative z-10 text-xs text-muted-foreground bg-card/90 border border-border rounded-md px-3 py-1.5">
+            Loading {stateId.replace("_", " ")} boundaries…
+          </div>
+        </div>
       )}
 
-      <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-        <MapViewUpdater center={center} zoom={zoom} bounds={selectionBounds} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        />
+      {geoReady && (
+        <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+          <MapViewUpdater
+            center={center}
+            zoom={zoom}
+            bounds={selectionBounds}
+            viewKey={`${stateId}-${appliedFilters.district}-${appliedFilters.block}-${recenterTick}`}
+          />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
 
-        {/* Primary layer: district choropleth */}
-        {geoData && (
+          {/* Primary layer: district choropleth */}
           <GeoJSON
             key={geoKey}
-            data={geoData}
+            data={geoData!}
             style={styleFeature as any}
             onEachFeature={onEachFeature}
           />
-        )}
 
-        {/* Child markers (blocks, wards, villages) at lower levels */}
-        {childPoints.map((r) => {
+          {/* Child markers (blocks, wards, villages) at lower levels */}
+          {childPoints.map((r) => {
           const coords = districtCoordinates[r.name];
           if (!coords) return null;
           const pred = predByArea.get(r.name);
@@ -351,8 +396,9 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
               </Tooltip>
             </CircleMarker>
           );
-        })}
-      </MapContainer>
+          })}
+        </MapContainer>
+      )}
 
       {/* Legend */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3 items-center">

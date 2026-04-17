@@ -37,10 +37,6 @@ export default function RiskStrip() {
               <span className={`risk-badge-${f.risk}`}>{f.risk}</span>
             </div>
           </div>
-            <div className="mt-1">
-              <span className={`risk-badge-${f.risk}`}>{f.risk}</span>
-            </div>
-          </div>
         ))}
       </div>
     </div>

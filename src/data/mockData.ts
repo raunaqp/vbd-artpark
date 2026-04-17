@@ -1411,6 +1411,15 @@ function transformHotspot(bundle: StateBundle, profile: TemporalProfile, filters
   };
 }
 
+function synthesizeDistrictPredictions(districtName: string, parentPred: OutbreakPrediction | undefined): OutbreakPrediction[] {
+  const baseProb = parentPred?.probability ?? Math.max(20, hashSeed(`${districtName}:pred`) % 70);
+  return [
+    { area: `${districtName} Sadar`, probability: clamp(baseProb + 4, 5, 99), risk: parentPred?.risk ?? "moderate", expectedWeek: "W+2", signal: parentPred?.signal ?? `${districtName} sub-district risk based on district aggregate.`, parentDistrict: districtName, areaType: "Block" },
+    { area: `${districtName} Town`, probability: clamp(baseProb - 6, 5, 99), risk: "moderate", expectedWeek: "W+3", signal: `${districtName} urban-area risk projection.`, parentDistrict: districtName, areaType: "Municipality" },
+    { area: `${districtName} Rural`, probability: clamp(baseProb - 18, 5, 99), risk: "low", expectedWeek: "W+4", signal: `${districtName} rural baseline projection.`, parentDistrict: districtName, areaType: "Block" },
+  ];
+}
+
 function getBasePredictionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const wardPredictions = bundle.municipalityPredictions.filter((item) => item.parentBlock === filters.block);
@@ -1418,7 +1427,12 @@ function getBasePredictionsForScope(bundle: StateBundle, filters: DashboardFilte
     const source = wardPredictions.length > 0 ? wardPredictions : blockPredictions;
     return filters.ward !== "All Wards" ? source.filter((item) => item.area === filters.ward) : source;
   }
-  if (filters.district !== "All Districts") return bundle.districtPredictions.filter((item) => item.parentDistrict === filters.district);
+  if (filters.district !== "All Districts") {
+    const found = bundle.districtPredictions.filter((item) => item.parentDistrict === filters.district);
+    if (found.length > 0) return found;
+    const parent = bundle.statePredictions.find((p) => p.area === filters.district);
+    return synthesizeDistrictPredictions(filters.district, parent);
+  }
   return bundle.statePredictions;
 }
 

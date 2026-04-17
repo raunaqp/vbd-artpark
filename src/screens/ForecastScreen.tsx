@@ -54,6 +54,14 @@ export default function ForecastScreen() {
         })}
       </div>
 
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="section-title">Forecasted Risk Map — Next 4 Weeks</h3>
+          <span className="text-[11px] text-muted-foreground">Colors reflect <strong>predicted</strong> outbreak risk · Click areas to drill down</span>
+        </div>
+        <DashboardMap height="380px" mode="forecast" />
+      </div>
+
       {isAnalyst && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-1">

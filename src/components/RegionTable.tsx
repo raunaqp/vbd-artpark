@@ -14,7 +14,7 @@ export default function RegionTable() {
 
   const [page, setPage] = useState(1);
   // Reset to page 1 when filtered set changes.
-  useEffect(() => { setPage(1); }, [appliedFilters.state, appliedFilters.district, appliedFilters.block]);
+  useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
 
   const start = (page - 1) * PAGE_SIZE;
   const visible = sorted.slice(start, start + PAGE_SIZE);

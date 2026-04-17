@@ -438,21 +438,25 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
               }
             >
               <Tooltip sticky>
-                <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 2 }}>
-                    {r.name}{r.type ? ` (${r.type})` : ""}
+                {mode === "forecast" && pred ? (
+                  <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                      {r.name}{r.type ? ` (${r.type})` : ""}
+                    </div>
+                    <div>Outbreak Probability: <strong>{pred.probability}%</strong></div>
+                    <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                    <div style={{ opacity: 0.8 }}>Week: {tooltipDateRange}</div>
                   </div>
-                  <div>Risk: <strong>{(displayRisk || "unknown").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                  <div>
-                    Cases: <strong>
-                      {mode === "forecast" && pred ? `${pred.probability}% (forecast)` : `${r.confirmed} ${trendArrow[r.trend] || ""}`}
-                    </strong>
+                ) : (
+                  <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                      {r.name}{r.type ? ` (${r.type})` : ""}
+                    </div>
+                    <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                    <div>Cases: <strong>{r.confirmed} {trendArrow[r.trend] || ""}</strong></div>
+                    <div style={{ opacity: 0.8 }}>Date: {tooltipDateRange}</div>
                   </div>
-                  <div style={{ opacity: 0.8 }}>Date: {tooltipDateRange}</div>
-                  {mode === "forecast" && pred && (
-                    <div style={{ opacity: 0.7, marginTop: 2 }}>{pred.expectedWeek}</div>
-                  )}
-                </div>
+                )}
               </Tooltip>
             </CircleMarker>
           );

@@ -157,9 +157,9 @@ export function getSituationSummary(regions: RegionData[], diseaseName: string, 
 
   if (regions.length === 1) {
     const r = regions[0];
-    return `${r.name} has recorded ${kpi.confirmed} confirmed ${diseaseName} cases with ${kpi.deaths} death(s). Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
+    return `${r.name} has recorded ${kpi.confirmed} confirmed ${diseaseName} cases. Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
   }
-  return `${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel} with ${kpi.deaths} deaths. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W+2 to W+3.`;
+  return `${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel}. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W+2 to W+3.`;
 }
 
 // ── Outbreak Prediction Data (role-specific) ──
@@ -174,90 +174,90 @@ export interface OutbreakPrediction {
   areaType?: string;
 }
 
-// State-level (district predictions)
+// State-level (district predictions) — explainable, context-aware AP signals
 export const statePredictions: OutbreakPrediction[] = [
-  { area: "Guntur", probability: 78, risk: "high", expectedWeek: "W+3", signal: "Cases rising + TPR spike + Historical trend" },
-  { area: "Krishna", probability: 72, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Climate conditions favorable" },
-  { area: "Visakhapatnam", probability: 61, risk: "moderate", expectedWeek: "W+3", signal: "TPR spike + High humidity corridor" },
-  { area: "East Godavari", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + Post-rainfall breeding" },
-  { area: "West Godavari", probability: 48, risk: "moderate", expectedWeek: "W+4", signal: "Climate conditions + Moderate case load" },
-  { area: "S.P.S. Nellore", probability: 35, risk: "moderate", expectedWeek: "W+4", signal: "Seasonal pattern" },
-  { area: "Kurnool", probability: 30, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + Moderate humidity" },
-  { area: "Prakasam", probability: 18, risk: "low", expectedWeek: "W+4", signal: "Low case load + Declining trend" },
-  { area: "Srikakulam", probability: 12, risk: "low", expectedWeek: "W+4", signal: "Low baseline + No climate trigger" },
-  { area: "Anakapalli", probability: 15, risk: "low", expectedWeek: "W+4", signal: "Declining cases + Stable climate" },
+  { area: "Visakhapatnam", probability: 78, risk: "high", expectedWeek: "W+2", signal: "High risk due to urban clustering in dense Vizag wards (MVP Colony, Gajuwaka)" },
+  { area: "Guntur", probability: 70, risk: "high", expectedWeek: "W+3", signal: "Moderate–high risk due to irrigation-driven mosquito breeding along canal networks" },
+  { area: "Krishna", probability: 72, risk: "high", expectedWeek: "W+2", signal: "Urban clustering in Vijayawada wards + drainage-linked breeding" },
+  { area: "East Godavari", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Post-rainfall breeding in delta region + rising OPD trend" },
+  { area: "West Godavari", probability: 48, risk: "moderate", expectedWeek: "W+4", signal: "Climate conditions favourable + moderate baseline cases" },
+  { area: "Kurnool", probability: 42, risk: "moderate", expectedWeek: "W+3", signal: "Rising risk due to gradual rural spread in select blocks" },
+  { area: "S.P.S. Nellore", probability: 35, risk: "moderate", expectedWeek: "W+4", signal: "Seasonal pattern + early breeding-site reports" },
+  { area: "Prakasam", probability: 18, risk: "low", expectedWeek: "W+4", signal: "Low case load + declining trend" },
+  { area: "Srikakulam", probability: 12, risk: "low", expectedWeek: "W+4", signal: "Low baseline + no climate trigger" },
+  { area: "Anakapalli", probability: 15, risk: "low", expectedWeek: "W+4", signal: "Declining cases + stable climate" },
   { area: "Eluru", probability: 10, risk: "low", expectedWeek: "W+4", signal: "Low baseline" },
-  { area: "Vizianagaram", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Seasonal pattern" },
+  { area: "Vizianagaram", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Routine seasonal pattern" },
 ];
 
-// District-level (block/municipality predictions)
+// District-level (block/municipality predictions) — context-aware
 export const districtPredictions: OutbreakPrediction[] = [
-  // Guntur
-  { area: "Tenali", probability: 82, risk: "high", expectedWeek: "W+2", signal: "Cases rising + TPR spike", parentDistrict: "Guntur", areaType: "Block" },
-  { area: "Mangalagiri", probability: 70, risk: "high", expectedWeek: "W+3", signal: "Climate conditions + Hospital OPD spike", parentDistrict: "Guntur", areaType: "Municipality" },
-  { area: "Amaravathi", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + Stagnant water", parentDistrict: "Guntur", areaType: "Block" },
-  { area: "Pedakakani", probability: 28, risk: "low", expectedWeek: "W+4", signal: "Low baseline", parentDistrict: "Guntur", areaType: "Block" },
+  // Guntur — canal-irrigated, rural + semi-urban
+  { area: "Tenali", probability: 82, risk: "high", expectedWeek: "W+2", signal: "Cases rising near canal-fed villages; breeding sites confirmed in field surveys", parentDistrict: "Guntur", areaType: "Block" },
+  { area: "Mangalagiri", probability: 70, risk: "high", expectedWeek: "W+3", signal: "Semi-urban clustering + hospital OPD spike for fever cases", parentDistrict: "Guntur", areaType: "Municipality" },
+  { area: "Amaravathi", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Stagnant water near construction sites + canal-side breeding", parentDistrict: "Guntur", areaType: "Block" },
+  { area: "Pedakakani", probability: 28, risk: "low", expectedWeek: "W+4", signal: "Low baseline; routine surveillance sufficient", parentDistrict: "Guntur", areaType: "Block" },
   { area: "Guntur West", probability: 18, risk: "low", expectedWeek: "W+4", signal: "Declining cases", parentDistrict: "Guntur", areaType: "Block" },
-  // Visakhapatnam
-  { area: "Bheemunipatnam", probability: 85, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Post-rainfall breeding", parentDistrict: "Visakhapatnam", areaType: "Block" },
-  { area: "Vizag MC", probability: 75, risk: "high", expectedWeek: "W+3", signal: "Waterlogging + OPD spike", parentDistrict: "Visakhapatnam", areaType: "Municipality" },
-  { area: "Gajuwaka", probability: 60, risk: "moderate", expectedWeek: "W+3", signal: "TPR spike + Construction debris", parentDistrict: "Visakhapatnam", areaType: "Block" },
-  { area: "Pendurthi", probability: 32, risk: "moderate", expectedWeek: "W+4", signal: "Moderate humidity", parentDistrict: "Visakhapatnam", areaType: "Block" },
-  { area: "Anakapalle", probability: 15, risk: "low", expectedWeek: "W+4", signal: "Stable climate", parentDistrict: "Visakhapatnam", areaType: "Block" },
-  // Kurnool
-  { area: "Nandyal", probability: 80, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Historical trend", parentDistrict: "Kurnool", areaType: "Block" },
-  { area: "Adoni", probability: 65, risk: "moderate", expectedWeek: "W+3", signal: "TPR increase + Climate conditions", parentDistrict: "Kurnool", areaType: "Block" },
-  { area: "Kallur", probability: 58, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + Moderate case load", parentDistrict: "Kurnool", areaType: "Block" },
-  { area: "C.Belagal", probability: 20, risk: "low", expectedWeek: "W+4", signal: "Low baseline", parentDistrict: "Kurnool", areaType: "Block" },
-  // Krishna
-  { area: "Vijayawada MC", probability: 78, risk: "high", expectedWeek: "W+2", signal: "Hospital OPD spike + Waterlogging", parentDistrict: "Krishna", areaType: "Municipality" },
-  { area: "Machilipatnam", probability: 52, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend", parentDistrict: "Krishna", areaType: "Block" },
-  { area: "Gudivada", probability: 45, risk: "moderate", expectedWeek: "W+3", signal: "Cases rising", parentDistrict: "Krishna", areaType: "Block" },
+  // Visakhapatnam — urban + peri-urban, ward-level clustering
+  { area: "Vizag MC", probability: 85, risk: "high", expectedWeek: "W+2", signal: "Dense urban clustering across wards + waterlogging post-rain + OPD spike", parentDistrict: "Visakhapatnam", areaType: "Municipality" },
+  { area: "Bheemunipatnam", probability: 75, risk: "high", expectedWeek: "W+2", signal: "Peri-urban breeding sites + post-rainfall mosquito density rise", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  { area: "Gajuwaka", probability: 60, risk: "moderate", expectedWeek: "W+3", signal: "Construction debris + industrial-area stagnant water + TPR spike", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  { area: "Pendurthi", probability: 32, risk: "moderate", expectedWeek: "W+4", signal: "Moderate humidity + emerging cluster reports", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  { area: "Anakapalle", probability: 15, risk: "low", expectedWeek: "W+4", signal: "Stable climate + low baseline", parentDistrict: "Visakhapatnam", areaType: "Block" },
+  // Kurnool — mixed rural-urban, gradual rise
+  { area: "Nandyal", probability: 72, risk: "high", expectedWeek: "W+2", signal: "Rural blocks reporting gradual increase in fever cases + historical April pattern", parentDistrict: "Kurnool", areaType: "Block" },
+  { area: "Adoni", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "TPR increase + favourable climate for vector breeding", parentDistrict: "Kurnool", areaType: "Block" },
+  { area: "Kallur", probability: 48, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + moderate case load in PHC data", parentDistrict: "Kurnool", areaType: "Block" },
+  { area: "C.Belagal", probability: 20, risk: "low", expectedWeek: "W+4", signal: "Low baseline; routine PHC monitoring", parentDistrict: "Kurnool", areaType: "Block" },
+  // Krishna — urban Vijayawada + delta
+  { area: "Vijayawada MC", probability: 80, risk: "high", expectedWeek: "W+2", signal: "Urban ward-level spikes + drainage-linked breeding + hospital OPD surge", parentDistrict: "Krishna", areaType: "Municipality" },
+  { area: "Machilipatnam", probability: 52, risk: "moderate", expectedWeek: "W+3", signal: "Coastal humidity + historical pattern", parentDistrict: "Krishna", areaType: "Block" },
+  { area: "Gudivada", probability: 45, risk: "moderate", expectedWeek: "W+3", signal: "Cases rising in semi-urban pockets", parentDistrict: "Krishna", areaType: "Block" },
   { area: "Nuzvid", probability: 20, risk: "low", expectedWeek: "W+4", signal: "Low baseline", parentDistrict: "Krishna", areaType: "Block" },
 ];
 
-// Block-level (village predictions)
+// Block-level (village predictions) — explainable
 export const blockPredictions: OutbreakPrediction[] = [
-  // Tenali
-  { area: "Kollipara", probability: 88, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Breeding sites found", parentDistrict: "Guntur", parentBlock: "Tenali" },
-  { area: "Pedaravuru", probability: 66, risk: "moderate", expectedWeek: "W+3", signal: "TPR increase + Stagnant water", parentDistrict: "Guntur", parentBlock: "Tenali" },
-  { area: "Angalakuduru", probability: 52, risk: "moderate", expectedWeek: "W+4", signal: "Historical trend", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  // Tenali (Guntur) — canal villages
+  { area: "Kollipara", probability: 88, risk: "high", expectedWeek: "W+2", signal: "Canal-side breeding confirmed + cases rising in last 2 weeks", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { area: "Pedaravuru", probability: 66, risk: "moderate", expectedWeek: "W+3", signal: "Stagnant irrigation water + TPR increase at PHC", parentDistrict: "Guntur", parentBlock: "Tenali" },
+  { area: "Angalakuduru", probability: 52, risk: "moderate", expectedWeek: "W+4", signal: "Historical trend + moderate breeding index", parentDistrict: "Guntur", parentBlock: "Tenali" },
   { area: "Duggirala", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Declining cases", parentDistrict: "Guntur", parentBlock: "Tenali" },
-  // Bheemunipatnam
-  { area: "Thagarapuvalasa", probability: 90, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Post-rainfall + Breeding sites", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
-  { area: "Anandapuram", probability: 70, risk: "high", expectedWeek: "W+3", signal: "TPR spike + Community reports", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
-  { area: "Rushikonda", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + Climate conditions", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  // Bheemunipatnam (Vizag) — peri-urban
+  { area: "Thagarapuvalasa", probability: 90, risk: "high", expectedWeek: "W+2", signal: "Cases rising + peri-urban breeding sites + post-rainfall density", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { area: "Anandapuram", probability: 70, risk: "high", expectedWeek: "W+3", signal: "TPR spike + ASHA fever-cluster reports", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
+  { area: "Rushikonda", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Coastal humidity + tourism-area construction debris", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
   { area: "Kapuluppada", probability: 20, risk: "low", expectedWeek: "W+4", signal: "Low baseline", parentDistrict: "Visakhapatnam", parentBlock: "Bheemunipatnam" },
-  // Nandyal
-  { area: "Mahanandi", probability: 82, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Field reports", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
-  { area: "Banaganapalle", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
-  { area: "Koilkuntla", probability: 42, risk: "moderate", expectedWeek: "W+3", signal: "Moderate case load", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
-  // Amaravathi
-  { area: "Undavalli", probability: 58, risk: "moderate", expectedWeek: "W+3", signal: "Stagnant water + Construction", parentDistrict: "Guntur", parentBlock: "Amaravathi" },
-  { area: "Tadepalli", probability: 35, risk: "low", expectedWeek: "W+4", signal: "Stable climate", parentDistrict: "Guntur", parentBlock: "Amaravathi" },
+  // Nandyal (Kurnool) — rural rise
+  { area: "Mahanandi", probability: 78, risk: "high", expectedWeek: "W+2", signal: "Rural fever-case rise + ASHA field reports of breeding sites", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+  { area: "Banaganapalle", probability: 55, risk: "moderate", expectedWeek: "W+3", signal: "Historical April pattern + moderate climate trigger", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+  { area: "Koilkuntla", probability: 42, risk: "moderate", expectedWeek: "W+3", signal: "Moderate case load + seasonal pattern", parentDistrict: "Kurnool", parentBlock: "Nandyal" },
+  // Amaravathi (Guntur)
+  { area: "Undavalli", probability: 58, risk: "moderate", expectedWeek: "W+3", signal: "Construction-area stagnant water + canal-side breeding", parentDistrict: "Guntur", parentBlock: "Amaravathi" },
+  { area: "Tadepalli", probability: 35, risk: "low", expectedWeek: "W+4", signal: "Stable climate + routine surveillance", parentDistrict: "Guntur", parentBlock: "Amaravathi" },
   { area: "Penumaka", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Low baseline", parentDistrict: "Guntur", parentBlock: "Amaravathi" },
-  // Gajuwaka
-  { area: "Pedagantyada", probability: 62, risk: "moderate", expectedWeek: "W+3", signal: "TPR spike + Urban density", parentDistrict: "Visakhapatnam", parentBlock: "Gajuwaka" },
-  { area: "Nathayyapalem", probability: 48, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend", parentDistrict: "Visakhapatnam", parentBlock: "Gajuwaka" },
+  // Gajuwaka (Vizag)
+  { area: "Pedagantyada", probability: 62, risk: "moderate", expectedWeek: "W+3", signal: "Industrial-area density + construction debris + TPR spike", parentDistrict: "Visakhapatnam", parentBlock: "Gajuwaka" },
+  { area: "Nathayyapalem", probability: 48, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + moderate humidity", parentDistrict: "Visakhapatnam", parentBlock: "Gajuwaka" },
   { area: "Aganampudi", probability: 25, risk: "low", expectedWeek: "W+4", signal: "Declining cases", parentDistrict: "Visakhapatnam", parentBlock: "Gajuwaka" },
 ];
 
-// Municipality-level (ward predictions)
+// Municipality-level (ward predictions) — urban context
 export const municipalityPredictions: OutbreakPrediction[] = [
-  // Vizag MC
-  { area: "MVP Colony", probability: 92, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Waterlogging in ward", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
-  { area: "Gajuwaka", probability: 68, risk: "moderate", expectedWeek: "W+3", signal: "TPR spike + Construction sites", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
-  { area: "Dwaraka Nagar", probability: 50, risk: "moderate", expectedWeek: "W+4", signal: "Historical trend", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  // Vizag MC — dense urban wards
+  { area: "MVP Colony", probability: 92, risk: "high", expectedWeek: "W+2", signal: "Dense urban clustering + waterlogging in low-lying ward areas", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { area: "Gajuwaka", probability: 68, risk: "moderate", expectedWeek: "W+3", signal: "Industrial-area construction debris + TPR spike at urban PHC", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
+  { area: "Dwaraka Nagar", probability: 50, risk: "moderate", expectedWeek: "W+4", signal: "Commercial-zone density + historical trend", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
   { area: "Akkayyapalem", probability: 25, risk: "low", expectedWeek: "W+4", signal: "Low baseline", parentDistrict: "Visakhapatnam", parentBlock: "Vizag MC" },
-  // Vijayawada MC
-  { area: "Benz Circle", probability: 85, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Poor drainage", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
-  { area: "Governorpet", probability: 65, risk: "moderate", expectedWeek: "W+3", signal: "TPR increase + Market area breeding", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
-  { area: "Patamata", probability: 55, risk: "moderate", expectedWeek: "W+4", signal: "Historical trend + Moderate humidity", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  // Vijayawada MC — drainage-linked urban risk
+  { area: "Benz Circle", probability: 85, risk: "high", expectedWeek: "W+2", signal: "Urban clustering + poor drainage in commercial ward + OPD spike", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { area: "Governorpet", probability: 65, risk: "moderate", expectedWeek: "W+3", signal: "Market-area breeding + TPR increase", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
+  { area: "Patamata", probability: 55, risk: "moderate", expectedWeek: "W+4", signal: "Residential density + moderate humidity + historical trend", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
   { area: "Gunadala", probability: 18, risk: "low", expectedWeek: "W+4", signal: "Low baseline", parentDistrict: "Krishna", parentBlock: "Vijayawada MC" },
-  // Mangalagiri
-  { area: "Mangalagiri Ward 1", probability: 72, risk: "high", expectedWeek: "W+2", signal: "Cases rising + Stagnant water", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
-  { area: "Mangalagiri Ward 4", probability: 48, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
-  { area: "Mangalagiri Ward 8", probability: 38, risk: "moderate", expectedWeek: "W+3", signal: "Construction debris + Climate", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+  // Mangalagiri (Guntur)
+  { area: "Mangalagiri Ward 1", probability: 72, risk: "high", expectedWeek: "W+2", signal: "Stagnant water + dense semi-urban clustering", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+  { area: "Mangalagiri Ward 4", probability: 48, risk: "moderate", expectedWeek: "W+3", signal: "Historical trend + moderate case load", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
+  { area: "Mangalagiri Ward 8", probability: 38, risk: "moderate", expectedWeek: "W+3", signal: "Construction debris + climate conditions favourable", parentDistrict: "Guntur", parentBlock: "Mangalagiri" },
 ];
 
 // ── Get predictions based on role hierarchy ──
@@ -346,11 +346,10 @@ export function getFilteredHotspots(district: string, block?: string): HotspotDa
 }
 
 export const hotspotAlerts = [
-  { id: 1, district: "Krishna", message: "Unusual spike in confirmed cases — 28 new cases in W-1", severity: "high" as const },
-  { id: 2, district: "East Godavari", message: "TPR rising above 30% for 2 consecutive weeks", severity: "high" as const },
-  { id: 3, district: "Visakhapatnam", message: "New cluster detected in Pendurthi block", severity: "moderate" as const },
-  { id: 4, district: "Guntur", message: "Tenali block shows rapid case increase", severity: "high" as const },
-  { id: 5, district: "Kurnool", message: "Nandyal block emerging hotspot", severity: "moderate" as const },
+  { id: 1, district: "Visakhapatnam", message: "Clustering of fever cases reported in Visakhapatnam urban wards (MVP Colony, Gajuwaka)", severity: "high" as const },
+  { id: 2, district: "Guntur", message: "Increased mosquito breeding observed along canal networks in Guntur district", severity: "high" as const },
+  { id: 3, district: "Krishna", message: "Urban clustering reported in Vijayawada wards — drainage-linked breeding suspected", severity: "high" as const },
+  { id: 4, district: "Kurnool", message: "Rural blocks in Kurnool reporting gradual increase in fever cases", severity: "moderate" as const },
 ];
 
 // ── Risk forecast (W+1 to W+4) with date ranges ──
@@ -497,20 +496,20 @@ export const actionsByScope: Record<string, { district: string[]; block: string[
 
 // ── Signals / Field Intelligence ──
 export const newsAlerts = [
-  { id: 1, headline: "Dengue cases rise sharply in Vijayawada hospitals", source: "The Hindu", date: "2026-04-10", district: "Krishna", severity: "high" as const },
-  { id: 2, headline: "Water-logging after rains creates breeding grounds in Vizag", source: "Deccan Chronicle", date: "2026-04-08", district: "Visakhapatnam", severity: "high" as const },
-  { id: 3, headline: "Health dept ramps up fumigation drives in East Godavari", source: "Eenadu", date: "2026-04-07", district: "East Godavari", severity: "moderate" as const },
-  { id: 4, headline: "Guntur hospitals report increasing OPD for fever cases", source: "Andhra Jyothy", date: "2026-04-06", district: "Guntur", severity: "moderate" as const },
-  { id: 5, headline: "Community health workers report poor sanitation in Kurnool villages", source: "Field Report", date: "2026-04-05", district: "Kurnool", severity: "low" as const },
+  { id: 1, headline: "Clustering of fever cases reported in Visakhapatnam urban wards", source: "The Hindu", date: "2026-04-10", district: "Visakhapatnam", severity: "high" as const },
+  { id: 2, headline: "Increased mosquito breeding observed along canal networks in Guntur district", source: "Eenadu", date: "2026-04-09", district: "Guntur", severity: "high" as const },
+  { id: 3, headline: "Urban clustering and drainage issues drive case rise in Vijayawada wards", source: "Deccan Chronicle", date: "2026-04-08", district: "Krishna", severity: "high" as const },
+  { id: 4, headline: "Rural blocks in Kurnool reporting gradual increase in fever cases", source: "Andhra Jyothy", date: "2026-04-07", district: "Kurnool", severity: "moderate" as const },
+  { id: 5, headline: "Post-rainfall breeding sites flagged in East Godavari delta", source: "Field Report", date: "2026-04-06", district: "East Godavari", severity: "moderate" as const },
   { id: 6, headline: "Construction debris piling up in Nellore outskirts — potential breeding sites", source: "Local Report", date: "2026-04-04", district: "S.P.S. Nellore", severity: "moderate" as const },
 ];
 
 export const geoTaggedAlerts = [
-  { id: 1, lat: 16.52, lng: 80.63, message: "Hospital OPD spike — 40+ fever cases in 2 days", district: "Krishna", severity: "high" as const },
-  { id: 2, lat: 17.72, lng: 83.30, message: "Waterlogging reported in 3 wards post-rain", district: "Visakhapatnam", severity: "high" as const },
-  { id: 3, lat: 17.0, lng: 81.78, message: "Fumigation drive underway — 8 wards covered", district: "East Godavari", severity: "moderate" as const },
-  { id: 4, lat: 16.30, lng: 80.44, message: "Fever screening camp set up at Guntur bus station", district: "Guntur", severity: "moderate" as const },
-  { id: 5, lat: 15.83, lng: 78.04, message: "ASHA reports increased fever in 2 villages", district: "Kurnool", severity: "low" as const },
+  { id: 1, lat: 17.74, lng: 83.32, message: "Urban ward clustering — MVP Colony fever cluster reported", district: "Visakhapatnam", severity: "high" as const },
+  { id: 2, lat: 16.24, lng: 80.64, message: "Canal-side breeding sites confirmed in Tenali villages", district: "Guntur", severity: "high" as const },
+  { id: 3, lat: 16.53, lng: 80.67, message: "Drainage-linked breeding + OPD spike near Benz Circle", district: "Krishna", severity: "high" as const },
+  { id: 4, lat: 15.48, lng: 78.48, message: "ASHA reports gradual fever rise in Nandyal rural pockets", district: "Kurnool", severity: "moderate" as const },
+  { id: 5, lat: 17.0, lng: 81.78, message: "Post-rainfall breeding flagged in delta region", district: "East Godavari", severity: "moderate" as const },
 ];
 
 // ── Upload formats ──

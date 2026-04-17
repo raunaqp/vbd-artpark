@@ -155,8 +155,34 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     const norm = normalize(raw);
     if (DISTRICT_ALIASES[norm]) return DISTRICT_ALIASES[norm];
     if (districtRiskByName.has(norm)) return districtRiskByName.get(norm)!.name;
-    return raw; // fallback to raw geo name (unmatched will get neutral fill)
+    return raw;
   };
+
+  // Compute bounds of selected district polygon (for fitBounds zoom)
+  const selectionBounds = useMemo<LatLngBounds | null>(() => {
+    if (!geoData || isStateLevel) return null;
+    const target = isBlockLevel ? appliedFilters.district : appliedFilters.district;
+    const feature = geoData.features.find((f) => featureToMockName(f) === target);
+    if (!feature) return null;
+    try {
+      const layer = L.geoJSON(feature as any);
+      const b = layer.getBounds();
+      return b.isValid() ? b : null;
+    } catch { return null; }
+  }, [geoData, isStateLevel, isBlockLevel, appliedFilters.district, appliedFilters.block]);
+
+  // Date range label for tooltip (e.g. "17 Jan - 17 Apr 2026")
+  const fmtShort = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  };
+  const fmtFull = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+  const tooltipDateRange = mode === "forecast"
+    ? `${fmtShort(dateWindow.forecastStartDate)} - ${fmtFull(dateWindow.forecastEndDate)}`
+    : `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
 
   // ─── Polygon style + behavior ───
   const styleFeature = (feature?: Feature): PathOptions => {
@@ -169,7 +195,7 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     const isSelected = name === appliedFilters.district;
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
-      fillOpacity: isSelected ? 0.75 : risk ? 0.55 : 0.18,
+      fillOpacity: isSelected ? 0.75 : risk ? 0.55 : 0.3,
       color: isSelected ? "#0f172a" : "#475569",
       weight: isSelected ? 3 : 1,
       opacity: 1,
@@ -182,31 +208,25 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     const region = districtRiskByName.get(norm);
     const pred = name ? predByArea.get(name) : undefined;
     const risk = mode === "forecast" && pred ? pred.risk : region?.risk;
-    const dateRange = mode === "forecast"
-      ? `${dateWindow.forecastStartDate} → ${dateWindow.forecastEndDate}`
-      : `${dateWindow.fromDate} → ${dateWindow.toDate}`;
+    const cases = mode === "forecast" && pred ? `${pred.probability}% (forecast)` : region ? `${region.confirmed}` : "—";
+    const riskLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "Unknown";
 
     const tooltip = `
-      <div style="font-size:11px;line-height:1.4">
-        <strong>${name || getFeatureDistrictName(feature)}</strong><br/>
-        ${risk ? `Risk: <strong style="text-transform:capitalize">${risk}</strong>` : `<em>No data for this district</em>`}
-        ${region ? `<br/>Cases (window): ${region.confirmed} ${trendArrow[region.trend] || ""}` : ""}
-        ${mode === "forecast" && pred ? `<br/>Probability: ${pred.probability}%<br/>Window: ${pred.expectedWeek}` : `<br/>${dateRange}`}
-        ${region && isStateLevel && !isLocked("district") ? `<br/><em style="opacity:0.7">Click to drill down</em>` : ""}
+      <div style="font-size:12px;line-height:1.45;min-width:140px">
+        <div style="font-weight:700;margin-bottom:2px">${name || getFeatureDistrictName(feature)}</div>
+        <div>Risk: <strong>${riskLabel}</strong></div>
+        <div>Cases: <strong>${cases}</strong></div>
+        <div style="opacity:0.8">Date: ${tooltipDateRange}</div>
+        ${isStateLevel && !isLocked("district") ? `<div style="opacity:0.6;margin-top:3px;font-style:italic">Click to drill down</div>` : ""}
       </div>`;
     layer.bindTooltip(tooltip, { sticky: true });
 
     layer.on({
-      mouseover: (e) => {
-        (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.8 });
-      },
-      mouseout: (e) => {
-        (e.target as any).setStyle(styleFeature(feature));
-      },
+      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.8 }); },
+      mouseout: (e) => { (e.target as any).setStyle(styleFeature(feature)); },
       click: () => {
-        if (!region) return;
-        if (isStateLevel && !isLocked("district")) {
-          drillDown(region.name, "district");
+        if (isStateLevel && !isLocked("district") && name) {
+          drillDown(name, "district");
         }
       },
     });

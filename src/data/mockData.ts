@@ -1417,8 +1417,13 @@ function transformRegion(bundle: StateBundle, profile: TemporalProfile, filters:
   const previousStart = addDays(previousEnd, -(durationDays - 1));
   const bias = seededBetween(`${bundle.id}:${item.name}:region`, 0.92, 1.12) * (item.trend === "up" ? 1.08 : item.trend === "down" ? 0.93 : 1) * (item.risk === "high" ? 1.06 : item.risk === "low" ? 0.94 : 1);
 
+  // Per-region asymmetry between current vs previous so trend varies across districts
+  // (without it, every district shares the same currentScalar/previousScalar ratio).
+  const trendBias = item.trend === "up" ? 1.18 : item.trend === "down" ? 0.82 : 1.0;
+  const prevPerturb = seededBetween(`${bundle.id}:${item.name}:region:prev`, 0.85, 1.15);
+
   const currentScalar = getRangeScalar(profile, window.from, window.to) * bias * share;
-  const previousScalar = getRangeScalar(profile, previousStart, previousEnd) * bias * share;
+  const previousScalar = getRangeScalar(profile, previousStart, previousEnd) * bias * share * prevPerturb / trendBias;
 
   const suspected = Math.max(0, Math.round(item.suspected * currentScalar));
   const tested = Math.max(0, Math.round(item.tested * currentScalar));

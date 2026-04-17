@@ -157,9 +157,9 @@ export function getSituationSummary(regions: RegionData[], diseaseName: string, 
 
   if (regions.length === 1) {
     const r = regions[0];
-    return `${r.name} has recorded ${kpi.confirmed} confirmed ${diseaseName} cases with ${kpi.deaths} death(s). Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
+    return `${r.name} has recorded ${kpi.confirmed} confirmed ${diseaseName} cases. Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
   }
-  return `${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel} with ${kpi.deaths} deaths. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W+2 to W+3.`;
+  return `${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel}. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W+2 to W+3.`;
 }
 
 // ── Outbreak Prediction Data (role-specific) ──

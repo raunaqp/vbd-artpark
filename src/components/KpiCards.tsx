@@ -1,4 +1,4 @@
-import { FileText, TestTube, CheckCircle, AlertTriangle } from "lucide-react";
+import { FileText, TestTube, CheckCircle, TrendingUp } from "lucide-react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { getFilteredRegions, getKpiFromRegions, applyDiseaseMultiplier } from "@/data/mockData";
@@ -9,12 +9,13 @@ export default function KpiCards() {
   const rawRegions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
   const kpi = getKpiFromRegions(regions);
+  const highRiskAreas = regions.filter((r) => r.risk === "high").length;
 
   const cards = [
     { label: "Suspected", value: kpi.suspected, sub: `${diseaseName} suspected in period`, className: "kpi-card-suspected", icon: FileText, color: "text-kpi-suspected" },
     { label: "Tested", value: kpi.tested, sub: "Samples / persons tested", className: "kpi-card-tested", icon: TestTube, color: "text-kpi-tested" },
     { label: "Confirmed", value: kpi.confirmed, sub: `Lab confirmed ${diseaseName.toLowerCase()}`, className: "kpi-card-confirmed", icon: CheckCircle, color: "text-kpi-confirmed" },
-    { label: "Deaths", value: kpi.deaths, sub: "In selected period", className: "kpi-card-deaths", icon: AlertTriangle, color: "text-kpi-deaths" },
+    { label: "High Risk Areas", value: highRiskAreas, sub: "Areas needing immediate action", className: "kpi-card-deaths", icon: TrendingUp, color: "text-kpi-deaths" },
   ];
 
   return (

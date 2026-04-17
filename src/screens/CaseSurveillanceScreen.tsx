@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
-import { weeklyTimeSeries, dailyTimeSeries, monthlyTimeSeries, ageDistribution, genderDistribution, lineListingData } from "@/data/mockData";
+import { weeklyTimeSeries, dailyTimeSeries, monthlyTimeSeries, lineListingData } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { Download } from "lucide-react";
 
 type TimeRange = "daily" | "weekly" | "monthly";
-const GENDER_COLORS = ["hsl(215, 60%, 40%)", "hsl(25, 90%, 50%)"];
 
 export default function CaseSurveillanceScreen() {
   const [timeRange, setTimeRange] = useState<TimeRange>("weekly");
@@ -54,32 +53,6 @@ export default function CaseSurveillanceScreen() {
             <Line yAxisId="right" type="monotone" dataKey="tpr" stroke="hsl(142, 50%, 45%)" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="section-card p-5">
-          <h3 className="section-title mb-4">Age Distribution</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={ageDistribution}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
-              <XAxis dataKey="group" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Bar dataKey="count" fill="hsl(215, 60%, 40%)" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="section-card p-5">
-          <h3 className="section-title mb-4">Gender Distribution</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={genderDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}%`}>
-                {genderDistribution.map((_, i) => <Cell key={i} fill={GENDER_COLORS[i]} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
       </div>
 
       <div className="mb-6">

@@ -1044,66 +1044,34 @@ export function getFilteredHotspots(district: string, block?: string): HotspotDa
   return s.hotspotDistrictData;
 }
 
-// ──────────────── Shared (state-agnostic) ────────────────
-export const riskForecast = [
-  { week: "W+1", risk: "moderate" as const, cases: 45, label: "8–14 Apr 2026" },
-  { week: "W+2", risk: "high" as const, cases: 68, label: "15–21 Apr 2026" },
-  { week: "W+3", risk: "high" as const, cases: 92, label: "22–28 Apr 2026" },
-  { week: "W+4", risk: "moderate" as const, cases: 71, label: "29 Apr–5 May" },
+// ──────────────── State-aware getters (preferred for components that re-render on state change) ────────────────
+export const getRiskForecast = (): RiskForecastPoint[] => S().riskForecast;
+export const getWeeklyTimeSeries = (): TimeSeriesPoint[] => S().weeklyTimeSeries;
+export const getDailyTimeSeries = (): TimeSeriesPoint[] => S().dailyTimeSeries;
+export const getMonthlyTimeSeries = (): TimeSeriesPoint[] => S().monthlyTimeSeries;
+export const getForecastData = (): ForecastChartPoint[] => S().forecastData;
+export const getWeatherObserved = (): WeatherPoint[] => S().weatherObserved;
+export const getWeatherForecast = (): WeatherPoint[] => S().weatherForecast;
+export const getDataQualityIssues = (): DataIssue[] => S().dataQualityIssues;
+
+// Backwards-compatible live proxies (read from active state on every access)
+export const riskForecast = liveArrayProxy(() => S().riskForecast);
+export const weeklyTimeSeries = liveArrayProxy(() => S().weeklyTimeSeries);
+export const dailyTimeSeries = liveArrayProxy(() => S().dailyTimeSeries);
+export const monthlyTimeSeries = liveArrayProxy(() => S().monthlyTimeSeries);
+export const forecastData = liveArrayProxy(() => S().forecastData);
+export const weatherObserved = liveArrayProxy(() => S().weatherObserved);
+export const weatherForecast = liveArrayProxy(() => S().weatherForecast);
+export const dataQualityIssues = liveArrayProxy(() => S().dataQualityIssues);
+
+// Combined weather (observed + forecast) — derived from active state
+export const getWeatherData = () => [
+  ...S().weatherObserved.map((w) => ({ ...w, type: "observed" as const })),
+  ...S().weatherForecast.map((w) => ({ ...w, type: "forecast" as const })),
 ];
+export const weatherData = liveArrayProxy(() => getWeatherData());
 
-export const weeklyTimeSeries = [
-  { week: "W-9", date: "3–9 Feb", positive: 8, samples: 45, tpr: 17.8 },
-  { week: "W-8", date: "10–16 Feb", positive: 12, samples: 52, tpr: 23.1 },
-  { week: "W-7", date: "17–23 Feb", positive: 10, samples: 48, tpr: 20.8 },
-  { week: "W-6", date: "24 Feb–2 Mar", positive: 15, samples: 60, tpr: 25.0 },
-  { week: "W-5", date: "3–9 Mar", positive: 18, samples: 65, tpr: 27.7 },
-  { week: "W-4", date: "10–16 Mar", positive: 14, samples: 58, tpr: 24.1 },
-  { week: "W-3", date: "17–23 Mar", positive: 20, samples: 72, tpr: 27.8 },
-  { week: "W-2", date: "24–30 Mar", positive: 16, samples: 62, tpr: 25.8 },
-  { week: "W-1", date: "31 Mar–6 Apr", positive: 22, samples: 78, tpr: 28.2 },
-  { week: "W0", date: "7–13 Apr", positive: 19, samples: 70, tpr: 27.1 },
-];
-
-export const dailyTimeSeries = Array.from({ length: 30 }, (_, i) => ({
-  day: i + 1, date: `Mar ${i + 1}`,
-  positive: Math.floor(Math.random() * 8) + 1,
-  samples: Math.floor(Math.random() * 15) + 5,
-  tpr: Math.round((Math.random() * 30 + 10) * 10) / 10,
-}));
-
-export const monthlyTimeSeries = [
-  { month: "Nov", positive: 45, samples: 180, tpr: 25.0 },
-  { month: "Dec", positive: 38, samples: 160, tpr: 23.8 },
-  { month: "Jan", positive: 52, samples: 210, tpr: 24.8 },
-  { month: "Feb", positive: 65, samples: 270, tpr: 24.1 },
-  { month: "Mar", positive: 90, samples: 350, tpr: 25.7 },
-];
-
-export const forecastData = [
-  { week: "W-11", actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-10", actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-9", actual: 2, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-8", actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-7", actual: 5, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-6", actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-5", actual: 6, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-4", actual: 5, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-3", actual: 7, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-2", actual: 8, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-1", actual: 6, predicted: 6, lower: 4, upper: 8, type: "Historical" },
-  { week: "W+1", actual: null, predicted: 7, lower: 4, upper: 10, type: "Forecast" },
-  { week: "W+2", actual: null, predicted: 9, lower: 5, upper: 13, type: "Forecast" },
-  { week: "W+3", actual: null, predicted: 11, lower: 6, upper: 16, type: "Forecast" },
-  { week: "W+4", actual: null, predicted: 10, lower: 5, upper: 15, type: "Forecast" },
-];
-
-export const dataQualityIssues = [
-  { type: "missing_reports", message: "3 blocks have not reported in last 7 days", severity: "high" as const },
-  { type: "missing_lab", message: "1 district missing lab confirmation data", severity: "moderate" as const },
-  { type: "delayed", message: "Some districts have delayed data (>3 days)", severity: "moderate" as const },
-];
-
+// ──────────────── Static (truly state-agnostic) ────────────────
 export const uploadFormats = [
   { id: "nvbdcp_linelist", name: "NVBDCP Line List", description: "Standard NVBDCP line listing format with patient details, test type, and results", columns: ["SL. NO", "SS Name", "Date of Testing", "Name of Patient", "Sex", "Age", "Address", "Mobile No", "District", "CHC", "SC", "Village", "Travel History", "Urban/Rural", "Referred By", "Test Type (IgM/NS1)", "Positive (Y/N)"] },
   { id: "nvbdcp_daily", name: "NVBDCP Daily Report", description: "Proforma for daily reporting of cases by sentinel site", columns: ["Sl No", "Sentinel Site", "NS1 Tested", "IgM Tested", "Total Tested", "NS1 Positive", "IgM Positive", "Total Positive", "Urban", "Rural", "Others"] },
@@ -1112,29 +1080,3 @@ export const uploadFormats = [
   { id: "survey_data", name: "Survey Data", description: "Field survey and entomological data", columns: ["Date", "District", "Block", "Ward/Village", "Houses Surveyed", "Containers Found", "Containers Positive", "Breeding Index", "Surveyor Name"] },
 ];
 
-export const weatherObserved = [
-  { week: "W-8", endDate: "10–16 Feb 2026", rainfall: 0.0, temp: 24.5, maxT: 32.0, minT: 17.0, humidity: 28.0 },
-  { week: "W-7", endDate: "17–23 Feb 2026", rainfall: 0.5, temp: 25.8, maxT: 33.5, minT: 18.5, humidity: 30.0 },
-  { week: "W-6", endDate: "24 Feb–2 Mar 2026", rainfall: 1.2, temp: 27.0, maxT: 35.0, minT: 19.5, humidity: 33.0 },
-  { week: "W-5", endDate: "3–9 Mar 2026", rainfall: 0.8, temp: 27.8, maxT: 36.2, minT: 20.0, humidity: 35.5 },
-  { week: "W-4", endDate: "10–16 Mar 2026", rainfall: 0.0, temp: 28.8, maxT: 37.0, minT: 20.8, humidity: 20.9 },
-  { week: "W-3", endDate: "17–23 Mar 2026", rainfall: 3.4, temp: 25.7, maxT: 34.8, minT: 16.9, humidity: 39.7 },
-  { week: "W-2", endDate: "24–31 Mar 2026", rainfall: 3.3, temp: 29.9, maxT: 37.0, minT: 21.8, humidity: 32.1 },
-  { week: "W-1", endDate: "1–7 Apr 2026", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
-];
-
-export const weatherForecast = [
-  { week: "W+1", endDate: "8–14 Apr 2026", rainfall: 5.2, temp: 30.1, maxT: 37.5, minT: 22.0, humidity: 45.0 },
-  { week: "W+2", endDate: "15–21 Apr 2026", rainfall: 12.4, temp: 31.2, maxT: 38.0, minT: 23.5, humidity: 52.0 },
-  { week: "W+3", endDate: "22–28 Apr 2026", rainfall: 18.6, temp: 32.0, maxT: 38.5, minT: 24.0, humidity: 58.0 },
-  { week: "W+4", endDate: "29 Apr–5 May 2026", rainfall: 25.0, temp: 31.5, maxT: 37.8, minT: 24.2, humidity: 62.0 },
-  { week: "W+5", endDate: "6–12 May 2026", rainfall: 35.0, temp: 30.8, maxT: 37.0, minT: 24.5, humidity: 68.0 },
-  { week: "W+6", endDate: "13–19 May 2026", rainfall: 42.0, temp: 30.2, maxT: 36.5, minT: 24.0, humidity: 72.0 },
-  { week: "W+7", endDate: "20–26 May 2026", rainfall: 55.0, temp: 29.5, maxT: 35.8, minT: 23.8, humidity: 75.0 },
-  { week: "W+8", endDate: "27 May–2 Jun 2026", rainfall: 65.0, temp: 28.8, maxT: 34.5, minT: 23.5, humidity: 78.0 },
-];
-
-export const weatherData = [
-  ...weatherObserved.map((w) => ({ ...w, type: "observed" as const })),
-  ...weatherForecast.map((w) => ({ ...w, type: "forecast" as const })),
-];

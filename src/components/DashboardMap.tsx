@@ -332,21 +332,20 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
                   : {}
               }
             >
-              <Tooltip>
-                <div className="text-xs">
-                  <strong>{r.name}</strong>
-                  {r.type && <span className="capitalize"> ({r.type})</span>}
-                  <br />
-                  {mode === "forecast" && pred ? (
-                    <>
-                      Forecast risk: <strong>{pred.risk}</strong><br />
-                      Probability: {pred.probability}% · {pred.expectedWeek}
-                    </>
-                  ) : (
-                    <>
-                      Cases: {r.confirmed} {trendArrow[r.trend] || ""}<br />
-                      Risk: {r.risk}
-                    </>
+              <Tooltip sticky>
+                <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                    {r.name}{r.type ? ` (${r.type})` : ""}
+                  </div>
+                  <div>Risk: <strong>{(displayRisk || "unknown").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                  <div>
+                    Cases: <strong>
+                      {mode === "forecast" && pred ? `${pred.probability}% (forecast)` : `${r.confirmed} ${trendArrow[r.trend] || ""}`}
+                    </strong>
+                  </div>
+                  <div style={{ opacity: 0.8 }}>Date: {tooltipDateRange}</div>
+                  {mode === "forecast" && pred && (
+                    <div style={{ opacity: 0.7, marginTop: 2 }}>{pred.expectedWeek}</div>
                   )}
                 </div>
               </Tooltip>

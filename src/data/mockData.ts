@@ -1293,6 +1293,15 @@ export function getDistrictRiskFallback(
 }
 
 /**
+ * True when the active state is configured to color every district polygon
+ * (synthesizing risk for boundary-only districts). False → boundary-only
+ * districts must render grey ("Data not available").
+ */
+export function stateCoversAllDistricts(): boolean {
+  return S().coversAllDistricts !== false;
+}
+
+/**
  * Resolve a district's hotspot-derived risk for the current date window.
  * Used by the hotspot map so map color ↔ hotspot table always agree.
  */

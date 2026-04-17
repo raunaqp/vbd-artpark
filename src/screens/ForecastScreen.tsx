@@ -1,9 +1,10 @@
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
 import { AlertTriangle } from "lucide-react";
-import { forecastData, riskForecast, getOutbreakPredictions } from "@/data/mockData";
+import { getForecastData, getRiskForecast, getOutbreakPredictions } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
+import { useStateSelection } from "@/contexts/StateContext";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 
@@ -11,7 +12,11 @@ export default function ForecastScreen() {
   const { isAnalyst } = useRole();
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
+  const { stateId } = useStateSelection();
+  void stateId;
 
+  const riskForecast = getRiskForecast();
+  const forecastData = getForecastData();
   const predictions = getOutbreakPredictions(appliedFilters.district, appliedFilters.block);
 
   const areaLabel = appliedFilters.block !== "All Blocks"

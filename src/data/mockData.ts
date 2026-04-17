@@ -41,6 +41,12 @@ export interface NewsAlert { id: number; headline: string; source: string; date:
 export interface GeoAlert { id: number; lat: number; lng: number; message: string; district: string; severity: "high" | "moderate" | "low"; }
 export interface LineListing { patient: string; gender: string; age: number; subDistrict: string; block: string; village: string; district: string; diagnosis: string; testType: string; testResult: string; dateOfTesting: string; urbanRural: string; referredBy: string; }
 
+export interface TimeSeriesPoint { week?: string; date?: string; month?: string; positive: number; samples: number; tpr: number; }
+export interface RiskForecastPoint { week: string; risk: "high" | "moderate" | "low"; cases: number; label: string; }
+export interface ForecastChartPoint { week: string; actual: number | null; predicted: number | null; lower: number | null; upper: number | null; type: string; }
+export interface WeatherPoint { week: string; endDate: string; rainfall: number; temp: number; maxT: number; minT: number; humidity: number; }
+export interface DataIssue { type: string; message: string; severity: "high" | "moderate" | "low"; }
+
 export interface StateBundle {
   id: StateId;
   label: string;
@@ -64,6 +70,15 @@ export interface StateBundle {
   districtCoordinates: Record<string, [number, number]>;
   mapCenter: [number, number];
   mapZoom: number;
+  // Time-series & forecast (state-specific)
+  riskForecast: RiskForecastPoint[];
+  weeklyTimeSeries: TimeSeriesPoint[];
+  dailyTimeSeries: TimeSeriesPoint[];
+  monthlyTimeSeries: TimeSeriesPoint[];
+  forecastData: ForecastChartPoint[];
+  weatherObserved: WeatherPoint[];
+  weatherForecast: WeatherPoint[];
+  dataQualityIssues: DataIssue[];
 }
 
 // ──────────────── ANDHRA PRADESH ────────────────
@@ -292,6 +307,74 @@ const AP: StateBundle = {
     "Benz Circle": [16.53, 80.67], "Governorpet": [16.50, 80.63], "Patamata": [16.49, 80.61], "Gunadala": [16.52, 80.65],
     "Mangalagiri Ward 1": [16.44, 80.59], "Mangalagiri Ward 4": [16.42, 80.55], "Mangalagiri Ward 8": [16.45, 80.57],
   },
+  riskForecast: [
+    { week: "W+1", risk: "moderate", cases: 45, label: "8–14 Apr 2026" },
+    { week: "W+2", risk: "high", cases: 68, label: "15–21 Apr 2026" },
+    { week: "W+3", risk: "high", cases: 92, label: "22–28 Apr 2026" },
+    { week: "W+4", risk: "moderate", cases: 71, label: "29 Apr–5 May" },
+  ],
+  weeklyTimeSeries: [
+    { week: "W-9", date: "3–9 Feb", positive: 8, samples: 45, tpr: 17.8 },
+    { week: "W-8", date: "10–16 Feb", positive: 12, samples: 52, tpr: 23.1 },
+    { week: "W-7", date: "17–23 Feb", positive: 10, samples: 48, tpr: 20.8 },
+    { week: "W-6", date: "24 Feb–2 Mar", positive: 15, samples: 60, tpr: 25.0 },
+    { week: "W-5", date: "3–9 Mar", positive: 18, samples: 65, tpr: 27.7 },
+    { week: "W-4", date: "10–16 Mar", positive: 14, samples: 58, tpr: 24.1 },
+    { week: "W-3", date: "17–23 Mar", positive: 20, samples: 72, tpr: 27.8 },
+    { week: "W-2", date: "24–30 Mar", positive: 16, samples: 62, tpr: 25.8 },
+    { week: "W-1", date: "31 Mar–6 Apr", positive: 22, samples: 78, tpr: 28.2 },
+    { week: "W0", date: "7–13 Apr", positive: 19, samples: 70, tpr: 27.1 },
+  ],
+  dailyTimeSeries: Array.from({ length: 30 }, (_, i) => ({ date: `Mar ${i + 1}`, positive: [2,3,2,4,3,5,4,3,5,6,4,5,7,6,5,4,6,7,8,6,5,7,8,9,7,6,8,9,10,8][i], samples: 12 + (i % 5) * 3, tpr: Math.round((15 + (i % 7) * 2.5) * 10) / 10 })),
+  monthlyTimeSeries: [
+    { month: "Nov", positive: 45, samples: 180, tpr: 25.0 },
+    { month: "Dec", positive: 38, samples: 160, tpr: 23.8 },
+    { month: "Jan", positive: 52, samples: 210, tpr: 24.8 },
+    { month: "Feb", positive: 65, samples: 270, tpr: 24.1 },
+    { month: "Mar", positive: 90, samples: 350, tpr: 25.7 },
+  ],
+  forecastData: [
+    { week: "W-11", actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-10", actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-9", actual: 2, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-8", actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-7", actual: 5, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-6", actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-5", actual: 6, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-4", actual: 5, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-3", actual: 7, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-2", actual: 8, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-1", actual: 6, predicted: 6, lower: 4, upper: 8, type: "Historical" },
+    { week: "W+1", actual: null, predicted: 7, lower: 4, upper: 10, type: "Forecast" },
+    { week: "W+2", actual: null, predicted: 9, lower: 5, upper: 13, type: "Forecast" },
+    { week: "W+3", actual: null, predicted: 11, lower: 6, upper: 16, type: "Forecast" },
+    { week: "W+4", actual: null, predicted: 10, lower: 5, upper: 15, type: "Forecast" },
+  ],
+  weatherObserved: [
+    { week: "W-8", endDate: "10–16 Feb 2026", rainfall: 0.0, temp: 24.5, maxT: 32.0, minT: 17.0, humidity: 28.0 },
+    { week: "W-7", endDate: "17–23 Feb 2026", rainfall: 0.5, temp: 25.8, maxT: 33.5, minT: 18.5, humidity: 30.0 },
+    { week: "W-6", endDate: "24 Feb–2 Mar 2026", rainfall: 1.2, temp: 27.0, maxT: 35.0, minT: 19.5, humidity: 33.0 },
+    { week: "W-5", endDate: "3–9 Mar 2026", rainfall: 0.8, temp: 27.8, maxT: 36.2, minT: 20.0, humidity: 35.5 },
+    { week: "W-4", endDate: "10–16 Mar 2026", rainfall: 0.0, temp: 28.8, maxT: 37.0, minT: 20.8, humidity: 20.9 },
+    { week: "W-3", endDate: "17–23 Mar 2026", rainfall: 3.4, temp: 25.7, maxT: 34.8, minT: 16.9, humidity: 39.7 },
+    { week: "W-2", endDate: "24–31 Mar 2026", rainfall: 3.3, temp: 29.9, maxT: 37.0, minT: 21.8, humidity: 32.1 },
+    { week: "W-1", endDate: "1–7 Apr 2026", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
+  ],
+  weatherForecast: [
+    { week: "W+1", endDate: "8–14 Apr 2026", rainfall: 5.2, temp: 30.1, maxT: 37.5, minT: 22.0, humidity: 45.0 },
+    { week: "W+2", endDate: "15–21 Apr 2026", rainfall: 12.4, temp: 31.2, maxT: 38.0, minT: 23.5, humidity: 52.0 },
+    { week: "W+3", endDate: "22–28 Apr 2026", rainfall: 18.6, temp: 32.0, maxT: 38.5, minT: 24.0, humidity: 58.0 },
+    { week: "W+4", endDate: "29 Apr–5 May 2026", rainfall: 25.0, temp: 31.5, maxT: 37.8, minT: 24.2, humidity: 62.0 },
+    { week: "W+5", endDate: "6–12 May 2026", rainfall: 35.0, temp: 30.8, maxT: 37.0, minT: 24.5, humidity: 68.0 },
+    { week: "W+6", endDate: "13–19 May 2026", rainfall: 42.0, temp: 30.2, maxT: 36.5, minT: 24.0, humidity: 72.0 },
+    { week: "W+7", endDate: "20–26 May 2026", rainfall: 55.0, temp: 29.5, maxT: 35.8, minT: 23.8, humidity: 75.0 },
+    { week: "W+8", endDate: "27 May–2 Jun 2026", rainfall: 65.0, temp: 28.8, maxT: 34.5, minT: 23.5, humidity: 78.0 },
+  ],
+  dataQualityIssues: [
+    { type: "missing_reports", message: "Kallur and C.Belagal blocks (Kurnool) — no reports in last 7 days", severity: "high" },
+    { type: "missing_lab", message: "East Godavari — lab confirmation data delayed by 4 days", severity: "moderate" },
+    { type: "delayed", message: "Vizianagaram — PHC submissions delayed (>3 days)", severity: "moderate" },
+  ],
 };
 
 // ──────────────── ODISHA ────────────────
@@ -519,8 +602,76 @@ const ODISHA: StateBundle = {
     "Old Town": [20.24, 85.83], "Saheed Nagar": [20.29, 85.83], "Patia": [20.35, 85.81], "Chandrasekharpur": [20.32, 85.81],
     "Buxi Bazaar": [20.46, 85.88], "Mangalabag": [20.46, 85.87], "Bidanasi": [20.50, 85.86],
     "Chhend": [22.20, 84.85], "Panposh": [22.24, 84.83], "Sector 19": [22.24, 84.86], "Civil Township": [22.21, 84.88],
-    "Modipara": [21.47, 83.98], "Budharaja": [21.46, 83.96],
   },
+  riskForecast: [
+    { week: "W+1", risk: "high", cases: 95, label: "8–14 Apr 2026" },
+    { week: "W+2", risk: "high", cases: 130, label: "15–21 Apr 2026" },
+    { week: "W+3", risk: "high", cases: 165, label: "22–28 Apr 2026" },
+    { week: "W+4", risk: "high", cases: 180, label: "29 Apr–5 May" },
+  ],
+  weeklyTimeSeries: [
+    { week: "W-9", date: "3–9 Feb", positive: 28, samples: 95, tpr: 29.5 },
+    { week: "W-8", date: "10–16 Feb", positive: 35, samples: 110, tpr: 31.8 },
+    { week: "W-7", date: "17–23 Feb", positive: 42, samples: 125, tpr: 33.6 },
+    { week: "W-6", date: "24 Feb–2 Mar", positive: 50, samples: 145, tpr: 34.5 },
+    { week: "W-5", date: "3–9 Mar", positive: 58, samples: 160, tpr: 36.3 },
+    { week: "W-4", date: "10–16 Mar", positive: 62, samples: 175, tpr: 35.4 },
+    { week: "W-3", date: "17–23 Mar", positive: 70, samples: 190, tpr: 36.8 },
+    { week: "W-2", date: "24–30 Mar", positive: 78, samples: 210, tpr: 37.1 },
+    { week: "W-1", date: "31 Mar–6 Apr", positive: 88, samples: 230, tpr: 38.3 },
+    { week: "W0", date: "7–13 Apr", positive: 95, samples: 245, tpr: 38.8 },
+  ],
+  dailyTimeSeries: Array.from({ length: 30 }, (_, i) => ({ date: `Mar ${i + 1}`, positive: [6,7,8,7,9,10,8,9,11,12,10,11,13,12,11,10,12,13,14,12,13,14,15,14,13,15,16,17,15,16][i], samples: 25 + (i % 5) * 4, tpr: Math.round((28 + (i % 7) * 2) * 10) / 10 })),
+  monthlyTimeSeries: [
+    { month: "Nov", positive: 95, samples: 320, tpr: 29.7 },
+    { month: "Dec", positive: 110, samples: 360, tpr: 30.6 },
+    { month: "Jan", positive: 145, samples: 430, tpr: 33.7 },
+    { month: "Feb", positive: 195, samples: 540, tpr: 36.1 },
+    { month: "Mar", positive: 280, samples: 720, tpr: 38.9 },
+  ],
+  forecastData: [
+    { week: "W-11", actual: 18, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-10", actual: 22, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-9", actual: 28, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-8", actual: 35, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-7", actual: 42, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-6", actual: 50, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-5", actual: 58, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-4", actual: 62, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-3", actual: 70, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-2", actual: 78, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-1", actual: 88, predicted: 86, lower: 78, upper: 95, type: "Historical" },
+    { week: "W+1", actual: null, predicted: 100, lower: 88, upper: 115, type: "Forecast" },
+    { week: "W+2", actual: null, predicted: 130, lower: 110, upper: 155, type: "Forecast" },
+    { week: "W+3", actual: null, predicted: 165, lower: 140, upper: 195, type: "Forecast" },
+    { week: "W+4", actual: null, predicted: 180, lower: 150, upper: 215, type: "Forecast" },
+  ],
+  weatherObserved: [
+    { week: "W-8", endDate: "10–16 Feb 2026", rainfall: 2.0, temp: 23.0, maxT: 30.5, minT: 16.0, humidity: 55.0 },
+    { week: "W-7", endDate: "17–23 Feb 2026", rainfall: 4.5, temp: 24.5, maxT: 31.5, minT: 17.5, humidity: 58.0 },
+    { week: "W-6", endDate: "24 Feb–2 Mar 2026", rainfall: 8.2, temp: 26.0, maxT: 33.0, minT: 18.5, humidity: 62.0 },
+    { week: "W-5", endDate: "3–9 Mar 2026", rainfall: 6.8, temp: 27.0, maxT: 34.5, minT: 19.5, humidity: 64.5 },
+    { week: "W-4", endDate: "10–16 Mar 2026", rainfall: 12.0, temp: 27.5, maxT: 35.0, minT: 20.0, humidity: 68.0 },
+    { week: "W-3", endDate: "17–23 Mar 2026", rainfall: 18.5, temp: 26.8, maxT: 33.8, minT: 19.5, humidity: 72.0 },
+    { week: "W-2", endDate: "24–31 Mar 2026", rainfall: 22.3, temp: 28.2, maxT: 35.2, minT: 21.0, humidity: 70.0 },
+    { week: "W-1", endDate: "1–7 Apr 2026", rainfall: 15.7, temp: 29.0, maxT: 36.0, minT: 22.0, humidity: 73.5 },
+  ],
+  weatherForecast: [
+    { week: "W+1", endDate: "8–14 Apr 2026", rainfall: 28.0, temp: 29.5, maxT: 36.8, minT: 22.5, humidity: 76.0 },
+    { week: "W+2", endDate: "15–21 Apr 2026", rainfall: 42.0, temp: 30.0, maxT: 37.0, minT: 23.0, humidity: 78.0 },
+    { week: "W+3", endDate: "22–28 Apr 2026", rainfall: 58.0, temp: 30.2, maxT: 36.8, minT: 23.5, humidity: 80.0 },
+    { week: "W+4", endDate: "29 Apr–5 May 2026", rainfall: 72.0, temp: 30.0, maxT: 36.0, minT: 23.5, humidity: 82.0 },
+    { week: "W+5", endDate: "6–12 May 2026", rainfall: 88.0, temp: 29.5, maxT: 35.5, minT: 23.8, humidity: 84.0 },
+    { week: "W+6", endDate: "13–19 May 2026", rainfall: 105.0, temp: 29.0, maxT: 34.8, minT: 23.5, humidity: 86.0 },
+    { week: "W+7", endDate: "20–26 May 2026", rainfall: 125.0, temp: 28.5, maxT: 34.0, minT: 23.2, humidity: 87.0 },
+    { week: "W+8", endDate: "27 May–2 Jun 2026", rainfall: 145.0, temp: 28.0, maxT: 33.5, minT: 23.0, humidity: 88.0 },
+  ],
+  dataQualityIssues: [
+    { type: "missing_reports", message: "Satyabadi and Krushnaprasad blocks (Puri) — no reports in last 7 days", severity: "high" },
+    { type: "missing_lab", message: "Sundargarh — Rourkela lab confirmation backlog", severity: "high" },
+    { type: "delayed", message: "Ganjam — PHC submissions delayed (>3 days)", severity: "moderate" },
+    { type: "incomplete", message: "Sambalpur — incomplete entomological survey data", severity: "moderate" },
+  ],
 };
 
 // ──────────────── KARNATAKA ────────────────
@@ -694,6 +845,74 @@ const KARNATAKA: StateBundle = {
     "Vijayanagar": [12.32, 76.62], "Kuvempunagar": [12.30, 76.62], "Saraswathipuram": [12.32, 76.65],
     "Manipal": [13.35, 74.79], "Brahmagiri (Udupi)": [13.34, 74.75], "Indrali": [13.32, 74.74],
   },
+  riskForecast: [
+    { week: "W+1", risk: "moderate", cases: 38, label: "8–14 Apr 2026" },
+    { week: "W+2", risk: "moderate", cases: 55, label: "15–21 Apr 2026" },
+    { week: "W+3", risk: "high", cases: 82, label: "22–28 Apr 2026" },
+    { week: "W+4", risk: "high", cases: 105, label: "29 Apr–5 May" },
+  ],
+  weeklyTimeSeries: [
+    { week: "W-9", date: "3–9 Feb", positive: 5, samples: 38, tpr: 13.2 },
+    { week: "W-8", date: "10–16 Feb", positive: 6, samples: 42, tpr: 14.3 },
+    { week: "W-7", date: "17–23 Feb", positive: 8, samples: 48, tpr: 16.7 },
+    { week: "W-6", date: "24 Feb–2 Mar", positive: 10, samples: 55, tpr: 18.2 },
+    { week: "W-5", date: "3–9 Mar", positive: 12, samples: 62, tpr: 19.4 },
+    { week: "W-4", date: "10–16 Mar", positive: 15, samples: 70, tpr: 21.4 },
+    { week: "W-3", date: "17–23 Mar", positive: 18, samples: 78, tpr: 23.1 },
+    { week: "W-2", date: "24–30 Mar", positive: 22, samples: 88, tpr: 25.0 },
+    { week: "W-1", date: "31 Mar–6 Apr", positive: 28, samples: 100, tpr: 28.0 },
+    { week: "W0", date: "7–13 Apr", positive: 32, samples: 115, tpr: 27.8 },
+  ],
+  dailyTimeSeries: Array.from({ length: 30 }, (_, i) => ({ date: `Mar ${i + 1}`, positive: [1,2,1,2,3,2,3,2,3,4,3,3,4,5,4,3,5,4,5,6,5,5,6,7,6,5,7,8,7,6][i], samples: 10 + (i % 5) * 2, tpr: Math.round((12 + (i % 7) * 1.8) * 10) / 10 })),
+  monthlyTimeSeries: [
+    { month: "Nov", positive: 22, samples: 110, tpr: 20.0 },
+    { month: "Dec", positive: 28, samples: 135, tpr: 20.7 },
+    { month: "Jan", positive: 38, samples: 175, tpr: 21.7 },
+    { month: "Feb", positive: 52, samples: 220, tpr: 23.6 },
+    { month: "Mar", positive: 85, samples: 320, tpr: 26.6 },
+  ],
+  forecastData: [
+    { week: "W-11", actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-10", actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-9", actual: 5, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-8", actual: 6, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-7", actual: 8, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-6", actual: 10, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-5", actual: 12, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-4", actual: 15, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-3", actual: 18, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-2", actual: 22, predicted: null, lower: null, upper: null, type: "Historical" },
+    { week: "W-1", actual: 28, predicted: 27, lower: 22, upper: 32, type: "Historical" },
+    { week: "W+1", actual: null, predicted: 38, lower: 30, upper: 48, type: "Forecast" },
+    { week: "W+2", actual: null, predicted: 55, lower: 42, upper: 70, type: "Forecast" },
+    { week: "W+3", actual: null, predicted: 82, lower: 62, upper: 105, type: "Forecast" },
+    { week: "W+4", actual: null, predicted: 105, lower: 78, upper: 135, type: "Forecast" },
+  ],
+  weatherObserved: [
+    { week: "W-8", endDate: "10–16 Feb 2026", rainfall: 0.0, temp: 26.0, maxT: 33.0, minT: 18.0, humidity: 60.0 },
+    { week: "W-7", endDate: "17–23 Feb 2026", rainfall: 0.2, temp: 27.0, maxT: 34.0, minT: 19.0, humidity: 62.0 },
+    { week: "W-6", endDate: "24 Feb–2 Mar 2026", rainfall: 1.5, temp: 28.0, maxT: 35.0, minT: 20.0, humidity: 65.0 },
+    { week: "W-5", endDate: "3–9 Mar 2026", rainfall: 3.2, temp: 28.5, maxT: 35.5, minT: 20.5, humidity: 68.0 },
+    { week: "W-4", endDate: "10–16 Mar 2026", rainfall: 8.5, temp: 28.8, maxT: 36.0, minT: 21.0, humidity: 72.0 },
+    { week: "W-3", endDate: "17–23 Mar 2026", rainfall: 15.2, temp: 28.0, maxT: 35.0, minT: 21.5, humidity: 76.0 },
+    { week: "W-2", endDate: "24–31 Mar 2026", rainfall: 22.0, temp: 28.5, maxT: 35.2, minT: 22.0, humidity: 78.0 },
+    { week: "W-1", endDate: "1–7 Apr 2026", rainfall: 35.5, temp: 29.0, maxT: 35.8, minT: 22.5, humidity: 82.0 },
+  ],
+  weatherForecast: [
+    { week: "W+1", endDate: "8–14 Apr 2026", rainfall: 48.0, temp: 29.5, maxT: 36.0, minT: 23.0, humidity: 84.0 },
+    { week: "W+2", endDate: "15–21 Apr 2026", rainfall: 65.0, temp: 29.8, maxT: 36.0, minT: 23.5, humidity: 85.0 },
+    { week: "W+3", endDate: "22–28 Apr 2026", rainfall: 82.0, temp: 30.0, maxT: 36.2, minT: 23.5, humidity: 86.0 },
+    { week: "W+4", endDate: "29 Apr–5 May 2026", rainfall: 95.0, temp: 29.8, maxT: 35.8, minT: 23.5, humidity: 87.0 },
+    { week: "W+5", endDate: "6–12 May 2026", rainfall: 110.0, temp: 29.5, maxT: 35.5, minT: 23.5, humidity: 88.0 },
+    { week: "W+6", endDate: "13–19 May 2026", rainfall: 130.0, temp: 29.0, maxT: 35.0, minT: 23.5, humidity: 89.0 },
+    { week: "W+7", endDate: "20–26 May 2026", rainfall: 155.0, temp: 28.5, maxT: 34.5, minT: 23.0, humidity: 90.0 },
+    { week: "W+8", endDate: "27 May–2 Jun 2026", rainfall: 180.0, temp: 28.0, maxT: 34.0, minT: 23.0, humidity: 91.0 },
+  ],
+  dataQualityIssues: [
+    { type: "missing_reports", message: "Kundapura and Karkala blocks (Udupi) — no reports in last 5 days", severity: "moderate" },
+    { type: "missing_lab", message: "Belagavi — rural PHC lab data incomplete", severity: "moderate" },
+    { type: "delayed", message: "BBMP East Zone — ward-level data delayed", severity: "high" },
+  ],
 };
 
 // ──────────────── State registry & active state ────────────────
@@ -825,66 +1044,34 @@ export function getFilteredHotspots(district: string, block?: string): HotspotDa
   return s.hotspotDistrictData;
 }
 
-// ──────────────── Shared (state-agnostic) ────────────────
-export const riskForecast = [
-  { week: "W+1", risk: "moderate" as const, cases: 45, label: "8–14 Apr 2026" },
-  { week: "W+2", risk: "high" as const, cases: 68, label: "15–21 Apr 2026" },
-  { week: "W+3", risk: "high" as const, cases: 92, label: "22–28 Apr 2026" },
-  { week: "W+4", risk: "moderate" as const, cases: 71, label: "29 Apr–5 May" },
+// ──────────────── State-aware getters (preferred for components that re-render on state change) ────────────────
+export const getRiskForecast = (): RiskForecastPoint[] => S().riskForecast;
+export const getWeeklyTimeSeries = (): TimeSeriesPoint[] => S().weeklyTimeSeries;
+export const getDailyTimeSeries = (): TimeSeriesPoint[] => S().dailyTimeSeries;
+export const getMonthlyTimeSeries = (): TimeSeriesPoint[] => S().monthlyTimeSeries;
+export const getForecastData = (): ForecastChartPoint[] => S().forecastData;
+export const getWeatherObserved = (): WeatherPoint[] => S().weatherObserved;
+export const getWeatherForecast = (): WeatherPoint[] => S().weatherForecast;
+export const getDataQualityIssues = (): DataIssue[] => S().dataQualityIssues;
+
+// Backwards-compatible live proxies (read from active state on every access)
+export const riskForecast = liveArrayProxy(() => S().riskForecast);
+export const weeklyTimeSeries = liveArrayProxy(() => S().weeklyTimeSeries);
+export const dailyTimeSeries = liveArrayProxy(() => S().dailyTimeSeries);
+export const monthlyTimeSeries = liveArrayProxy(() => S().monthlyTimeSeries);
+export const forecastData = liveArrayProxy(() => S().forecastData);
+export const weatherObserved = liveArrayProxy(() => S().weatherObserved);
+export const weatherForecast = liveArrayProxy(() => S().weatherForecast);
+export const dataQualityIssues = liveArrayProxy(() => S().dataQualityIssues);
+
+// Combined weather (observed + forecast) — derived from active state
+export const getWeatherData = () => [
+  ...S().weatherObserved.map((w) => ({ ...w, type: "observed" as const })),
+  ...S().weatherForecast.map((w) => ({ ...w, type: "forecast" as const })),
 ];
+export const weatherData = liveArrayProxy(() => getWeatherData());
 
-export const weeklyTimeSeries = [
-  { week: "W-9", date: "3–9 Feb", positive: 8, samples: 45, tpr: 17.8 },
-  { week: "W-8", date: "10–16 Feb", positive: 12, samples: 52, tpr: 23.1 },
-  { week: "W-7", date: "17–23 Feb", positive: 10, samples: 48, tpr: 20.8 },
-  { week: "W-6", date: "24 Feb–2 Mar", positive: 15, samples: 60, tpr: 25.0 },
-  { week: "W-5", date: "3–9 Mar", positive: 18, samples: 65, tpr: 27.7 },
-  { week: "W-4", date: "10–16 Mar", positive: 14, samples: 58, tpr: 24.1 },
-  { week: "W-3", date: "17–23 Mar", positive: 20, samples: 72, tpr: 27.8 },
-  { week: "W-2", date: "24–30 Mar", positive: 16, samples: 62, tpr: 25.8 },
-  { week: "W-1", date: "31 Mar–6 Apr", positive: 22, samples: 78, tpr: 28.2 },
-  { week: "W0", date: "7–13 Apr", positive: 19, samples: 70, tpr: 27.1 },
-];
-
-export const dailyTimeSeries = Array.from({ length: 30 }, (_, i) => ({
-  day: i + 1, date: `Mar ${i + 1}`,
-  positive: Math.floor(Math.random() * 8) + 1,
-  samples: Math.floor(Math.random() * 15) + 5,
-  tpr: Math.round((Math.random() * 30 + 10) * 10) / 10,
-}));
-
-export const monthlyTimeSeries = [
-  { month: "Nov", positive: 45, samples: 180, tpr: 25.0 },
-  { month: "Dec", positive: 38, samples: 160, tpr: 23.8 },
-  { month: "Jan", positive: 52, samples: 210, tpr: 24.8 },
-  { month: "Feb", positive: 65, samples: 270, tpr: 24.1 },
-  { month: "Mar", positive: 90, samples: 350, tpr: 25.7 },
-];
-
-export const forecastData = [
-  { week: "W-11", actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-10", actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-9", actual: 2, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-8", actual: 3, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-7", actual: 5, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-6", actual: 4, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-5", actual: 6, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-4", actual: 5, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-3", actual: 7, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-2", actual: 8, predicted: null, lower: null, upper: null, type: "Historical" },
-  { week: "W-1", actual: 6, predicted: 6, lower: 4, upper: 8, type: "Historical" },
-  { week: "W+1", actual: null, predicted: 7, lower: 4, upper: 10, type: "Forecast" },
-  { week: "W+2", actual: null, predicted: 9, lower: 5, upper: 13, type: "Forecast" },
-  { week: "W+3", actual: null, predicted: 11, lower: 6, upper: 16, type: "Forecast" },
-  { week: "W+4", actual: null, predicted: 10, lower: 5, upper: 15, type: "Forecast" },
-];
-
-export const dataQualityIssues = [
-  { type: "missing_reports", message: "3 blocks have not reported in last 7 days", severity: "high" as const },
-  { type: "missing_lab", message: "1 district missing lab confirmation data", severity: "moderate" as const },
-  { type: "delayed", message: "Some districts have delayed data (>3 days)", severity: "moderate" as const },
-];
-
+// ──────────────── Static (truly state-agnostic) ────────────────
 export const uploadFormats = [
   { id: "nvbdcp_linelist", name: "NVBDCP Line List", description: "Standard NVBDCP line listing format with patient details, test type, and results", columns: ["SL. NO", "SS Name", "Date of Testing", "Name of Patient", "Sex", "Age", "Address", "Mobile No", "District", "CHC", "SC", "Village", "Travel History", "Urban/Rural", "Referred By", "Test Type (IgM/NS1)", "Positive (Y/N)"] },
   { id: "nvbdcp_daily", name: "NVBDCP Daily Report", description: "Proforma for daily reporting of cases by sentinel site", columns: ["Sl No", "Sentinel Site", "NS1 Tested", "IgM Tested", "Total Tested", "NS1 Positive", "IgM Positive", "Total Positive", "Urban", "Rural", "Others"] },
@@ -893,29 +1080,3 @@ export const uploadFormats = [
   { id: "survey_data", name: "Survey Data", description: "Field survey and entomological data", columns: ["Date", "District", "Block", "Ward/Village", "Houses Surveyed", "Containers Found", "Containers Positive", "Breeding Index", "Surveyor Name"] },
 ];
 
-export const weatherObserved = [
-  { week: "W-8", endDate: "10–16 Feb 2026", rainfall: 0.0, temp: 24.5, maxT: 32.0, minT: 17.0, humidity: 28.0 },
-  { week: "W-7", endDate: "17–23 Feb 2026", rainfall: 0.5, temp: 25.8, maxT: 33.5, minT: 18.5, humidity: 30.0 },
-  { week: "W-6", endDate: "24 Feb–2 Mar 2026", rainfall: 1.2, temp: 27.0, maxT: 35.0, minT: 19.5, humidity: 33.0 },
-  { week: "W-5", endDate: "3–9 Mar 2026", rainfall: 0.8, temp: 27.8, maxT: 36.2, minT: 20.0, humidity: 35.5 },
-  { week: "W-4", endDate: "10–16 Mar 2026", rainfall: 0.0, temp: 28.8, maxT: 37.0, minT: 20.8, humidity: 20.9 },
-  { week: "W-3", endDate: "17–23 Mar 2026", rainfall: 3.4, temp: 25.7, maxT: 34.8, minT: 16.9, humidity: 39.7 },
-  { week: "W-2", endDate: "24–31 Mar 2026", rainfall: 3.3, temp: 29.9, maxT: 37.0, minT: 21.8, humidity: 32.1 },
-  { week: "W-1", endDate: "1–7 Apr 2026", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
-];
-
-export const weatherForecast = [
-  { week: "W+1", endDate: "8–14 Apr 2026", rainfall: 5.2, temp: 30.1, maxT: 37.5, minT: 22.0, humidity: 45.0 },
-  { week: "W+2", endDate: "15–21 Apr 2026", rainfall: 12.4, temp: 31.2, maxT: 38.0, minT: 23.5, humidity: 52.0 },
-  { week: "W+3", endDate: "22–28 Apr 2026", rainfall: 18.6, temp: 32.0, maxT: 38.5, minT: 24.0, humidity: 58.0 },
-  { week: "W+4", endDate: "29 Apr–5 May 2026", rainfall: 25.0, temp: 31.5, maxT: 37.8, minT: 24.2, humidity: 62.0 },
-  { week: "W+5", endDate: "6–12 May 2026", rainfall: 35.0, temp: 30.8, maxT: 37.0, minT: 24.5, humidity: 68.0 },
-  { week: "W+6", endDate: "13–19 May 2026", rainfall: 42.0, temp: 30.2, maxT: 36.5, minT: 24.0, humidity: 72.0 },
-  { week: "W+7", endDate: "20–26 May 2026", rainfall: 55.0, temp: 29.5, maxT: 35.8, minT: 23.8, humidity: 75.0 },
-  { week: "W+8", endDate: "27 May–2 Jun 2026", rainfall: 65.0, temp: 28.8, maxT: 34.5, minT: 23.5, humidity: 78.0 },
-];
-
-export const weatherData = [
-  ...weatherObserved.map((w) => ({ ...w, type: "observed" as const })),
-  ...weatherForecast.map((w) => ({ ...w, type: "forecast" as const })),
-];

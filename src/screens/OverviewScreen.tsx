@@ -111,7 +111,9 @@ export default function OverviewScreen({ onNavigate }: Props) {
             );
           })}
         </div>
-        <p className="text-xs text-muted-foreground mt-3">{forecastInterpretation}</p>
+        {appliedFilters.district === "All Districts" && (
+          <p className="text-xs text-muted-foreground mt-3">{forecastInterpretation}</p>
+        )}
       </div>
     </div>
   );

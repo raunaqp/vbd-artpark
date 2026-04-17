@@ -75,7 +75,9 @@ export default function ForecastScreen() {
         })}
       </div>
 
-      <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
+      {appliedFilters.district === "All Districts" && (
+        <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
+      )}
 
       <div>
         <div className="flex items-center justify-between mb-2">

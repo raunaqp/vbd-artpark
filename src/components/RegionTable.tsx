@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowRight } from "lucide-react";
 import { getFilteredRegions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import TablePagination from "@/components/TablePagination";
 
-const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
 
 interface Props { maxRows?: number }
@@ -57,7 +57,10 @@ export default function RegionTable({ maxRows }: Props = {}) {
                   </td>
                   <td className="py-2 px-2 text-right">{r.confirmed}</td>
                   <td className="py-2 px-2 text-center">
-                    <TrendIcon className={`h-4 w-4 inline ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
+                    <span className="inline-flex items-center gap-1 text-xs">
+                      <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
+                      <span className="text-muted-foreground capitalize">{r.trend === "up" ? "Rising" : r.trend === "down" ? "Falling" : "Stable"}</span>
+                    </span>
                   </td>
                   <td className="py-2 px-2 text-center"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
                 </tr>

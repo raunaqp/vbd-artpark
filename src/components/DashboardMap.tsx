@@ -486,7 +486,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                     </div>
                     <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
                     <div>Cases: <strong>{r.confirmed} {trendArrow[r.trend] || ""}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Date: {tooltipDateRange}</div>
+                    <div style={{ opacity: 0.8 }}>Date: {`${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`}</div>
                   </div>
                 )}
               </Tooltip>

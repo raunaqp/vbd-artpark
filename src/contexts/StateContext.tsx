@@ -7,7 +7,7 @@ interface StateContextType {
   options: typeof stateOptions;
 }
 
-const StateContext = createContext<StateContextType | null>(null);
+const StateContext = createContext<StateContextType | undefined>(undefined);
 
 export function StateProvider({ children }: { children: ReactNode }) {
   const [stateId, setStateIdLocal] = useState<StateId>(getActiveStateId());

@@ -1263,6 +1263,8 @@ export function getDistrictRiskFallback(districtName: string): { risk: RegionDat
   const row = getOrSynthesizeDistrictRow(bundle, districtName);
   return { risk: row.risk, confirmed: row.confirmed, trend: row.trend, synthesized: true };
 }
+
+function getBaseRegionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
   if (filters.block !== "All Blocks") {
     const villages = bundle.villageData.filter((item) => item.parentBlock === filters.block);
     const wardsInBlock = bundle.wardData.filter((item) => item.parentBlock === filters.block);

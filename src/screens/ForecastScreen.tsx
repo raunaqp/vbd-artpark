@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
 import { AlertTriangle } from "lucide-react";
-import { getForecastData, getRiskForecast, getOutbreakPredictions } from "@/data/mockData";
+import { getForecastData, getRiskForecast, getOutbreakPredictions, getStateLocalRiskNote } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";

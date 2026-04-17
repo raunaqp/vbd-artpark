@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
 import { AlertTriangle } from "lucide-react";
 import { getForecastData, getRiskForecast, getOutbreakPredictions } from "@/data/mockData";
@@ -7,6 +8,9 @@ import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
+import TablePagination from "@/components/TablePagination";
+
+const PAGE_SIZE = 20;
 
 export default function ForecastScreen() {
   const { isAnalyst } = useRole();

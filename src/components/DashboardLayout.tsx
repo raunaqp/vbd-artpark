@@ -38,6 +38,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const currentStateLabel = stateOptions.find((s) => s.id === stateId)?.label || "State";
   const dataQualityIssues = getDataQualityIssues();
   void stateId; // re-evaluate on state change
+  useEffect(() => { setPendingStateId(stateId); }, [stateId]);
 
   return (
     <div className="min-h-screen flex flex-col">

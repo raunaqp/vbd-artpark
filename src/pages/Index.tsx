@@ -10,6 +10,7 @@ import DataUploadScreen from "@/screens/DataUploadScreen";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { DiseaseProvider } from "@/contexts/DiseaseContext";
+import { StateProvider } from "@/contexts/StateContext";
 
 const screens: Record<TabId, React.ComponentType> = {
   overview: OverviewScreen,
@@ -26,14 +27,16 @@ export default function Index() {
   const Screen = screens[activeTab];
 
   return (
-    <RoleProvider>
-      <DiseaseProvider>
-        <FilterProvider>
-          <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-            <Screen />
-          </DashboardLayout>
-        </FilterProvider>
-      </DiseaseProvider>
-    </RoleProvider>
+    <StateProvider>
+      <RoleProvider>
+        <DiseaseProvider>
+          <FilterProvider>
+            <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+              <Screen />
+            </DashboardLayout>
+          </FilterProvider>
+        </DiseaseProvider>
+      </RoleProvider>
+    </StateProvider>
   );
 }

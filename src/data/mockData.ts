@@ -1848,6 +1848,10 @@ export interface QAReport {
   sumOfDistrictForecastSum: number;
   forecast_diff: number;
   perDistrict: Array<{ district: string; confirmed: number; forecastSum: number; childRows: number }>;
+  probabilityBands: { high: number; moderate: number; low: number };
+  bandConsistencyOk: boolean;
+  missingDataDistricts: number;
+  stateLocalNote: string;
 }
 
 export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
@@ -1875,6 +1879,17 @@ export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
   const sumOfDistrictConfirmed = perDistrict.reduce((s, d) => s + d.confirmed, 0);
   const sumOfDistrictForecastSum = perDistrict.reduce((s, d) => s + d.forecastSum, 0);
 
+  // Probability → risk band consistency check (>75 High, 50–75 Moderate, <50 Low)
+  const bands = { high: 0, moderate: 0, low: 0 };
+  let bandConsistencyOk = true;
+  statePredictions.forEach((p) => {
+    bands[p.risk] += 1;
+    const expected: OutbreakPrediction["risk"] = p.probability > 75 ? "high" : p.probability >= 50 ? "moderate" : "low";
+    if (expected !== p.risk) bandConsistencyOk = false;
+  });
+
+  const missingDataDistricts = stateRegions.filter((r) => r.confirmed === 0 && r.suspected === 0).length;
+
   return {
     state: bundle.label,
     windowLabel: `${format(window.from, "d MMM yyyy")} – ${format(window.to, "d MMM yyyy")}`,
@@ -1886,6 +1901,10 @@ export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
     sumOfDistrictForecastSum,
     forecast_diff: sumOfDistrictForecastSum - stateForecastSum,
     perDistrict,
+    probabilityBands: bands,
+    bandConsistencyOk,
+    missingDataDistricts,
+    stateLocalNote: getStateLocalRiskNote(baseFilters),
   };
 }
 

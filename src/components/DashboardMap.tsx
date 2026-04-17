@@ -10,6 +10,8 @@ import {
   getFilteredRegions,
   getOutbreakPredictions,
   getDistrictRiskFallback,
+  getDistrictHotspotRisk,
+  getFilteredHotspots,
 } from "@/data/mockData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters } from "@/contexts/FilterContext";
@@ -128,8 +130,14 @@ function getFeatureDistrictName(feature: Feature): string {
 // ──────────────── Component ────────────────
 interface DashboardMapProps {
   height?: string;
-  /** "current" colors by past-cases risk, "forecast" colors by predicted outbreak risk */
-  mode?: "current" | "forecast";
+  /**
+   * "current"  → color polygons by past-cases risk (RegionData)
+   * "forecast" → color polygons by predicted outbreak risk (OutbreakPrediction)
+   * "hotspot"  → color polygons by hotspot data (HotspotData) — same source as the hotspot table
+   */
+  mode?: "current" | "forecast" | "hotspot";
+  /** Hotspot lookback window. Only used when mode === "hotspot". */
+  hotspotLookbackWeeks?: 2 | 4;
 }
 
 // Helper: imperatively update the map view when center/zoom inputs change.
@@ -148,13 +156,16 @@ function MapViewUpdater({ center, zoom, bounds, viewKey }: { center: [number, nu
   return null;
 }
 
-export default function DashboardMap({ height = "400px", mode = "current" }: DashboardMapProps) {
+export default function DashboardMap({ height = "400px", mode = "current", hotspotLookbackWeeks = 4 }: DashboardMapProps) {
   const { appliedFilters, drillDown, breadcrumb, isLocked, dateWindow } = useFilters();
   const { stateId } = useStateSelection();
 
   const regions = getFilteredRegions(appliedFilters);
   const predictions = mode === "forecast" ? getOutbreakPredictions(appliedFilters) : [];
   const predByArea = useMemo(() => new Map(predictions.map((p) => [p.area, p])), [predictions]);
+  // Hotspot mode → state-level hotspot list, same source the hotspot table reads from.
+  const hotspotsForMap = mode === "hotspot" ? getFilteredHotspots({ ...appliedFilters, district: "All Districts", block: "All Blocks", ward: "All Wards" }, hotspotLookbackWeeks) : [];
+  const hotspotByArea = useMemo(() => new Map(hotspotsForMap.map((h) => [h.area, h])), [hotspotsForMap]);
 
   // Build a quick-lookup map: normalized district name → region
   const districtRiskByName = useMemo(() => {
@@ -240,37 +251,50 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     const [y, m, d] = iso.split("-");
     return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   };
-  const tooltipDateRange = mode === "forecast"
-    ? `${fmtShort(dateWindow.forecastStartDate)} - ${fmtFull(dateWindow.forecastEndDate)}`
-    : `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
+  void dateWindow; // used inside tooltips below
 
   // ─── Polygon style + behavior ───
-  // Resolve risk for a polygon. If the GeoJSON district isn't in the current
-  // regions slice (e.g. user has drilled into another district), fall back to
-  // the deterministic per-state synthesis so every visible polygon stays
-  // consistent with the outer map color.
-  const resolveDistrictRisk = (name: string | null): { risk: "high" | "moderate" | "low" | null; cases: string } => {
+  // SINGLE SOURCE OF TRUTH:
+  //   • current mode  → state-level transformed regions (via getDistrictRiskFallback)
+  //   • forecast mode → state-level predictions (predByArea)
+  //   • hotspot mode  → state-level hotspots (hotspotByArea), same source as the table
+  // This guarantees a district's color/risk never changes between state view,
+  // drill-down view, and table view.
+  const resolveDistrictRisk = (name: string | null): {
+    risk: "high" | "moderate" | "low" | null;
+    cases: string;
+    week?: string;
+    trend?: "up" | "down" | "stable" | null;
+  } => {
     if (!name) return { risk: null, cases: "—" };
-    const norm = normalize(name);
-    const region = districtRiskByName.get(norm);
+
     if (mode === "forecast") {
       const pred = predByArea.get(name);
-      if (pred) return { risk: pred.risk, cases: `${pred.probability}% (forecast)` };
+      if (pred) return { risk: pred.risk, cases: `${pred.probability}%`, week: pred.expectedWeek };
+      return { risk: null, cases: "—" };
     }
-    if (region) return { risk: region.risk, cases: `${region.confirmed}` };
-    // Fallback so outer/inner views never contradict.
-    const fb = getDistrictRiskFallback(name);
-    return { risk: fb.risk, cases: `${fb.confirmed}` };
+
+    if (mode === "hotspot") {
+      const norm = normalize(name);
+      const direct = hotspotByArea.get(name);
+      if (direct) return { risk: direct.risk, cases: `${direct.currentCases}`, trend: direct.trend };
+      for (const h2 of hotspotsForMap) {
+        if (normalize(h2.area) === norm) return { risk: h2.risk, cases: `${h2.currentCases}`, trend: h2.trend };
+      }
+      return { risk: null, cases: "—" };
+    }
+
+    // current mode → always state-level derived district (consistent across drill-downs)
+    const fb = getDistrictRiskFallback(name, appliedFilters);
+    return { risk: fb.risk, cases: `${fb.confirmed}`, trend: fb.trend };
   };
 
-  const hasSelection = !isStateLevel; // a district (and possibly block) is selected
+  const hasSelection = !isStateLevel;
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
     const { risk } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
-    // Focus mode: when a district is selected, dim every other polygon so the
-    // selected boundary clearly stands out. Selected polygon stays vivid.
     const dimmed = hasSelection && !isSelected;
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
@@ -281,27 +305,33 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     };
   };
 
+  const trendLabel = (t?: "up" | "down" | "stable" | null) =>
+    t === "up" ? "↑ Rising" : t === "down" ? "↓ Falling" : t === "stable" ? "→ Stable" : "";
+
   const onEachFeature = (feature: Feature<Geometry>, layer: Layer) => {
     const name = featureToMockName(feature);
-    const { risk, cases } = resolveDistrictRisk(name);
+    const { risk, cases, week, trend } = resolveDistrictRisk(name);
     const riskLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "Data not available";
     const displayName = name || getFeatureDistrictName(feature);
+    const observedDateRange = `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
+    const trendStr = trendLabel(trend);
 
-    // Forecast tooltip → probability + week. Observed tooltip → cases + date.
+    // Forecast tooltip → probability + per-prediction expected week (no global range).
+    // Observed/Hotspot tooltip → cases + observation date range.
     const tooltip = mode === "forecast"
       ? `
         <div style="font-size:12px;line-height:1.45;min-width:160px">
           <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
-          <div>Outbreak Probability: <strong>${cases.replace(" (forecast)", "")}</strong></div>
+          <div>Outbreak Probability: <strong>${risk ? cases : "—"}</strong></div>
           <div>Risk: <strong>${riskLabel}</strong></div>
-          <div style="opacity:0.8">Week: ${tooltipDateRange}</div>
+          ${week ? `<div style="opacity:0.8">Week: ${week}</div>` : ""}
         </div>`
       : `
         <div style="font-size:12px;line-height:1.45;min-width:140px">
           <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
           <div>Risk: <strong>${riskLabel}</strong></div>
-          <div>Cases: <strong>${cases}</strong></div>
-          <div style="opacity:0.8">Date: ${tooltipDateRange}</div>
+          <div>Cases: <strong>${cases}${trendStr ? ` <span style="opacity:0.7">(${trendStr})</span>` : ""}</strong></div>
+          <div style="opacity:0.8">Date: ${observedDateRange}</div>
           ${isStateLevel && !isLocked("district") ? `<div style="opacity:0.6;margin-top:3px;font-style:italic">Click to drill down</div>` : ""}
         </div>`;
     layer.bindTooltip(tooltip, { sticky: true });
@@ -445,7 +475,7 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
                     </div>
                     <div>Outbreak Probability: <strong>{pred.probability}%</strong></div>
                     <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Week: {tooltipDateRange}</div>
+                    <div style={{ opacity: 0.8 }}>Week: {pred.expectedWeek}</div>
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>
@@ -454,7 +484,7 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
                     </div>
                     <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
                     <div>Cases: <strong>{r.confirmed} {trendArrow[r.trend] || ""}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Date: {tooltipDateRange}</div>
+                    <div style={{ opacity: 0.8 }}>Date: {`${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`}</div>
                   </div>
                 )}
               </Tooltip>

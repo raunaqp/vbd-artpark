@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
+import { AlertTriangle, ArrowUp, ArrowDown, ArrowRight, Info } from "lucide-react";
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
 import TablePagination from "@/components/TablePagination";
@@ -7,7 +7,7 @@ import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 
-const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
 
 export default function HotspotsScreen() {
@@ -90,7 +90,7 @@ export default function HotspotsScreen() {
         </div>
       )}
 
-      <DashboardMap height="350px" />
+      <DashboardMap height="350px" mode="hotspot" hotspotLookbackWeeks={timeRange === "2weeks" ? 2 : 4} />
 
       {displayHotspots.length > 0 ? (
         <div className="section-card p-5">
@@ -113,7 +113,10 @@ export default function HotspotsScreen() {
                       <td className="py-2 px-3">{r.currentCases}</td>
                       <td className="py-2 px-3 text-muted-foreground">{r.prevCases}</td>
                       <td className="py-2 px-3">
-                        <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
+                        <span className="inline-flex items-center gap-1 text-xs">
+                          <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
+                          <span className="text-muted-foreground capitalize">{r.trend === "up" ? "Rising" : r.trend === "down" ? "Falling" : "Stable"}</span>
+                        </span>
                       </td>
                       <td className="py-2 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
                     </tr>

@@ -1256,12 +1256,53 @@ function getOrSynthesizeDistrictRow(bundle: StateBundle, districtName: string): 
  * Looks up the current filtered region first; falls back to a deterministic
  * synthesis seeded by `${activeStateId}:${districtName}`.
  */
-export function getDistrictRiskFallback(districtName: string): { risk: RegionData["risk"]; confirmed: number; trend: RegionData["trend"]; synthesized: boolean } {
+export function getDistrictRiskFallback(
+  districtName: string,
+  input?: DashboardFiltersLike | string,
+): { risk: RegionData["risk"]; confirmed: number; trend: RegionData["trend"]; synthesized: boolean } {
   const bundle = S();
-  const existing = bundle.regionData.find((r) => r.name === districtName);
-  if (existing) return { risk: existing.risk, confirmed: existing.confirmed, trend: existing.trend, synthesized: false };
+  // SINGLE SOURCE OF TRUTH: always derive a district's risk from the state-level
+  // transformed regions for the current date window. This guarantees that when a
+  // user drills into one district, every other district's polygon retains the
+  // exact same risk/cases/trend it had on the state-level map.
+  const baseFilters = resolveFilters(input);
+  const stateFilters: DashboardFiltersLike = {
+    ...baseFilters,
+    district: "All Districts",
+    block: "All Blocks",
+    ward: "All Wards",
+  };
+  const stateRegions = buildDerivedDashboardData(stateFilters).regions;
+  const transformed = stateRegions.find((r) => r.name === districtName);
+  if (transformed) {
+    return { risk: transformed.risk, confirmed: transformed.confirmed, trend: transformed.trend, synthesized: false };
+  }
+  // Boundary-only district (not in regionData): deterministic synthesis.
   const row = getOrSynthesizeDistrictRow(bundle, districtName);
   return { risk: row.risk, confirmed: row.confirmed, trend: row.trend, synthesized: true };
+}
+
+/**
+ * Resolve a district's hotspot-derived risk for the current date window.
+ * Used by the hotspot map so map color ↔ hotspot table always agree.
+ */
+export function getDistrictHotspotRisk(
+  districtName: string,
+  input?: DashboardFiltersLike | string,
+  lookbackWeeks: 2 | 4 = 4,
+): { risk: HotspotData["risk"] | null; cases: number; trend: HotspotData["trend"] | null } {
+  const baseFilters = resolveFilters(input);
+  const stateFilters: DashboardFiltersLike = {
+    ...baseFilters,
+    district: "All Districts",
+    block: "All Blocks",
+    ward: "All Wards",
+  };
+  const derived = buildDerivedDashboardData(stateFilters);
+  const list = lookbackWeeks === 2 ? derived.hotspots2w : derived.hotspots4w;
+  const match = list.find((h) => h.area === districtName);
+  if (match) return { risk: match.risk, cases: match.currentCases, trend: match.trend };
+  return { risk: null, cases: 0, trend: null };
 }
 
 function getBaseRegionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {

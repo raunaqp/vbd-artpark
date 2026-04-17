@@ -1,5 +1,5 @@
 import { useFilters } from "@/contexts/FilterContext";
-import { districts, subDistrictData, villageData, wardData } from "@/data/mockData";
+import { districts, subDistrictData, villageData, wardData, getDateWindow } from "@/data/mockData";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -9,6 +9,7 @@ export default function GlobalFilters() {
   const { stateId } = useStateSelection();
   void stateId; // re-render on state change so cascading lists refresh
   const [collapsed, setCollapsed] = useState(false);
+  const window = getDateWindow(filters);
 
   const availableBlocks = useMemo(() => {
     if (filters.district === "All Districts") return ["All Blocks"];

@@ -2,7 +2,10 @@ import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Cartesia
 import { getWeatherObserved, getWeatherForecast, type WeatherPoint } from "@/data/mockData";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useFilters } from "@/contexts/FilterContext";
+import { format, parseISO } from "date-fns";
 import GlobalFilters from "@/components/GlobalFilters";
+
+function fmtDate(iso: string) { try { return format(parseISO(iso), "dd MMM yyyy"); } catch { return iso; } }
 
 function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) {
   return (
@@ -12,7 +15,7 @@ function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) 
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              {["Week", "End Date", "Rain (mm)", "Temp (°C)", "Max T", "Min T", "Humidity %"].map((h) => (
+              {["Week of", "Date Range", "Rain (mm)", "Temp (°C)", "Max T", "Min T", "Humidity %"].map((h) => (
                 <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
               ))}
             </tr>
@@ -43,17 +46,19 @@ function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) 
 
 export default function WeatherScreen() {
   const { stateId } = useStateSelection();
-  const { appliedFilters } = useFilters();
+  const { appliedFilters, dateWindow } = useFilters();
   void stateId; // re-render on state change
   const weatherObserved = getWeatherObserved(appliedFilters);
   const weatherForecast = getWeatherForecast(appliedFilters);
+  const observedLabel = `${fmtDate(dateWindow.fromDate)} – ${fmtDate(dateWindow.toDate)}`;
+  const forecastLabel = `${fmtDate(dateWindow.forecastStartDate)} – ${fmtDate(dateWindow.forecastEndDate)}`;
   return (
     <div className="space-y-6">
       <GlobalFilters />
 
-      {/* Section A: Observed (W-8 to W-1) */}
+      {/* Section A: Observed */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Weather (W-8 to W-1)</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Weather ({observedLabel})</h2>
         <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations · Past 8 weeks</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

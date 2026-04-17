@@ -66,7 +66,7 @@ export default function RegionTable({ maxRows }: Props = {}) {
           </tbody>
         </table>
       </div>
-      <TablePagination page={page} pageSize={PAGE_SIZE} total={sorted.length} onPageChange={setPage} />
+      {!maxRows && <TablePagination page={page} pageSize={PAGE_SIZE} total={sorted.length} onPageChange={setPage} />}
     </div>
   );
 }

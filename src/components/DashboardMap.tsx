@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import { mapCenter, mapZoom, districtCoordinates, getFilteredRegions, subDistrictData } from "@/data/mockData";
+import { mapCenter, mapZoom, districtCoordinates, getFilteredRegions, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import "leaflet/dist/leaflet.css";
 
@@ -11,9 +11,17 @@ const riskColor: Record<string, string> = {
 
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
 
-export default function DashboardMap({ height = "400px" }: { height?: string }) {
+interface DashboardMapProps {
+  height?: string;
+  /** "current" colors by past-cases risk, "forecast" colors by predicted outbreak risk */
+  mode?: "current" | "forecast";
+}
+
+export default function DashboardMap({ height = "400px", mode = "current" }: DashboardMapProps) {
   const { appliedFilters, drillDown, breadcrumb, isLocked } = useFilters();
   const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const predictions = mode === "forecast" ? getOutbreakPredictions(appliedFilters.district, appliedFilters.block) : [];
+  const predByArea = new Map(predictions.map(p => [p.area, p]));
 
   // Compute center/zoom based on filter level
   let center = mapCenter;

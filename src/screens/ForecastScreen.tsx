@@ -10,7 +10,7 @@ import DashboardMap from "@/components/DashboardMap";
 
 export default function ForecastScreen() {
   const { isAnalyst } = useRole();
-  const { appliedFilters } = useFilters();
+  const { appliedFilters, dateWindow } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId } = useStateSelection();
   void stateId;
@@ -25,14 +25,21 @@ export default function ForecastScreen() {
     ? "Block / Municipality"
     : "District";
 
+  const fmtIso = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+  const forecastRange = `${fmtIso(dateWindow.forecastStartDate)} – ${fmtIso(dateWindow.forecastEndDate)}`;
+  const todayLabel = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
   return (
     <div className="space-y-6">
       <GlobalFilters />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Forecast — Predicted Risk (Next 4 Weeks)</h2>
-          <p className="text-xs text-muted-foreground">Forecast last updated: 07 Apr 2026 · Next update: 14 Apr 2026</p>
+          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Forecast — Predicted Risk ({forecastRange})</h2>
+          <p className="text-xs text-muted-foreground">Forecast last updated: {todayLabel}</p>
         </div>
       </div>
 
@@ -50,9 +57,9 @@ export default function ForecastScreen() {
             : "border-risk-low bg-risk-low/5 text-risk-low";
           return (
             <div key={f.week} className={`rounded-lg border-2 p-3 text-center ${riskClass}`}>
-              <div className="text-xs font-semibold uppercase">{f.week}</div>
+              <div className="text-xs font-semibold">{f.label}</div>
               <div className="text-lg font-bold">{f.cases}</div>
-              <div className="text-xs opacity-80">{f.label}</div>
+              <div className="text-xs opacity-80">cases (predicted)</div>
               <div className="mt-1"><span className={`risk-badge-${f.risk}`}>{f.risk}</span></div>
             </div>
           );
@@ -61,7 +68,7 @@ export default function ForecastScreen() {
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="section-title">Forecasted Risk Map — Next 4 Weeks</h3>
+          <h3 className="section-title">Forecasted Risk Map — {forecastRange}</h3>
           <span className="text-[11px] text-muted-foreground">Colors reflect <strong>predicted</strong> outbreak risk · Click areas to drill down</span>
         </div>
         <DashboardMap height="380px" mode="forecast" />
@@ -100,7 +107,7 @@ export default function ForecastScreen() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {[areaLabel, "Probability (%)", "Risk Level", "Expected Week", "Signal"].map((h) => (
+                {[areaLabel, "Probability (%)", "Risk Level", "Expected Window", "Signal"].map((h) => (
                   <th key={h} className="text-left py-2.5 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>

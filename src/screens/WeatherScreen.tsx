@@ -102,12 +102,12 @@ export default function WeatherScreen() {
           </div>
         </div>
 
-        <WeatherTable data={weatherObserved} label="Observed Climate Data (W-8 to W-1)" />
+        <WeatherTable data={weatherObserved} label={`Observed Climate Data (${observedLabel})`} />
       </div>
 
-      {/* Section B: Forecast (W+1 to W+8) */}
+      {/* Section B: Forecast */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Weather Forecast (W+1 to W+8)</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Weather Forecast ({forecastLabel})</h2>
         <p className="text-xs text-muted-foreground mb-4">Projected meteorological data — source: IMD extended range forecast · Next 8 weeks</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -152,7 +152,7 @@ export default function WeatherScreen() {
           </div>
         </div>
 
-        <WeatherTable data={weatherForecast} label="Forecast Climate Data (W+1 to W+8)" />
+        <WeatherTable data={weatherForecast} label={`Forecast Climate Data (${forecastLabel})`} />
       </div>
     </div>
   );

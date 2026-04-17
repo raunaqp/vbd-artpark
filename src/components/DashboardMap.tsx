@@ -69,10 +69,55 @@ function normalize(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-// Aliases: GeoJSON name → mock-data name
+// Aliases: normalized GeoJSON name → mock-data district name.
+// Keeps the same district consistent across map / tables / tooltips.
 const DISTRICT_ALIASES: Record<string, string> = {
+  // Andhra Pradesh
   "sripottisriramulunell": "S.P.S. Nellore",
+  "sripottisriramulunellore": "S.P.S. Nellore",
+  "spsnellore": "S.P.S. Nellore",
+  "nellore": "S.P.S. Nellore",
   "ysr": "Y.S.R.",
+  "ysrkadapa": "Y.S.R.",
+  "kadapa": "Y.S.R.",
+  // Odisha
+  "balasore": "Baleshwar",
+  "baleshwar": "Baleshwar",
+  "baleswar": "Baleshwar",
+  "jagatsinghpur": "Jagatsinghapur",
+  "jagatsinghapur": "Jagatsinghapur",
+  "jajapur": "Jajpur",
+  "jajpur": "Jajpur",
+  "khordha": "Khurda",
+  "khurda": "Khurda",
+  "kendrapara": "Kendrapada",
+  "kendrapada": "Kendrapada",
+  "subarnapur": "Sonepur",
+  "sonepur": "Sonepur",
+  "deogarh": "Debagarh",
+  "debagarh": "Debagarh",
+  "anugul": "Angul",
+  // Karnataka
+  "bengaluruurban": "Bengaluru Urban",
+  "bangaloreurban": "Bengaluru Urban",
+  "bengalururural": "Bengaluru Rural",
+  "bangalorerural": "Bengaluru Rural",
+  "belgaum": "Belagavi",
+  "belagavi": "Belagavi",
+  "mysore": "Mysuru",
+  "mysuru": "Mysuru",
+  "tumkur": "Tumakuru",
+  "tumakuru": "Tumakuru",
+  "shimoga": "Shivamogga",
+  "shivamogga": "Shivamogga",
+  "bijapur": "Vijayapura",
+  "vijayapura": "Vijayapura",
+  "gulbarga": "Kalaburagi",
+  "kalaburagi": "Kalaburagi",
+  "chikmagalur": "Chikkamagaluru",
+  "chikkamagaluru": "Chikkamagaluru",
+  "chamrajnagar": "Chamarajanagara",
+  "chamarajanagara": "Chamarajanagara",
 };
 
 function getFeatureDistrictName(feature: Feature): string {

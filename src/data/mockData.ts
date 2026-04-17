@@ -1361,10 +1361,19 @@ function transformPrediction(bundle: StateBundle, profile: TemporalProfile, filt
   const adjustment = Math.round((futureFactor - currentFactor) * 20 + seededBetween(`${bundle.id}:${item.area}:prediction`, -5, 6) - (share < 1 ? 6 : 0));
   const probability = clamp(Math.round(item.probability + adjustment), 5, 99);
   const risk: OutbreakPrediction["risk"] = probability >= 70 ? "high" : probability >= 40 ? "moderate" : "low";
+
+  // Convert "W+N" to actual date range based on forecast window
+  const match = /W\+(\d+)/.exec(item.expectedWeek || "");
+  const weekIndex = match ? Math.max(1, parseInt(match[1], 10)) : 1;
+  const weekStart = addDays(window.forecastStart, (weekIndex - 1) * 7);
+  const weekEnd = addDays(weekStart, 6);
+  const expectedWeek = formatRangeLabel(weekStart, weekEnd);
+
   return {
     ...item,
     probability,
     risk,
+    expectedWeek,
   };
 }
 
@@ -1382,7 +1391,7 @@ function generateWeeklyTimeSeries(profile: TemporalProfile, window: DashboardDat
     const positive = Math.max(0, Math.round(profile.weeklyPositiveBase * scopeScale * scalar * noise));
     const samples = Math.max(positive, Math.round(positive * profile.sampleMultiplier * seededBetween(`${seedKey}:weekly:samples:${index}`, 0.96, 1.1)));
     results.push({
-      week: `H-${weekStarts.length - index}`,
+      week: format(start, "d MMM"),
       date: formatRangeLabel(start, end),
       positive,
       samples,
@@ -1433,7 +1442,7 @@ function generateForecastSeries(profile: TemporalProfile, window: DashboardDateW
     const weekEnd = addDays(weekStart, 6) > window.to ? window.to : addDays(weekStart, 6);
     const scalar = getRangeScalar(profile, weekStart, weekEnd);
     return {
-      week: `W-${historyWeeks.length - index - 1}`,
+      week: format(weekStart, "d MMM"),
       label: formatRangeLabel(weekStart, weekEnd),
       actual: Math.max(0, Math.round(profile.weeklyPositiveBase * scopeScale * scalar * seededBetween(`${seedKey}:actual:${formatISODate(weekEnd)}`, 0.92, 1.08))),
     };
@@ -1455,14 +1464,16 @@ function generateForecastSeries(profile: TemporalProfile, window: DashboardDateW
     const moderateThreshold = Math.max(3, profile.riskCardThresholds.moderate * scaleFloor);
     const highThreshold = Math.max(6, profile.riskCardThresholds.high * scaleFloor);
     const risk: RiskForecastPoint["risk"] = predicted >= highThreshold ? "high" : predicted >= moderateThreshold ? "moderate" : "low";
-    forecastPoints.push({ week: `W+${index + 1}`, actual: null, predicted, lower, upper, type: "Forecast" });
-    riskPoints.push({ week: `W+${index + 1}`, cases: predicted, risk, label: formatRangeLabel(weekStart, weekEnd) });
+    const weekLabel = format(weekStart, "d MMM");
+    const rangeLabel = formatRangeLabel(weekStart, weekEnd);
+    forecastPoints.push({ week: weekLabel, actual: null, predicted, lower, upper, type: "Forecast" });
+    riskPoints.push({ week: weekLabel, cases: predicted, risk, label: rangeLabel });
   });
 
-  const historyChart: ForecastChartPoint[] = actualHistory.map((point) => ({
+  const historyChart: ForecastChartPoint[] = actualHistory.map((point, idx) => ({
     week: point.week,
     actual: point.actual,
-    predicted: point.week === "W-0" ? point.actual : null,
+    predicted: idx === actualHistory.length - 1 ? point.actual : null,
     lower: null,
     upper: null,
     type: "Historical",
@@ -1483,7 +1494,7 @@ function generateWeatherSeries(profile: TemporalProfile, start: Date, end: Date,
     const temp = Number((days.reduce((sum, day) => sum + profile.temperature[day.getMonth()], 0) / Math.max(days.length, 1) * seededBetween(`${seedKey}:temp:${formatISODate(weekEnd)}`, 0.97, 1.03)).toFixed(1));
     const humidity = Number((days.reduce((sum, day) => sum + profile.humidity[day.getMonth()], 0) / Math.max(days.length, 1) * seededBetween(`${seedKey}:humidity:${formatISODate(weekEnd)}`, 0.95, 1.05)).toFixed(1));
     return {
-      week: `${prefix}${prefix === "W-" ? weeks.length - index : index + 1}`,
+      week: format(weekStart, "d MMM"),
       endDate: formatRangeLabel(weekStart, weekEnd),
       rainfall,
       temp,

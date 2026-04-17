@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
+import TablePagination from "@/components/TablePagination";
 import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 
 const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+const PAGE_SIZE = 20;
 
 export default function HotspotsScreen() {
   const [timeRange, setTimeRange] = useState<"2weeks" | "4weeks">("4weeks");
+  const [page, setPage] = useState(1);
   const { appliedFilters } = useFilters();
   const { diseaseName, currentDisease } = useDisease();
 
@@ -21,6 +24,10 @@ export default function HotspotsScreen() {
     currentCases: Math.round(r.currentCases * currentDisease.caseMultiplier),
     prevCases: Math.round(r.prevCases * currentDisease.caseMultiplier),
   }));
+
+  // Reset to first page whenever filters or time range change
+  useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block, timeRange]);
+  const visibleHotspots = displayHotspots.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
     ? "Villages / Wards"
@@ -98,7 +105,7 @@ export default function HotspotsScreen() {
                 </tr>
               </thead>
               <tbody>
-                {displayHotspots.map((r) => {
+                {visibleHotspots.map((r) => {
                   const TrendIcon = trendIcon[r.trend];
                   return (
                     <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
@@ -115,6 +122,7 @@ export default function HotspotsScreen() {
               </tbody>
             </table>
           </div>
+          <TablePagination page={page} pageSize={PAGE_SIZE} total={displayHotspots.length} onPageChange={setPage} />
         </div>
       ) : (
         <div className="section-card p-5 text-center text-muted-foreground text-sm">

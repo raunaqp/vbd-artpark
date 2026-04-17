@@ -71,7 +71,13 @@ export default function OverviewScreen() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DashboardMap height="400px" />
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="section-title">Observed Hotspots (Last 4 Weeks)</h3>
+            <span className="text-[11px] text-muted-foreground">Based on confirmed cases &amp; recent trends</span>
+          </div>
+          <DashboardMap height="400px" />
+        </div>
         <RegionTable />
       </div>
     </div>

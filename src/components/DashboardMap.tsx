@@ -218,17 +218,21 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
     return { risk: fb.risk, cases: `${fb.confirmed}` };
   };
 
+  const hasSelection = !isStateLevel; // a district (and possibly block) is selected
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
     const { risk } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
+    // Focus mode: when a district is selected, dim every other polygon so the
+    // selected boundary clearly stands out. Selected polygon stays vivid.
+    const dimmed = hasSelection && !isSelected;
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
-      fillOpacity: isSelected ? 0.78 : risk ? 0.6 : 0.3,
-      color: isSelected ? "#0f172a" : "#475569",
+      fillOpacity: isSelected ? 0.82 : dimmed ? 0.15 : risk ? 0.6 : 0.3,
+      color: isSelected ? "#0f172a" : dimmed ? "#94a3b8" : "#475569",
       weight: isSelected ? 3 : 1,
-      opacity: 1,
+      opacity: dimmed ? 0.55 : 1,
     };
   };
 
@@ -364,12 +368,13 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
             <CircleMarker
               key={`${r.type}-${r.name}`}
               center={coords}
-              radius={Math.max(6, Math.min(16, r.confirmed / 2))}
+              // Smaller, less dominant — boundaries remain the primary encoding.
+              radius={Math.max(4, Math.min(8, 4 + r.confirmed / 12))}
               pathOptions={{
                 fillColor: riskColor[displayRisk],
-                fillOpacity: 0.85,
+                fillOpacity: 0.9,
                 color: "#0f172a",
-                weight: 1.5,
+                weight: 1,
               }}
               eventHandlers={
                 isDistrictLevel && r.type !== "village" && r.type !== "ward" && !isLocked("block")

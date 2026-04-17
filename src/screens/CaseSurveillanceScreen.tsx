@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
+import TablePagination from "@/components/TablePagination";
 import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
@@ -10,10 +11,12 @@ import { useStateSelection } from "@/contexts/StateContext";
 import { Download } from "lucide-react";
 
 type TimeRange = "daily" | "weekly" | "monthly";
+const PAGE_SIZE = 20;
 
 export default function CaseSurveillanceScreen() {
   const [timeRange, setTimeRange] = useState<TimeRange>("weekly");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId } = useStateSelection();
@@ -26,6 +29,10 @@ export default function CaseSurveillanceScreen() {
     if (!search) return true;
     return Object.values(r).some((v) => String(v).toLowerCase().includes(search.toLowerCase()));
   });
+
+  // Reset to first page when filters / search change
+  useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block, search]);
+  const visibleListing = filteredListing.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div>
@@ -85,7 +92,7 @@ export default function CaseSurveillanceScreen() {
               </tr>
             </thead>
             <tbody>
-              {filteredListing.map((r, i) => (
+              {visibleListing.map((r, i) => (
                 <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                   <td className="py-2 px-2">{r.patient}</td>
                   <td className="py-2 px-2">{r.gender}</td>
@@ -103,6 +110,7 @@ export default function CaseSurveillanceScreen() {
             </tbody>
           </table>
         </div>
+        <TablePagination page={page} pageSize={PAGE_SIZE} total={filteredListing.length} onPageChange={setPage} />
       </div>
     </div>
   );

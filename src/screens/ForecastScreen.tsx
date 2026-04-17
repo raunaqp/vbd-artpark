@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
 import { AlertTriangle } from "lucide-react";
 import { getForecastData, getRiskForecast, getOutbreakPredictions } from "@/data/mockData";
@@ -7,6 +8,9 @@ import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
+import TablePagination from "@/components/TablePagination";
+
+const PAGE_SIZE = 20;
 
 export default function ForecastScreen() {
   const { isAnalyst } = useRole();
@@ -18,6 +22,10 @@ export default function ForecastScreen() {
   const riskForecast = getRiskForecast(appliedFilters);
   const forecastData = getForecastData(appliedFilters);
   const predictions = getOutbreakPredictions(appliedFilters);
+
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
+  const visiblePredictions = predictions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
     ? "Village / Ward"
@@ -113,7 +121,7 @@ export default function ForecastScreen() {
               </tr>
             </thead>
             <tbody>
-              {predictions.map((r) => (
+              {visiblePredictions.map((r) => (
                 <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
                   <td className="py-2.5 px-3 font-medium">
                     {r.area}
@@ -142,6 +150,7 @@ export default function ForecastScreen() {
             </tbody>
           </table>
         </div>
+        <TablePagination page={page} pageSize={PAGE_SIZE} total={predictions.length} onPageChange={setPage} />
       </div>
     </div>
   );

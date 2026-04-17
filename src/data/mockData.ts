@@ -1,3 +1,5 @@
+import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
+
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)
 // Active state is set via setActiveState(); all getters/proxies read from the active bundle.
 
@@ -972,102 +974,740 @@ export const getMapZoom = (): number => S().mapZoom;
 export const mapCenter: [number, number] = AP.mapCenter;
 export const mapZoom: number = AP.mapZoom;
 
-// ──────────────── Filter functions ────────────────
-export function getFilteredRegions(district: string, block?: string): RegionData[] {
-  const s = S();
-  if (block && block !== "All Blocks") {
-    const villages = s.villageData.filter((v) => v.parentBlock === block);
-    const wardsInBlock = s.wardData.filter((w) => w.parentBlock === block);
-    const result = [...villages, ...wardsInBlock];
-    return result.length > 0 ? result : s.subDistrictData.filter((sb) => sb.name === block);
+// ──────────────── Dynamic filter + date-aware data layer ────────────────
+export type DashboardAreaType = "all" | "urban" | "rural";
+
+export interface DashboardFiltersLike {
+  district: string;
+  block: string;
+  ward: string;
+  areaType: DashboardAreaType;
+  fromDate: string;
+  toDate: string;
+}
+
+export interface DashboardDateWindow {
+  from: Date;
+  to: Date;
+  forecastStart: Date;
+  forecastEnd: Date;
+  fromDate: string;
+  toDate: string;
+  forecastStartDate: string;
+  forecastEndDate: string;
+  minDate: string;
+  maxDate: string;
+}
+
+interface TemporalProfile {
+  caseSeasonality: number[];
+  rainfall: number[];
+  humidity: number[];
+  temperature: number[];
+  weeklyPositiveBase: number;
+  sampleMultiplier: number;
+  forecastBoost: [number, number, number, number];
+  riskCardThresholds: { moderate: number; high: number };
+  yearBase: number;
+  yearlyGrowth: number;
+}
+
+interface DerivedDashboardData {
+  filters: DashboardFiltersLike;
+  window: DashboardDateWindow;
+  scopeScale: number;
+  regions: RegionData[];
+  hotspots2w: HotspotData[];
+  hotspots4w: HotspotData[];
+  predictions: OutbreakPrediction[];
+  riskForecast: RiskForecastPoint[];
+  weeklyTimeSeries: TimeSeriesPoint[];
+  dailyTimeSeries: TimeSeriesPoint[];
+  monthlyTimeSeries: TimeSeriesPoint[];
+  forecastData: ForecastChartPoint[];
+  weatherObserved: WeatherPoint[];
+  weatherForecast: WeatherPoint[];
+  hotspotAlerts: StateBundle["hotspotAlerts"];
+  newsAlerts: NewsAlert[];
+  geoTaggedAlerts: GeoAlert[];
+  lineListing: LineListing[];
+  dataQualityIssues: DataIssue[];
+}
+
+const DATA_LOOKBACK_YEARS = 6;
+const REFERENCE_DATE = startOfDay(new Date("2026-04-07"));
+const FIRST_NAMES = ["Aarav", "Aditi", "Anil", "Bhavana", "Charan", "Deepa", "Harsha", "Kiran", "Lakshmi", "Madhav", "Naveen", "Pratima", "Raghav", "Sahana", "Sanjay", "Shreya", "Sujata", "Usha", "Vikram", "Yamini"];
+const LAST_NAMES = ["Behera", "Das", "Gowda", "Kamat", "Kumari", "Mahapatra", "Mohanty", "Naidu", "Pai", "Patil", "Pradhan", "Rao", "Reddy", "Rout", "Sahoo", "Sethi", "Shetty", "Swain", "Varma", "Yadav"];
+const REFERRAL_SOURCES = ["ASHA", "ANM", "HW", "MO", "PHC", "CHC"];
+
+const temporalProfiles: Record<StateId, TemporalProfile> = {
+  andhra_pradesh: {
+    caseSeasonality: [0.58, 0.62, 0.78, 1.0, 1.12, 1.28, 1.36, 1.3, 1.12, 0.9, 0.72, 0.62],
+    rainfall: [6, 8, 12, 22, 38, 92, 128, 118, 96, 62, 22, 10],
+    humidity: [58, 60, 63, 68, 72, 78, 82, 81, 78, 72, 66, 61],
+    temperature: [25.8, 27.2, 29.4, 31.2, 32.1, 30.9, 29.6, 29.4, 29.2, 28.4, 27.0, 26.0],
+    weeklyPositiveBase: 19,
+    sampleMultiplier: 3.55,
+    forecastBoost: [2.37, 3.58, 4.84, 3.74],
+    riskCardThresholds: { moderate: 24, high: 56 },
+    yearBase: 0.8,
+    yearlyGrowth: 0.042,
+  },
+  odisha: {
+    caseSeasonality: [0.64, 0.7, 0.88, 1.02, 1.18, 1.38, 1.54, 1.48, 1.28, 1.02, 0.8, 0.68],
+    rainfall: [12, 18, 28, 42, 68, 126, 188, 176, 148, 92, 34, 16],
+    humidity: [60, 63, 66, 70, 75, 81, 86, 85, 82, 76, 70, 64],
+    temperature: [23.8, 25.4, 28.1, 30.2, 31.4, 30.1, 28.8, 28.7, 28.9, 28.0, 26.1, 24.6],
+    weeklyPositiveBase: 95,
+    sampleMultiplier: 2.58,
+    forecastBoost: [1.0, 1.37, 1.74, 1.89],
+    riskCardThresholds: { moderate: 42, high: 82 },
+    yearBase: 0.86,
+    yearlyGrowth: 0.035,
+  },
+  karnataka: {
+    caseSeasonality: [0.54, 0.58, 0.72, 0.88, 1.0, 1.18, 1.36, 1.42, 1.18, 0.94, 0.72, 0.58],
+    rainfall: [4, 6, 12, 28, 56, 104, 162, 184, 124, 72, 26, 10],
+    humidity: [56, 58, 61, 66, 71, 78, 84, 86, 80, 72, 64, 58],
+    temperature: [24.6, 26.1, 28.4, 30.2, 31.1, 29.6, 27.9, 27.8, 28.2, 27.5, 25.9, 24.8],
+    weeklyPositiveBase: 32,
+    sampleMultiplier: 3.18,
+    forecastBoost: [1.19, 1.72, 2.56, 3.28],
+    riskCardThresholds: { moderate: 20, high: 58 },
+    yearBase: 0.78,
+    yearlyGrowth: 0.04,
+  },
+};
+
+const derivedDashboardCache = new Map<string, DerivedDashboardData>();
+
+function hashSeed(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
   }
-  if (district && district !== "All Districts") {
-    const subs = s.subDistrictData.filter((sb) => sb.parentDistrict === district);
-    return subs.length > 0 ? subs : s.regionData.filter((r) => r.name === district);
+  return Math.abs(hash);
+}
+
+function seededBetween(key: string, min: number, max: number): number {
+  const fraction = (hashSeed(key) % 1000) / 1000;
+  return min + (max - min) * fraction;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function formatISODate(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
+
+function formatRangeLabel(start: Date, end: Date) {
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  return sameMonth ? `${format(start, "d")}–${format(end, "d MMM yyyy")}` : `${format(start, "d MMM")}–${format(end, "d MMM yyyy")}`;
+}
+
+function parseDateOr(value: string | undefined, fallback: Date) {
+  if (!value) return fallback;
+  const parsed = parseISO(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : startOfDay(parsed);
+}
+
+export function getDefaultHistoricalDateRange(baseDate = new Date()) {
+  const today = startOfDay(baseDate);
+  return {
+    fromDate: formatISODate(subMonths(today, 3)),
+    toDate: formatISODate(today),
+  };
+}
+
+export function getDateWindow(filters?: Partial<DashboardFiltersLike>, baseDate = new Date()): DashboardDateWindow {
+  const today = startOfDay(baseDate);
+  const minDate = startOfDay(addYears(today, -DATA_LOOKBACK_YEARS));
+  let to = parseDateOr(filters?.toDate, today);
+  if (to > today) to = today;
+  if (to < minDate) to = minDate;
+
+  let from = parseDateOr(filters?.fromDate, subMonths(today, 3));
+  if (from < minDate) from = minDate;
+  if (from > to) from = to;
+
+  const forecastStart = addDays(to, 1);
+  const forecastEnd = addDays(forecastStart, 27);
+
+  return {
+    from,
+    to,
+    forecastStart,
+    forecastEnd,
+    fromDate: formatISODate(from),
+    toDate: formatISODate(to),
+    forecastStartDate: formatISODate(forecastStart),
+    forecastEndDate: formatISODate(forecastEnd),
+    minDate: formatISODate(minDate),
+    maxDate: formatISODate(today),
+  };
+}
+
+function getDefaultFilters(baseDate = new Date()): DashboardFiltersLike {
+  const dates = getDefaultHistoricalDateRange(baseDate);
+  return {
+    district: "All Districts",
+    block: "All Blocks",
+    ward: "All Wards",
+    areaType: "all",
+    ...dates,
+  };
+}
+
+function resolveFilters(input?: DashboardFiltersLike | string, legacyBlock?: string): DashboardFiltersLike {
+  if (typeof input === "string") {
+    return {
+      ...getDefaultFilters(),
+      district: input || "All Districts",
+      block: legacyBlock || "All Blocks",
+    };
   }
-  return s.regionData;
+
+  return {
+    ...getDefaultFilters(),
+    ...input,
+  };
+}
+
+function getAreaMode(item: { name?: string; area?: string; type?: string }) {
+  const label = item.name || item.area || "";
+  if (item.type === "municipality" || item.type === "ward") return "urban" as const;
+  if (item.type === "block" || item.type === "village") return "rural" as const;
+  if (/\b(MC|City|Zone)\b/i.test(label)) return "urban" as const;
+  return "rural" as const;
+}
+
+function getDistrictAreaShare(bundle: StateBundle, districtName: string, areaType: DashboardAreaType) {
+  if (areaType === "all") return 1;
+  const children = bundle.subDistrictData.filter((item) => item.parentDistrict === districtName);
+  const total = children.reduce((sum, item) => sum + item.confirmed, 0);
+  if (!total) return 0.5;
+  const urban = children.filter((item) => getAreaMode(item) === "urban").reduce((sum, item) => sum + item.confirmed, 0);
+  const urbanShare = clamp(urban / total, 0.18, 0.82);
+  return areaType === "urban" ? urbanShare : 1 - urbanShare;
+}
+
+function getAreaShare(bundle: StateBundle, filters: DashboardFiltersLike, item: { name?: string; area?: string; type?: string; parentDistrict?: string; parentBlock?: string }) {
+  if (filters.areaType === "all") return 1;
+  if (item.type === "district") {
+    const districtName = item.name || item.area || "";
+    return getDistrictAreaShare(bundle, districtName, filters.areaType);
+  }
+  return getAreaMode(item) === filters.areaType ? 1 : 0;
+}
+
+function getStateBaseConfirmed(bundle: StateBundle) {
+  return bundle.regionData.reduce((sum, region) => sum + region.confirmed, 0);
+}
+
+function getBaseRegionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
+  if (filters.block !== "All Blocks") {
+    const villages = bundle.villageData.filter((item) => item.parentBlock === filters.block);
+    const wardsInBlock = bundle.wardData.filter((item) => item.parentBlock === filters.block);
+    const leafNodes = [...villages, ...wardsInBlock];
+    if (filters.ward !== "All Wards") return leafNodes.filter((item) => item.name === filters.ward);
+    return leafNodes.length > 0 ? leafNodes : bundle.subDistrictData.filter((item) => item.name === filters.block);
+  }
+  if (filters.district !== "All Districts") {
+    return bundle.subDistrictData.filter((item) => item.parentDistrict === filters.district);
+  }
+  return bundle.regionData;
+}
+
+function getLeafAreasForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
+  const source = filters.block !== "All Blocks"
+    ? [...bundle.villageData.filter((item) => item.parentBlock === filters.block), ...bundle.wardData.filter((item) => item.parentBlock === filters.block)]
+    : filters.district !== "All Districts"
+    ? [...bundle.villageData.filter((item) => item.parentDistrict === filters.district), ...bundle.wardData.filter((item) => item.parentDistrict === filters.district)]
+    : [...bundle.villageData, ...bundle.wardData];
+
+  return source.filter((item) => {
+    if (filters.ward !== "All Wards" && item.name !== filters.ward) return false;
+    return getAreaShare(bundle, filters, item) > 0;
+  });
+}
+
+function getSelectedBaseConfirmed(bundle: StateBundle, filters: DashboardFiltersLike) {
+  return getBaseRegionsForScope(bundle, filters).reduce((sum, item) => sum + item.confirmed * getAreaShare(bundle, filters, item), 0);
+}
+
+function getRelativeYearFactor(profile: TemporalProfile, date: Date) {
+  const minYear = startOfDay(new Date()).getFullYear() - DATA_LOOKBACK_YEARS;
+  const absolute = profile.yearBase + (date.getFullYear() - minYear) * profile.yearlyGrowth;
+  const reference = profile.yearBase + (REFERENCE_DATE.getFullYear() - minYear) * profile.yearlyGrowth;
+  return absolute / reference;
+}
+
+function getAverageRelativeCaseFactor(profile: TemporalProfile, start: Date, end: Date) {
+  const referenceSeason = profile.caseSeasonality[REFERENCE_DATE.getMonth()];
+  const days = eachDayOfInterval({ start, end });
+  const seasonal = days.reduce((sum, day) => sum + profile.caseSeasonality[day.getMonth()] / referenceSeason, 0) / Math.max(days.length, 1);
+  return seasonal * getRelativeYearFactor(profile, end);
+}
+
+function getRangeScalar(profile: TemporalProfile, start: Date, end: Date) {
+  const days = differenceInCalendarDays(end, start) + 1;
+  return (days / 28) * getAverageRelativeCaseFactor(profile, start, end);
+}
+
+function getRiskThresholds(type?: string) {
+  if (type === "district") return { moderate: 18, high: 36 };
+  if (type === "block" || type === "municipality") return { moderate: 7, high: 15 };
+  return { moderate: 3, high: 7 };
+}
+
+function getRiskLevel(ratePerFourWeeks: number, type?: string): RegionData["risk"] {
+  const thresholds = getRiskThresholds(type);
+  if (ratePerFourWeeks >= thresholds.high) return "high";
+  if (ratePerFourWeeks >= thresholds.moderate) return "moderate";
+  return "low";
+}
+
+function getTrend(currentValue: number, previousValue: number): RegionData["trend"] {
+  if (previousValue === 0 && currentValue > 0) return "up";
+  if (previousValue === 0) return "stable";
+  const change = (currentValue - previousValue) / previousValue;
+  if (change > 0.12) return "up";
+  if (change < -0.12) return "down";
+  return "stable";
+}
+
+function transformRegion(bundle: StateBundle, profile: TemporalProfile, filters: DashboardFiltersLike, window: DashboardDateWindow, item: RegionData): RegionData | null {
+  const share = getAreaShare(bundle, filters, item);
+  if (share <= 0) return null;
+
+  const durationDays = differenceInCalendarDays(window.to, window.from) + 1;
+  const previousEnd = addDays(window.from, -1);
+  const previousStart = addDays(previousEnd, -(durationDays - 1));
+  const bias = seededBetween(`${bundle.id}:${item.name}:region`, 0.92, 1.12) * (item.trend === "up" ? 1.08 : item.trend === "down" ? 0.93 : 1) * (item.risk === "high" ? 1.06 : item.risk === "low" ? 0.94 : 1);
+
+  const currentScalar = getRangeScalar(profile, window.from, window.to) * bias * share;
+  const previousScalar = getRangeScalar(profile, previousStart, previousEnd) * bias * share;
+
+  const suspected = Math.max(0, Math.round(item.suspected * currentScalar));
+  const tested = Math.max(0, Math.round(item.tested * currentScalar));
+  const confirmed = Math.max(0, Math.round(item.confirmed * currentScalar));
+  const previousConfirmed = Math.max(0, Math.round(item.confirmed * previousScalar));
+  const ratePerFourWeeks = durationDays > 0 ? confirmed / (durationDays / 28 || 1) : confirmed;
+
+  return {
+    ...item,
+    suspected,
+    tested,
+    confirmed,
+    trend: getTrend(confirmed, previousConfirmed),
+    risk: getRiskLevel(ratePerFourWeeks, item.type),
+  };
+}
+
+function getBaseHotspotsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
+  if (filters.block !== "All Blocks") {
+    const leafHotspots = bundle.hotspotVillageData.filter((item) => item.parentBlock === filters.block);
+    return filters.ward !== "All Wards" ? leafHotspots.filter((item) => item.area === filters.ward) : leafHotspots;
+  }
+  if (filters.district !== "All Districts") return bundle.hotspotSubDistrictData.filter((item) => item.parentDistrict === filters.district);
+  return bundle.hotspotDistrictData;
+}
+
+function transformHotspot(bundle: StateBundle, profile: TemporalProfile, filters: DashboardFiltersLike, window: DashboardDateWindow, item: HotspotData, lookbackWeeks: 2 | 4): HotspotData | null {
+  const share = getAreaShare(bundle, filters, { ...item, name: item.area });
+  if (share <= 0) return null;
+
+  const lookbackDays = lookbackWeeks * 7;
+  const currentEnd = window.to;
+  const currentStart = addDays(currentEnd, -(lookbackDays - 1));
+  const previousEnd = addDays(currentStart, -1);
+  const previousStart = addDays(previousEnd, -(lookbackDays - 1));
+  const bias = seededBetween(`${bundle.id}:${item.area}:hotspot:${lookbackWeeks}`, 0.9, 1.14);
+  const currentScalar = getRangeScalar(profile, currentStart, currentEnd) * bias * share;
+  const previousScalar = getRangeScalar(profile, previousStart, previousEnd) * bias * share;
+  const currentCases = Math.max(0, Math.round(item.currentCases * currentScalar));
+  const prevCases = Math.max(0, Math.round(item.prevCases * previousScalar));
+  const ratePerFourWeeks = currentCases / (lookbackWeeks / 4);
+
+  return {
+    ...item,
+    currentCases,
+    prevCases,
+    trend: getTrend(currentCases, prevCases),
+    risk: getRiskLevel(ratePerFourWeeks, filters.block !== "All Blocks" ? "village" : filters.district !== "All Districts" ? "block" : "district"),
+  };
+}
+
+function getBasePredictionsForScope(bundle: StateBundle, filters: DashboardFiltersLike) {
+  if (filters.block !== "All Blocks") {
+    const wardPredictions = bundle.municipalityPredictions.filter((item) => item.parentBlock === filters.block);
+    const blockPredictions = bundle.blockPredictions.filter((item) => item.parentBlock === filters.block);
+    const source = wardPredictions.length > 0 ? wardPredictions : blockPredictions;
+    return filters.ward !== "All Wards" ? source.filter((item) => item.area === filters.ward) : source;
+  }
+  if (filters.district !== "All Districts") return bundle.districtPredictions.filter((item) => item.parentDistrict === filters.district);
+  return bundle.statePredictions;
+}
+
+function transformPrediction(bundle: StateBundle, profile: TemporalProfile, filters: DashboardFiltersLike, window: DashboardDateWindow, item: OutbreakPrediction): OutbreakPrediction | null {
+  const share = getAreaShare(bundle, filters, { ...item, name: item.area, type: item.areaType?.toLowerCase() });
+  if (share <= 0) return null;
+
+  const currentFactor = getAverageRelativeCaseFactor(profile, window.from, window.to);
+  const futureFactor = getAverageRelativeCaseFactor(profile, window.forecastStart, window.forecastEnd);
+  const adjustment = Math.round((futureFactor - currentFactor) * 20 + seededBetween(`${bundle.id}:${item.area}:prediction`, -5, 6) - (share < 1 ? 6 : 0));
+  const probability = clamp(Math.round(item.probability + adjustment), 5, 99);
+  const risk: OutbreakPrediction["risk"] = probability >= 70 ? "high" : probability >= 40 ? "moderate" : "low";
+  return {
+    ...item,
+    probability,
+    risk,
+  };
+}
+
+function generateWeeklyTimeSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string): TimeSeriesPoint[] {
+  const weekStarts = eachWeekOfInterval({ start: window.from, end: window.to }, { weekStartsOn: 1 });
+  const chunkSize = Math.max(1, Math.ceil(weekStarts.length / 52));
+  const results: TimeSeriesPoint[] = [];
+
+  for (let index = 0; index < weekStarts.length; index += chunkSize) {
+    const start = weekStarts[index];
+    const groupEndWeek = weekStarts[Math.min(index + chunkSize - 1, weekStarts.length - 1)];
+    const end = groupEndWeek > window.to ? window.to : addDays(groupEndWeek, 6) > window.to ? window.to : addDays(groupEndWeek, 6);
+    const scalar = getRangeScalar(profile, start, end);
+    const noise = seededBetween(`${seedKey}:weekly:${index}:${formatISODate(end)}`, 0.92, 1.1);
+    const positive = Math.max(0, Math.round(profile.weeklyPositiveBase * scopeScale * scalar * noise));
+    const samples = Math.max(positive, Math.round(positive * profile.sampleMultiplier * seededBetween(`${seedKey}:weekly:samples:${index}`, 0.96, 1.1)));
+    results.push({
+      week: `H-${weekStarts.length - index}`,
+      date: formatRangeLabel(start, end),
+      positive,
+      samples,
+      tpr: Number(((positive / Math.max(samples, 1)) * 100).toFixed(1)),
+    });
+  }
+
+  return results;
+}
+
+function generateDailyTimeSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string): TimeSeriesPoint[] {
+  const dailyStart = differenceInCalendarDays(window.to, window.from) > 59 ? addDays(window.to, -59) : window.from;
+  const days = eachDayOfInterval({ start: dailyStart, end: window.to });
+  return days.map((day, index) => {
+    const scalar = getRangeScalar(profile, day, day);
+    const weekdayFactor = [0.92, 1.0, 1.08, 1.12, 1.04, 0.94, 0.82][day.getDay()];
+    const positive = Math.max(0, Math.round(profile.weeklyPositiveBase * 0.18 * scopeScale * scalar * weekdayFactor * seededBetween(`${seedKey}:daily:${formatISODate(day)}`, 0.9, 1.12)));
+    const samples = Math.max(positive, Math.round(positive * profile.sampleMultiplier * seededBetween(`${seedKey}:daily:samples:${index}`, 0.95, 1.1)));
+    return {
+      date: format(day, "d MMM"),
+      positive,
+      samples,
+      tpr: Number(((positive / Math.max(samples, 1)) * 100).toFixed(1)),
+    };
+  });
+}
+
+function generateMonthlyTimeSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string): TimeSeriesPoint[] {
+  const months = eachMonthOfInterval({ start: window.from, end: window.to });
+  return months.map((monthStart, index) => {
+    const monthEnd = index === months.length - 1 ? window.to : addDays(months[index + 1], -1);
+    const scalar = getRangeScalar(profile, monthStart, monthEnd);
+    const positive = Math.max(0, Math.round(profile.weeklyPositiveBase * 1.05 * scopeScale * scalar * seededBetween(`${seedKey}:monthly:${format(monthStart, "yyyy-MM")}`, 0.92, 1.12)));
+    const samples = Math.max(positive, Math.round(positive * profile.sampleMultiplier * seededBetween(`${seedKey}:monthly:samples:${index}`, 0.97, 1.12)));
+    return {
+      month: format(monthStart, months.length > 12 ? "MMM yyyy" : "MMM"),
+      positive,
+      samples,
+      tpr: Number(((positive / Math.max(samples, 1)) * 100).toFixed(1)),
+    };
+  });
+}
+
+function generateForecastSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string) {
+  const historyStart = startOfWeek(addWeeks(window.to, -10), { weekStartsOn: 1 });
+  const historyWeeks = eachWeekOfInterval({ start: historyStart < window.from ? window.from : historyStart, end: window.to }, { weekStartsOn: 1 });
+  const actualHistory = historyWeeks.map((weekStart, index) => {
+    const weekEnd = addDays(weekStart, 6) > window.to ? window.to : addDays(weekStart, 6);
+    const scalar = getRangeScalar(profile, weekStart, weekEnd);
+    return {
+      week: `W-${historyWeeks.length - index - 1}`,
+      label: formatRangeLabel(weekStart, weekEnd),
+      actual: Math.max(0, Math.round(profile.weeklyPositiveBase * scopeScale * scalar * seededBetween(`${seedKey}:actual:${formatISODate(weekEnd)}`, 0.92, 1.08))),
+    };
+  });
+
+  const currentActual = actualHistory[actualHistory.length - 1]?.actual || Math.max(1, Math.round(profile.weeklyPositiveBase * scopeScale));
+  const forecastPoints: ForecastChartPoint[] = [];
+  const riskPoints: RiskForecastPoint[] = [];
+
+  profile.forecastBoost.forEach((boost, index) => {
+    const weekStart = addWeeks(startOfWeek(window.forecastStart, { weekStartsOn: 1 }), index);
+    const weekEnd = addDays(weekStart, 6);
+    const futureSeason = getAverageRelativeCaseFactor(profile, weekStart, weekEnd);
+    const currentSeason = getAverageRelativeCaseFactor(profile, addDays(window.to, -6), window.to) || 1;
+    const predicted = Math.max(0, Math.round(currentActual * boost * (futureSeason / currentSeason) * seededBetween(`${seedKey}:forecast:${index}`, 0.96, 1.05)));
+    const lower = Math.max(0, Math.round(predicted * seededBetween(`${seedKey}:forecast:lower:${index}`, 0.76, 0.86)));
+    const upper = Math.max(predicted, Math.round(predicted * seededBetween(`${seedKey}:forecast:upper:${index}`, 1.14, 1.26)));
+    const scaleFloor = Math.max(scopeScale, 0.12);
+    const moderateThreshold = Math.max(3, profile.riskCardThresholds.moderate * scaleFloor);
+    const highThreshold = Math.max(6, profile.riskCardThresholds.high * scaleFloor);
+    const risk: RiskForecastPoint["risk"] = predicted >= highThreshold ? "high" : predicted >= moderateThreshold ? "moderate" : "low";
+    forecastPoints.push({ week: `W+${index + 1}`, actual: null, predicted, lower, upper, type: "Forecast" });
+    riskPoints.push({ week: `W+${index + 1}`, cases: predicted, risk, label: formatRangeLabel(weekStart, weekEnd) });
+  });
+
+  const historyChart: ForecastChartPoint[] = actualHistory.map((point) => ({
+    week: point.week,
+    actual: point.actual,
+    predicted: point.week === "W-0" ? point.actual : null,
+    lower: null,
+    upper: null,
+    type: "Historical",
+  }));
+
+  return {
+    forecastData: [...historyChart, ...forecastPoints],
+    riskForecast: riskPoints,
+  };
+}
+
+function generateWeatherSeries(profile: TemporalProfile, start: Date, end: Date, prefix: "W-" | "W+", seedKey: string) {
+  const weeks = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 }).slice(-8);
+  return weeks.map((weekStart, index) => {
+    const weekEnd = addDays(weekStart, 6) > end ? end : addDays(weekStart, 6);
+    const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    const rainfall = Number((days.reduce((sum, day) => sum + profile.rainfall[day.getMonth()], 0) / Math.max(days.length, 1) * seededBetween(`${seedKey}:rain:${formatISODate(weekEnd)}`, 0.82, 1.18)).toFixed(1));
+    const temp = Number((days.reduce((sum, day) => sum + profile.temperature[day.getMonth()], 0) / Math.max(days.length, 1) * seededBetween(`${seedKey}:temp:${formatISODate(weekEnd)}`, 0.97, 1.03)).toFixed(1));
+    const humidity = Number((days.reduce((sum, day) => sum + profile.humidity[day.getMonth()], 0) / Math.max(days.length, 1) * seededBetween(`${seedKey}:humidity:${formatISODate(weekEnd)}`, 0.95, 1.05)).toFixed(1));
+    return {
+      week: `${prefix}${prefix === "W-" ? weeks.length - index : index + 1}`,
+      endDate: formatRangeLabel(weekStart, weekEnd),
+      rainfall,
+      temp,
+      maxT: Number((temp + seededBetween(`${seedKey}:max:${index}`, 5.8, 6.9)).toFixed(1)),
+      minT: Number((temp - seededBetween(`${seedKey}:min:${index}`, 6.0, 7.4)).toFixed(1)),
+      humidity,
+    };
+  });
+}
+
+function shiftAlertDate(window: DashboardDateWindow, index: number) {
+  return formatISODate(addDays(window.to, -index));
+}
+
+function buildLineListing(bundle: StateBundle, profile: TemporalProfile, filters: DashboardFiltersLike, window: DashboardDateWindow, seedKey: string, scopeScale: number): LineListing[] {
+  const templates = getLeafAreasForScope(bundle, filters);
+  const days = differenceInCalendarDays(window.to, window.from) + 1;
+  const selectedBase = getSelectedBaseConfirmed(bundle, filters);
+  const estimate = Math.round((selectedBase / 4) * (days / 30) * getAverageRelativeCaseFactor(profile, window.from, window.to) * seededBetween(`${seedKey}:linelist:size`, 0.75, 1.1));
+  const count = templates.length === 0 ? 0 : clamp(estimate, 0, 180);
+  if (count <= 0) return [];
+
+  return Array.from({ length: count }, (_, index) => {
+    const area = templates[index % templates.length];
+    const district = area.parentDistrict || filters.district !== "All Districts" ? area.parentDistrict || filters.district : area.name;
+    const block = area.parentBlock || area.name;
+    const dateOffset = Math.floor((days - 1) * (1 - seededBetween(`${seedKey}:linelist:date:${index}`, 0, 1) ** 1.6));
+    const testDate = addDays(window.from, dateOffset);
+    const seed = hashSeed(`${seedKey}:${district}:${block}:${area.name}:${index}`);
+    return {
+      patient: `${FIRST_NAMES[seed % FIRST_NAMES.length]} ${LAST_NAMES[(seed + index) % LAST_NAMES.length]}`,
+      gender: seed % 2 === 0 ? "Male" : "Female",
+      age: 6 + (seed % 61),
+      subDistrict: block,
+      block,
+      village: area.name,
+      district,
+      diagnosis: "Dengue",
+      testType: seed % 3 === 0 ? "IgM" : seed % 3 === 1 ? "NS1" : "RDT",
+      testResult: "Positive",
+      dateOfTesting: formatISODate(testDate),
+      urbanRural: getAreaMode(area) === "urban" ? "Urban" : "Rural",
+      referredBy: REFERRAL_SOURCES[(seed + 2) % REFERRAL_SOURCES.length],
+    };
+  }).sort((a, b) => b.dateOfTesting.localeCompare(a.dateOfTesting));
+}
+
+function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacyBlock?: string): DerivedDashboardData {
+  const filters = resolveFilters(input, legacyBlock);
+  const cacheKey = `${activeStateId}|${filters.district}|${filters.block}|${filters.ward}|${filters.areaType}|${filters.fromDate}|${filters.toDate}`;
+  const cached = derivedDashboardCache.get(cacheKey);
+  if (cached) return cached;
+
+  const bundle = S();
+  const profile = temporalProfiles[bundle.id];
+  const window = getDateWindow(filters);
+  const scopeScale = clamp(getSelectedBaseConfirmed(bundle, filters) / Math.max(getStateBaseConfirmed(bundle), 1), 0, 1);
+  const seedKey = `${bundle.id}:${filters.district}:${filters.block}:${filters.ward}:${filters.areaType}:${window.toDate}`;
+
+  const regions = getBaseRegionsForScope(bundle, filters)
+    .map((item) => transformRegion(bundle, profile, filters, window, item))
+    .filter((item): item is RegionData => Boolean(item) && (item.confirmed > 0 || item.suspected > 0 || item.tested > 0));
+
+  const hotspots4w = getBaseHotspotsForScope(bundle, filters)
+    .map((item) => transformHotspot(bundle, profile, filters, window, item, 4))
+    .filter((item): item is HotspotData => Boolean(item) && (item.currentCases > 0 || item.prevCases > 0));
+
+  const hotspots2w = getBaseHotspotsForScope(bundle, filters)
+    .map((item) => transformHotspot(bundle, profile, filters, window, item, 2))
+    .filter((item): item is HotspotData => Boolean(item) && (item.currentCases > 0 || item.prevCases > 0));
+
+  const predictions = getBasePredictionsForScope(bundle, filters)
+    .map((item) => transformPrediction(bundle, profile, filters, window, item))
+    .filter((item): item is OutbreakPrediction => Boolean(item))
+    .sort((a, b) => b.probability - a.probability);
+
+  const weeklyTimeSeries = generateWeeklyTimeSeries(profile, window, scopeScale || 1, seedKey);
+  const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey);
+  const monthlyTimeSeries = generateMonthlyTimeSeries(profile, window, scopeScale || 1, seedKey);
+  const { forecastData, riskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey);
+
+  const observedWeatherStart = addWeeks(startOfWeek(window.to, { weekStartsOn: 1 }), -7);
+  const weatherObserved = generateWeatherSeries(profile, observedWeatherStart < window.from ? window.from : observedWeatherStart, window.to, "W-", `${seedKey}:observed`);
+  const forecastWeatherEnd = addWeeks(startOfWeek(window.forecastStart, { weekStartsOn: 1 }), 7);
+  const weatherForecast = generateWeatherSeries(profile, startOfWeek(window.forecastStart, { weekStartsOn: 1 }), forecastWeatherEnd, "W+", `${seedKey}:forecast-weather`);
+
+  const hotspotAlerts = bundle.hotspotAlerts.filter((alert) => filters.district === "All Districts" || alert.district === filters.district);
+  const newsAlerts = bundle.newsAlerts
+    .filter((alert) => filters.district === "All Districts" || alert.district === filters.district)
+    .map((alert, index) => ({ ...alert, date: shiftAlertDate(window, index + 1) }));
+  const geoTaggedAlerts = bundle.geoTaggedAlerts.filter((alert) => filters.district === "All Districts" || alert.district === filters.district);
+  const lineListing = buildLineListing(bundle, profile, filters, window, seedKey, scopeScale || 1);
+
+  const derived: DerivedDashboardData = {
+    filters,
+    window,
+    scopeScale,
+    regions,
+    hotspots2w,
+    hotspots4w,
+    predictions,
+    riskForecast,
+    weeklyTimeSeries,
+    dailyTimeSeries,
+    monthlyTimeSeries,
+    forecastData,
+    weatherObserved,
+    weatherForecast,
+    hotspotAlerts,
+    newsAlerts,
+    geoTaggedAlerts,
+    lineListing,
+    dataQualityIssues: bundle.dataQualityIssues,
+  };
+
+  derivedDashboardCache.set(cacheKey, derived);
+  return derived;
+}
+
+export function getFilteredRegions(input?: DashboardFiltersLike | string, legacyBlock?: string): RegionData[] {
+  return buildDerivedDashboardData(input, legacyBlock).regions;
 }
 
 export function getKpiFromRegions(regions: RegionData[]) {
   return {
-    suspected: regions.reduce((s, r) => s + r.suspected, 0),
-    tested: regions.reduce((s, r) => s + r.tested, 0),
-    confirmed: regions.reduce((s, r) => s + r.confirmed, 0),
+    suspected: regions.reduce((sum, region) => sum + region.suspected, 0),
+    tested: regions.reduce((sum, region) => sum + region.tested, 0),
+    confirmed: regions.reduce((sum, region) => sum + region.confirmed, 0),
   };
 }
 
 export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number): RegionData[] {
   if (multiplier === 1) return regions;
-  return regions.map((r) => ({ ...r, suspected: Math.round(r.suspected * multiplier), tested: Math.round(r.tested * multiplier), confirmed: Math.round(r.confirmed * multiplier) }));
+  return regions.map((region) => ({
+    ...region,
+    suspected: Math.round(region.suspected * multiplier),
+    tested: Math.round(region.tested * multiplier),
+    confirmed: Math.round(region.confirmed * multiplier),
+  }));
 }
 
-export function getSituationSummary(regions: RegionData[], diseaseName: string, district?: string, block?: string): string[] {
-  const kpi = getKpiFromRegions(regions);
-  const highRisk = regions.filter((r) => r.risk === "high");
-  const rising = regions.filter((r) => r.trend === "up");
-  const declining = regions.filter((r) => r.trend === "down");
-  const areaLabel = block && block !== "All Blocks" ? "villages/wards" : district && district !== "All Districts" ? "blocks/municipalities" : "districts";
-  const bullets: string[] = [];
-  if (regions.length === 1) {
-    const r = regions[0];
-    bullets.push(`${r.name} has ${kpi.confirmed} confirmed ${diseaseName} cases · risk: ${r.risk}`);
-    bullets.push(`Trend: ${r.trend === "up" ? "rising" : r.trend === "down" ? "declining" : "stable"} over last 4 weeks`);
-    bullets.push(`Forecast indicates continued ${r.risk === "high" ? "high" : "moderate"} risk over W+2 to W+3`);
-    bullets.push(`Recommended: ${r.risk === "high" ? "intensified vector control + fever surveys" : "routine surveillance + targeted action"}`);
-    return bullets;
+export function getSituationSummary(regions: RegionData[], diseaseName: string, filters?: DashboardFiltersLike | string, legacyBlock?: string): string[] {
+  const resolved = resolveFilters(filters, legacyBlock);
+  const window = getDateWindow(resolved);
+  if (regions.length === 0) {
+    return [`No ${diseaseName.toLowerCase()} data available for ${format(window.from, "d MMM yyyy")} to ${format(window.to, "d MMM yyyy")}.`];
   }
-  bullets.push(`${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel} (last 4 weeks)`);
-  if (highRisk.length > 0) bullets.push(`High risk in ${highRisk.slice(0, 3).map((r) => r.name).join(", ")}${highRisk.length > 3 ? ` +${highRisk.length - 3} more` : ""}`);
-  else bullets.push(`No ${areaLabel} currently classified as high risk`);
-  if (rising.length > 0) bullets.push(`Rising trend observed in ${rising.slice(0, 2).map((r) => r.name).join(", ")}${rising.length > 2 ? ` +${rising.length - 2} more` : ""}`);
-  if (declining.length > 0 && bullets.length < 4) bullets.push(`Declining cases in ${declining.slice(0, 2).map((r) => r.name).join(", ")}`);
-  bullets.push(`Forecast: projected increase in W+2 to W+3 driven by climate + clustering signals`);
+
+  const kpi = getKpiFromRegions(regions);
+  const highRisk = regions.filter((region) => region.risk === "high");
+  const rising = regions.filter((region) => region.trend === "up");
+  const declining = regions.filter((region) => region.trend === "down");
+  const areaLabel = resolved.block !== "All Blocks" ? "villages/wards" : resolved.district !== "All Districts" ? "blocks/municipalities" : "districts";
+
+  if (regions.length === 1) {
+    const region = regions[0];
+    return [
+      `${region.name} recorded ${kpi.confirmed} confirmed ${diseaseName} cases from ${format(window.from, "d MMM yyyy")} to ${format(window.to, "d MMM yyyy")}.`,
+      `Risk is ${region.risk} with a ${region.trend === "up" ? "rising" : region.trend === "down" ? "declining" : "stable"} trend against the previous matched period.`,
+      `Forecast window ${format(window.forecastStart, "d MMM")}–${format(window.forecastEnd, "d MMM yyyy")} remains ${region.risk === "high" ? "high" : "moderate"} risk.`,
+      `Recommended action: ${region.risk === "high" ? "intensified vector control and fever surveys" : "targeted surveillance and rapid response readiness"}.`,
+    ];
+  }
+
+  const bullets = [
+    `${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel} from ${format(window.from, "d MMM yyyy")} to ${format(window.to, "d MMM yyyy")}.`,
+    highRisk.length > 0 ? `High risk persists in ${highRisk.slice(0, 3).map((region) => region.name).join(", ")}${highRisk.length > 3 ? ` +${highRisk.length - 3} more` : ""}.` : `No ${areaLabel} are currently classified as high risk.`,
+    rising.length > 0 ? `Rising activity is concentrated in ${rising.slice(0, 2).map((region) => region.name).join(", ")}${rising.length > 2 ? ` +${rising.length - 2} more` : ""}.` : `No major rising clusters are visible in the selected period.`,
+    declining.length > 0 ? `Declining transmission is visible in ${declining.slice(0, 2).map((region) => region.name).join(", ")}.` : `Most selected areas are holding steady versus the prior matched period.`,
+    `Next 4 weeks (${format(window.forecastStart, "d MMM")}–${format(window.forecastEnd, "d MMM yyyy")}) are driven by climate, clustering, and historical seasonal patterns.`,
+  ];
+
   return bullets.slice(0, 5);
 }
 
-export function getOutbreakPredictions(district: string, block?: string): OutbreakPrediction[] {
-  const s = S();
-  if (block && block !== "All Blocks") {
-    const muniPreds = s.municipalityPredictions.filter((p) => p.parentBlock === block);
-    if (muniPreds.length > 0) return muniPreds.sort((a, b) => b.probability - a.probability);
-    const blockPreds = s.blockPredictions.filter((p) => p.parentBlock === block);
-    return blockPreds.sort((a, b) => b.probability - a.probability);
-  }
-  if (district && district !== "All Districts") return s.districtPredictions.filter((p) => p.parentDistrict === district).sort((a, b) => b.probability - a.probability);
-  return [...s.statePredictions].sort((a, b) => b.probability - a.probability);
+export function getOutbreakPredictions(input?: DashboardFiltersLike | string, legacyBlock?: string): OutbreakPrediction[] {
+  return buildDerivedDashboardData(input, legacyBlock).predictions;
 }
 
-export function getFilteredHotspots(district: string, block?: string): HotspotData[] {
-  const s = S();
-  if (block && block !== "All Blocks") return s.hotspotVillageData.filter((h) => h.parentBlock === block);
-  if (district && district !== "All Districts") return s.hotspotSubDistrictData.filter((h) => h.parentDistrict === district);
-  return s.hotspotDistrictData;
+export function getFilteredHotspots(input?: DashboardFiltersLike | string, lookbackWeeks: 2 | 4 = 4): HotspotData[] {
+  const derived = buildDerivedDashboardData(input);
+  return lookbackWeeks === 2 ? derived.hotspots2w : derived.hotspots4w;
 }
 
-// ──────────────── State-aware getters (preferred for components that re-render on state change) ────────────────
-export const getRiskForecast = (): RiskForecastPoint[] => S().riskForecast;
-export const getWeeklyTimeSeries = (): TimeSeriesPoint[] => S().weeklyTimeSeries;
-export const getDailyTimeSeries = (): TimeSeriesPoint[] => S().dailyTimeSeries;
-export const getMonthlyTimeSeries = (): TimeSeriesPoint[] => S().monthlyTimeSeries;
-export const getForecastData = (): ForecastChartPoint[] => S().forecastData;
-export const getWeatherObserved = (): WeatherPoint[] => S().weatherObserved;
-export const getWeatherForecast = (): WeatherPoint[] => S().weatherForecast;
-export const getDataQualityIssues = (): DataIssue[] => S().dataQualityIssues;
+export function getHotspotAlerts(input?: DashboardFiltersLike | string, legacyBlock?: string) {
+  return buildDerivedDashboardData(input, legacyBlock).hotspotAlerts;
+}
 
-// Backwards-compatible live proxies (read from active state on every access)
-export const riskForecast = liveArrayProxy(() => S().riskForecast);
-export const weeklyTimeSeries = liveArrayProxy(() => S().weeklyTimeSeries);
-export const dailyTimeSeries = liveArrayProxy(() => S().dailyTimeSeries);
-export const monthlyTimeSeries = liveArrayProxy(() => S().monthlyTimeSeries);
-export const forecastData = liveArrayProxy(() => S().forecastData);
-export const weatherObserved = liveArrayProxy(() => S().weatherObserved);
-export const weatherForecast = liveArrayProxy(() => S().weatherForecast);
-export const dataQualityIssues = liveArrayProxy(() => S().dataQualityIssues);
+export function getNewsAlerts(input?: DashboardFiltersLike | string, legacyBlock?: string) {
+  return buildDerivedDashboardData(input, legacyBlock).newsAlerts;
+}
 
-// Combined weather (observed + forecast) — derived from active state
-export const getWeatherData = () => [
-  ...S().weatherObserved.map((w) => ({ ...w, type: "observed" as const })),
-  ...S().weatherForecast.map((w) => ({ ...w, type: "forecast" as const })),
+export function getGeoTaggedAlerts(input?: DashboardFiltersLike | string, legacyBlock?: string) {
+  return buildDerivedDashboardData(input, legacyBlock).geoTaggedAlerts;
+}
+
+export function getLineListing(input?: DashboardFiltersLike | string, legacyBlock?: string) {
+  return buildDerivedDashboardData(input, legacyBlock).lineListing;
+}
+
+// ──────────────── State-aware getters (preferred for components that re-render on filters/state change) ────────────────
+export const getRiskForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): RiskForecastPoint[] => buildDerivedDashboardData(input, legacyBlock).riskForecast;
+export const getWeeklyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).weeklyTimeSeries;
+export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).dailyTimeSeries;
+export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).monthlyTimeSeries;
+export const getForecastData = (input?: DashboardFiltersLike | string, legacyBlock?: string): ForecastChartPoint[] => buildDerivedDashboardData(input, legacyBlock).forecastData;
+export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherObserved;
+export const getWeatherForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherForecast;
+export const getDataQualityIssues = (input?: DashboardFiltersLike | string, legacyBlock?: string): DataIssue[] => buildDerivedDashboardData(input, legacyBlock).dataQualityIssues;
+
+// Backwards-compatible live proxies (default state slice with current 3-month window)
+export const riskForecast = liveArrayProxy(() => getRiskForecast());
+export const weeklyTimeSeries = liveArrayProxy(() => getWeeklyTimeSeries());
+export const dailyTimeSeries = liveArrayProxy(() => getDailyTimeSeries());
+export const monthlyTimeSeries = liveArrayProxy(() => getMonthlyTimeSeries());
+export const forecastData = liveArrayProxy(() => getForecastData());
+export const weatherObserved = liveArrayProxy(() => getWeatherObserved());
+export const weatherForecast = liveArrayProxy(() => getWeatherForecast());
+export const dataQualityIssues = liveArrayProxy(() => getDataQualityIssues());
+
+// Combined weather (observed + forecast) — derived from active state + filters
+export const getWeatherData = (input?: DashboardFiltersLike | string, legacyBlock?: string) => [
+  ...getWeatherObserved(input, legacyBlock).map((week) => ({ ...week, type: "observed" as const })),
+  ...getWeatherForecast(input, legacyBlock).map((week) => ({ ...week, type: "forecast" as const })),
 ];
 export const weatherData = liveArrayProxy(() => getWeatherData());
 

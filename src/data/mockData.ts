@@ -145,21 +145,42 @@ export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number
   }));
 }
 
-export function getSituationSummary(regions: RegionData[], diseaseName: string, district?: string, block?: string) {
+export function getSituationSummary(regions: RegionData[], diseaseName: string, district?: string, block?: string): string[] {
   const kpi = getKpiFromRegions(regions);
   const highRisk = regions.filter(r => r.risk === "high");
-  const highNames = highRisk.map(r => r.name).join(", ");
+  const rising = regions.filter(r => r.trend === "up");
+  const declining = regions.filter(r => r.trend === "down");
   const areaLabel = block && block !== "All Blocks"
     ? "villages/wards"
     : district && district !== "All Districts"
     ? "blocks/municipalities"
     : "districts";
 
+  const bullets: string[] = [];
+
   if (regions.length === 1) {
     const r = regions[0];
-    return `${r.name} has recorded ${kpi.confirmed} confirmed ${diseaseName} cases. Risk level: ${r.risk}. Trend: ${r.trend === "up" ? "increasing" : r.trend === "down" ? "declining" : "stable"}.`;
+    bullets.push(`${r.name} has ${kpi.confirmed} confirmed ${diseaseName} cases · risk: ${r.risk}`);
+    bullets.push(`Trend: ${r.trend === "up" ? "rising" : r.trend === "down" ? "declining" : "stable"} over last 4 weeks`);
+    bullets.push(`Forecast indicates continued ${r.risk === "high" ? "high" : "moderate"} risk over W+2 to W+3`);
+    bullets.push(`Recommended: ${r.risk === "high" ? "intensified vector control + fever surveys" : "routine surveillance + targeted action"}`);
+    return bullets;
   }
-  return `${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel}. ${highRisk.length > 0 ? `High-risk areas: ${highNames}.` : "No areas at high risk currently."} Forecast indicates projected increase in weeks W+2 to W+3.`;
+
+  bullets.push(`${kpi.confirmed} confirmed ${diseaseName} cases across ${regions.length} ${areaLabel} (last 4 weeks)`);
+  if (highRisk.length > 0) {
+    bullets.push(`High risk in ${highRisk.slice(0, 3).map(r => r.name).join(", ")}${highRisk.length > 3 ? ` +${highRisk.length - 3} more` : ""}`);
+  } else {
+    bullets.push(`No ${areaLabel} currently classified as high risk`);
+  }
+  if (rising.length > 0) {
+    bullets.push(`Rising trend observed in ${rising.slice(0, 2).map(r => r.name).join(", ")}${rising.length > 2 ? ` +${rising.length - 2} more` : ""}`);
+  }
+  if (declining.length > 0 && bullets.length < 4) {
+    bullets.push(`Declining cases in ${declining.slice(0, 2).map(r => r.name).join(", ")}`);
+  }
+  bullets.push(`Forecast: projected increase in W+2 to W+3 driven by climate + clustering signals`);
+  return bullets.slice(0, 5);
 }
 
 // ── Outbreak Prediction Data (role-specific) ──
@@ -521,23 +542,27 @@ export const uploadFormats = [
   { id: "survey_data", name: "Survey Data", description: "Field survey and entomological data", columns: ["Date", "District", "Block", "Ward/Village", "Houses Surveyed", "Containers Found", "Containers Positive", "Breeding Index", "Surveyor Name"] },
 ];
 
-// ── Weather data (observed + forecast) with W- / W+ labels and dates ──
+// ── Weather data (observed W-8..W-1 + forecast W+1..W+8) with date ranges ──
 export const weatherObserved = [
-  { week: "W-4", endDate: "17 Mar 2026", rainfall: 0.0, temp: 28.8, maxT: 37.0, minT: 20.8, humidity: 20.9 },
-  { week: "W-3", endDate: "24 Mar 2026", rainfall: 3.4, temp: 25.7, maxT: 34.8, minT: 16.9, humidity: 39.7 },
-  { week: "W-2", endDate: "31 Mar 2026", rainfall: 3.3, temp: 29.9, maxT: 37.0, minT: 21.8, humidity: 32.1 },
-  { week: "W-1", endDate: "7 Apr 2026", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
+  { week: "W-8", endDate: "10–16 Feb 2026", rainfall: 0.0, temp: 24.5, maxT: 32.0, minT: 17.0, humidity: 28.0 },
+  { week: "W-7", endDate: "17–23 Feb 2026", rainfall: 0.5, temp: 25.8, maxT: 33.5, minT: 18.5, humidity: 30.0 },
+  { week: "W-6", endDate: "24 Feb–2 Mar 2026", rainfall: 1.2, temp: 27.0, maxT: 35.0, minT: 19.5, humidity: 33.0 },
+  { week: "W-5", endDate: "3–9 Mar 2026", rainfall: 0.8, temp: 27.8, maxT: 36.2, minT: 20.0, humidity: 35.5 },
+  { week: "W-4", endDate: "10–16 Mar 2026", rainfall: 0.0, temp: 28.8, maxT: 37.0, minT: 20.8, humidity: 20.9 },
+  { week: "W-3", endDate: "17–23 Mar 2026", rainfall: 3.4, temp: 25.7, maxT: 34.8, minT: 16.9, humidity: 39.7 },
+  { week: "W-2", endDate: "24–31 Mar 2026", rainfall: 3.3, temp: 29.9, maxT: 37.0, minT: 21.8, humidity: 32.1 },
+  { week: "W-1", endDate: "1–7 Apr 2026", rainfall: 1.7, temp: 27.8, maxT: 36.3, minT: 20.7, humidity: 37.4 },
 ];
 
 export const weatherForecast = [
-  { week: "W+1", endDate: "14 Apr 2026", rainfall: 5.2, temp: 30.1, maxT: 37.5, minT: 22.0, humidity: 45.0 },
-  { week: "W+2", endDate: "21 Apr 2026", rainfall: 12.4, temp: 31.2, maxT: 38.0, minT: 23.5, humidity: 52.0 },
-  { week: "W+3", endDate: "28 Apr 2026", rainfall: 18.6, temp: 32.0, maxT: 38.5, minT: 24.0, humidity: 58.0 },
-  { week: "W+4", endDate: "5 May 2026", rainfall: 25.0, temp: 31.5, maxT: 37.8, minT: 24.2, humidity: 62.0 },
-  { week: "W+5", endDate: "12 May 2026", rainfall: 35.0, temp: 30.8, maxT: 37.0, minT: 24.5, humidity: 68.0 },
-  { week: "W+6", endDate: "19 May 2026", rainfall: 42.0, temp: 30.2, maxT: 36.5, minT: 24.0, humidity: 72.0 },
-  { week: "W+7", endDate: "26 May 2026", rainfall: 55.0, temp: 29.5, maxT: 35.8, minT: 23.8, humidity: 75.0 },
-  { week: "W+8", endDate: "2 Jun 2026", rainfall: 65.0, temp: 28.8, maxT: 34.5, minT: 23.5, humidity: 78.0 },
+  { week: "W+1", endDate: "8–14 Apr 2026", rainfall: 5.2, temp: 30.1, maxT: 37.5, minT: 22.0, humidity: 45.0 },
+  { week: "W+2", endDate: "15–21 Apr 2026", rainfall: 12.4, temp: 31.2, maxT: 38.0, minT: 23.5, humidity: 52.0 },
+  { week: "W+3", endDate: "22–28 Apr 2026", rainfall: 18.6, temp: 32.0, maxT: 38.5, minT: 24.0, humidity: 58.0 },
+  { week: "W+4", endDate: "29 Apr–5 May 2026", rainfall: 25.0, temp: 31.5, maxT: 37.8, minT: 24.2, humidity: 62.0 },
+  { week: "W+5", endDate: "6–12 May 2026", rainfall: 35.0, temp: 30.8, maxT: 37.0, minT: 24.5, humidity: 68.0 },
+  { week: "W+6", endDate: "13–19 May 2026", rainfall: 42.0, temp: 30.2, maxT: 36.5, minT: 24.0, humidity: 72.0 },
+  { week: "W+7", endDate: "20–26 May 2026", rainfall: 55.0, temp: 29.5, maxT: 35.8, minT: 23.8, humidity: 75.0 },
+  { week: "W+8", endDate: "27 May–2 Jun 2026", rainfall: 65.0, temp: 28.8, maxT: 34.5, minT: 23.5, humidity: 78.0 },
 ];
 
 export const weatherData = [

@@ -41,6 +41,12 @@ export interface NewsAlert { id: number; headline: string; source: string; date:
 export interface GeoAlert { id: number; lat: number; lng: number; message: string; district: string; severity: "high" | "moderate" | "low"; }
 export interface LineListing { patient: string; gender: string; age: number; subDistrict: string; block: string; village: string; district: string; diagnosis: string; testType: string; testResult: string; dateOfTesting: string; urbanRural: string; referredBy: string; }
 
+export interface TimeSeriesPoint { week?: string; date?: string; month?: string; positive: number; samples: number; tpr: number; }
+export interface RiskForecastPoint { week: string; risk: "high" | "moderate" | "low"; cases: number; label: string; }
+export interface ForecastChartPoint { week: string; actual: number | null; predicted: number | null; lower: number | null; upper: number | null; type: string; }
+export interface WeatherPoint { week: string; endDate: string; rainfall: number; temp: number; maxT: number; minT: number; humidity: number; }
+export interface DataIssue { type: string; message: string; severity: "high" | "moderate" | "low"; }
+
 export interface StateBundle {
   id: StateId;
   label: string;
@@ -64,6 +70,15 @@ export interface StateBundle {
   districtCoordinates: Record<string, [number, number]>;
   mapCenter: [number, number];
   mapZoom: number;
+  // Time-series & forecast (state-specific)
+  riskForecast: RiskForecastPoint[];
+  weeklyTimeSeries: TimeSeriesPoint[];
+  dailyTimeSeries: TimeSeriesPoint[];
+  monthlyTimeSeries: TimeSeriesPoint[];
+  forecastData: ForecastChartPoint[];
+  weatherObserved: WeatherPoint[];
+  weatherForecast: WeatherPoint[];
+  dataQualityIssues: DataIssue[];
 }
 
 // ──────────────── ANDHRA PRADESH ────────────────

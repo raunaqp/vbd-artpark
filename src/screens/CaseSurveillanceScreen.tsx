@@ -85,7 +85,7 @@ export default function CaseSurveillanceScreen() {
               </tr>
             </thead>
             <tbody>
-              {filteredListing.map((r, i) => (
+              {visibleListing.map((r, i) => (
                 <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                   <td className="py-2 px-2">{r.patient}</td>
                   <td className="py-2 px-2">{r.gender}</td>
@@ -103,6 +103,7 @@ export default function CaseSurveillanceScreen() {
             </tbody>
           </table>
         </div>
+        <TablePagination page={page} pageSize={PAGE_SIZE} total={filteredListing.length} onPageChange={setPage} />
       </div>
     </div>
   );

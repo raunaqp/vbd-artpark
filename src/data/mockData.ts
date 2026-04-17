@@ -81,6 +81,13 @@ export interface StateBundle {
   weatherObserved: WeatherPoint[];
   weatherForecast: WeatherPoint[];
   dataQualityIssues: DataIssue[];
+  /**
+   * If true, every district polygon (incl. boundary-only ones not in regionData)
+   * gets a synthesized risk → fully colored choropleth.
+   * If false, boundary-only districts render grey ("Data not available").
+   * Default: true. Set false for states with intentionally partial coverage.
+   */
+  coversAllDistricts?: boolean;
 }
 
 // ──────────────── ANDHRA PRADESH ────────────────

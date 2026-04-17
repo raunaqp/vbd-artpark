@@ -102,15 +102,17 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
           const coords = districtCoordinates[r.name];
           if (!coords) return null;
           const isClickable = !isBottomLevel;
+          const pred = predByArea.get(r.name);
+          const displayRisk = mode === "forecast" && pred ? pred.risk : r.risk;
           return (
             <CircleMarker
               key={r.name}
               center={coords}
               radius={Math.max(6, Math.min(20, r.confirmed / 2))}
               pathOptions={{
-                fillColor: riskColor[r.risk],
+                fillColor: riskColor[displayRisk],
                 fillOpacity: isBottomLevel ? 0.5 : 0.7,
-                color: riskColor[r.risk],
+                color: riskColor[displayRisk],
                 weight: 2,
               }}
               eventHandlers={isClickable ? { click: () => handleClick(r.name) } : {}}
@@ -120,9 +122,19 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
                   <strong>{r.name}</strong>
                   {r.type && r.type !== "district" && <span className="capitalize"> ({r.type})</span>}
                   <br />
-                  Cases (4 wk): {r.confirmed}<br />
-                  Trend: {trendArrow[r.trend] || "→"}<br />
-                  Risk: {r.risk}
+                  {mode === "forecast" && pred ? (
+                    <>
+                      Forecast risk: <strong>{pred.risk}</strong><br />
+                      Probability: {pred.probability}% · {pred.expectedWeek}<br />
+                      <span className="text-[10px] italic">{pred.signal}</span>
+                    </>
+                  ) : (
+                    <>
+                      Cases (4 wk): {r.confirmed}<br />
+                      Trend: {trendArrow[r.trend] || "→"}<br />
+                      Risk: {r.risk}
+                    </>
+                  )}
                   {isClickable && <><br /><em className="text-[10px]">Click to drill down</em></>}
                 </div>
               </Tooltip>

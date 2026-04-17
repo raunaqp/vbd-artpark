@@ -11,6 +11,7 @@ import {
   getSituationSummary,
   applyDiseaseMultiplier,
   getRiskForecast,
+  getStateLocalRiskNote,
 } from "@/data/mockData";
 import type { TabId } from "@/components/DashboardLayout";
 

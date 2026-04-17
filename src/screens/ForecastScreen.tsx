@@ -75,9 +75,7 @@ export default function ForecastScreen() {
         })}
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="section-title">Forecasted Risk Map — {forecastRange}</h3>
+      <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
           <span className="text-[11px] text-muted-foreground">Colors reflect <strong>predicted</strong> outbreak risk · Click areas to drill down</span>
         </div>
         <DashboardMap height="380px" mode="forecast" />

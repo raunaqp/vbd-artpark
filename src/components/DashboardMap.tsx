@@ -10,6 +10,8 @@ import {
   getFilteredRegions,
   getOutbreakPredictions,
   getDistrictRiskFallback,
+  getDistrictHotspotRisk,
+  getFilteredHotspots,
 } from "@/data/mockData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters } from "@/contexts/FilterContext";

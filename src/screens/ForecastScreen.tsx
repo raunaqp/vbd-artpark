@@ -22,6 +22,7 @@ export default function ForecastScreen() {
   const riskForecast = getRiskForecast(appliedFilters);
   const forecastData = getForecastData(appliedFilters);
   const predictions = getOutbreakPredictions(appliedFilters);
+  const stateLocalNote = getStateLocalRiskNote(appliedFilters);
 
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);

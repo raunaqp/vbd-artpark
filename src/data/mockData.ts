@@ -81,6 +81,13 @@ export interface StateBundle {
   weatherObserved: WeatherPoint[];
   weatherForecast: WeatherPoint[];
   dataQualityIssues: DataIssue[];
+  /**
+   * If true, every district polygon (incl. boundary-only ones not in regionData)
+   * gets a synthesized risk → fully colored choropleth.
+   * If false, boundary-only districts render grey ("Data not available").
+   * Default: true. Set false for states with intentionally partial coverage.
+   */
+  coversAllDistricts?: boolean;
 }
 
 // ──────────────── ANDHRA PRADESH ────────────────
@@ -674,6 +681,9 @@ const ODISHA: StateBundle = {
     { type: "delayed", message: "Ganjam — PHC submissions delayed (>3 days)", severity: "moderate" },
     { type: "incomplete", message: "Sambalpur — incomplete entomological survey data", severity: "moderate" },
   ],
+  // Odisha intentionally has partial coverage — boundary-only districts render
+  // grey ("Data not available") rather than synthesized colors.
+  coversAllDistricts: false,
 };
 
 // ──────────────── KARNATAKA ────────────────
@@ -1280,6 +1290,15 @@ export function getDistrictRiskFallback(
   // Boundary-only district (not in regionData): deterministic synthesis.
   const row = getOrSynthesizeDistrictRow(bundle, districtName);
   return { risk: row.risk, confirmed: row.confirmed, trend: row.trend, synthesized: true };
+}
+
+/**
+ * True when the active state is configured to color every district polygon
+ * (synthesizing risk for boundary-only districts). False → boundary-only
+ * districts must render grey ("Data not available").
+ */
+export function stateCoversAllDistricts(): boolean {
+  return S().coversAllDistricts !== false;
 }
 
 /**

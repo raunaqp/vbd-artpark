@@ -12,6 +12,7 @@ import {
   getDistrictRiskFallback,
   getDistrictHotspotRisk,
   getFilteredHotspots,
+  stateCoversAllDistricts,
 } from "@/data/mockData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters } from "@/contexts/FilterContext";
@@ -286,6 +287,11 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
 
     // current mode → always state-level derived district (consistent across drill-downs)
     const fb = getDistrictRiskFallback(name, appliedFilters);
+    // For states with partial coverage (e.g. Odisha), boundary-only / synthesized
+    // districts render grey ("Data not available") instead of inventing a risk.
+    if (fb.synthesized && !stateCoversAllDistricts()) {
+      return { risk: null, cases: "—" };
+    }
     return { risk: fb.risk, cases: `${fb.confirmed}`, trend: fb.trend };
   };
 

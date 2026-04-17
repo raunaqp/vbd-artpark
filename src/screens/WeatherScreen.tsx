@@ -44,10 +44,10 @@ export default function WeatherScreen() {
     <div className="space-y-6">
       <GlobalFilters />
 
-      {/* Section A: Observed (W-4 to W-1) */}
+      {/* Section A: Observed (W-8 to W-1) */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Weather (W-4 to W-1)</h2>
-        <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations · Past 4 weeks</p>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Weather (W-8 to W-1)</h2>
+        <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations · Past 8 weeks</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="section-card p-5">
@@ -90,7 +90,7 @@ export default function WeatherScreen() {
           </div>
         </div>
 
-        <WeatherTable data={weatherObserved} label="Observed Climate Data (W-4 to W-1)" />
+        <WeatherTable data={weatherObserved} label="Observed Climate Data (W-8 to W-1)" />
       </div>
 
       {/* Section B: Forecast (W+1 to W+8) */}

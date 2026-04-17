@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import { mapCenter, mapZoom, districtCoordinates, getFilteredRegions, subDistrictData } from "@/data/mockData";
+import { mapCenter, mapZoom, districtCoordinates, getFilteredRegions, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import "leaflet/dist/leaflet.css";
 
@@ -11,9 +11,17 @@ const riskColor: Record<string, string> = {
 
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
 
-export default function DashboardMap({ height = "400px" }: { height?: string }) {
+interface DashboardMapProps {
+  height?: string;
+  /** "current" colors by past-cases risk, "forecast" colors by predicted outbreak risk */
+  mode?: "current" | "forecast";
+}
+
+export default function DashboardMap({ height = "400px", mode = "current" }: DashboardMapProps) {
   const { appliedFilters, drillDown, breadcrumb, isLocked } = useFilters();
   const regions = getFilteredRegions(appliedFilters.district, appliedFilters.block);
+  const predictions = mode === "forecast" ? getOutbreakPredictions(appliedFilters.district, appliedFilters.block) : [];
+  const predByArea = new Map(predictions.map(p => [p.area, p]));
 
   // Compute center/zoom based on filter level
   let center = mapCenter;
@@ -94,15 +102,17 @@ export default function DashboardMap({ height = "400px" }: { height?: string }) 
           const coords = districtCoordinates[r.name];
           if (!coords) return null;
           const isClickable = !isBottomLevel;
+          const pred = predByArea.get(r.name);
+          const displayRisk = mode === "forecast" && pred ? pred.risk : r.risk;
           return (
             <CircleMarker
               key={r.name}
               center={coords}
               radius={Math.max(6, Math.min(20, r.confirmed / 2))}
               pathOptions={{
-                fillColor: riskColor[r.risk],
+                fillColor: riskColor[displayRisk],
                 fillOpacity: isBottomLevel ? 0.5 : 0.7,
-                color: riskColor[r.risk],
+                color: riskColor[displayRisk],
                 weight: 2,
               }}
               eventHandlers={isClickable ? { click: () => handleClick(r.name) } : {}}
@@ -112,9 +122,19 @@ export default function DashboardMap({ height = "400px" }: { height?: string }) 
                   <strong>{r.name}</strong>
                   {r.type && r.type !== "district" && <span className="capitalize"> ({r.type})</span>}
                   <br />
-                  Cases (4 wk): {r.confirmed}<br />
-                  Trend: {trendArrow[r.trend] || "→"}<br />
-                  Risk: {r.risk}
+                  {mode === "forecast" && pred ? (
+                    <>
+                      Forecast risk: <strong>{pred.risk}</strong><br />
+                      Probability: {pred.probability}% · {pred.expectedWeek}<br />
+                      <span className="text-[10px] italic">{pred.signal}</span>
+                    </>
+                  ) : (
+                    <>
+                      Cases (4 wk): {r.confirmed}<br />
+                      Trend: {trendArrow[r.trend] || "→"}<br />
+                      Risk: {r.risk}
+                    </>
+                  )}
                   {isClickable && <><br /><em className="text-[10px]">Click to drill down</em></>}
                 </div>
               </Tooltip>

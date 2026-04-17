@@ -33,7 +33,14 @@ export default function OverviewScreen() {
 
       <div className="section-card p-4 mb-6">
         <h3 className="section-title mb-2">Situation Summary — {diseaseName}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">{summary}</p>
+        <ul className="space-y-1.5 text-sm text-foreground">
+          {summary.map((line, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+              <span className="leading-relaxed">{line}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <RecommendedActions />

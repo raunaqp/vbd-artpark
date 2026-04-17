@@ -11,6 +11,7 @@ import {
   getSituationSummary,
   applyDiseaseMultiplier,
   getRiskForecast,
+  getStateLocalRiskNote,
 } from "@/data/mockData";
 import type { TabId } from "@/components/DashboardLayout";
 
@@ -41,12 +42,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
 
   // Lightweight forecast for Home
   const riskForecast = getRiskForecast(appliedFilters);
-  const forecastHighOrMod = riskForecast.filter((f) => f.risk !== "low").length;
-  const forecastInterpretation = forecastHighOrMod === 0
-    ? "Low overall state burden expected over the next 4 weeks"
-    : forecastHighOrMod >= 3
-    ? "Elevated risk expected over the next 4 weeks across multiple districts"
-    : "Low overall state burden expected, with moderate localized risk in select districts";
+  const forecastInterpretation = getStateLocalRiskNote(appliedFilters);
 
   return (
     <div>

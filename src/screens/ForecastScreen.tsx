@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
 import { AlertTriangle } from "lucide-react";
-import { getForecastData, getRiskForecast, getOutbreakPredictions } from "@/data/mockData";
+import { getForecastData, getRiskForecast, getOutbreakPredictions, getStateLocalRiskNote } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
@@ -22,6 +22,7 @@ export default function ForecastScreen() {
   const riskForecast = getRiskForecast(appliedFilters);
   const forecastData = getForecastData(appliedFilters);
   const predictions = getOutbreakPredictions(appliedFilters);
+  const stateLocalNote = getStateLocalRiskNote(appliedFilters);
 
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
@@ -73,6 +74,8 @@ export default function ForecastScreen() {
           );
         })}
       </div>
+
+      <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
 
       <div>
         <div className="flex items-center justify-between mb-2">

@@ -1462,7 +1462,8 @@ function transformPrediction(bundle: StateBundle, profile: TemporalProfile, filt
   const futureFactor = getAverageRelativeCaseFactor(profile, window.forecastStart, window.forecastEnd);
   const adjustment = Math.round((futureFactor - currentFactor) * 20 + seededBetween(`${bundle.id}:${item.area}:prediction`, -5, 6) - (share < 1 ? 6 : 0));
   const probability = clamp(Math.round(item.probability + adjustment), 5, 99);
-  const risk: OutbreakPrediction["risk"] = probability >= 70 ? "high" : probability >= 40 ? "moderate" : "low";
+  // Standardised probability → risk mapping (>75 High, 50–75 Moderate, <50 Low)
+  const risk: OutbreakPrediction["risk"] = probability > 75 ? "high" : probability >= 50 ? "moderate" : "low";
 
   // Convert "W+N" to actual date range based on forecast window
   const match = /W\+(\d+)/.exec(item.expectedWeek || "");
@@ -1807,6 +1808,34 @@ export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacy
 export const getWeatherForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherForecast;
 export const getDataQualityIssues = (input?: DashboardFiltersLike | string, legacyBlock?: string): DataIssue[] => buildDerivedDashboardData(input, legacyBlock).dataQualityIssues;
 
+/**
+ * Single-sentence interpretation of state-vs-local forecast risk.
+ * Used below forecast cards on Home + Forecast tab.
+ */
+export function getStateLocalRiskNote(input?: DashboardFiltersLike | string): string {
+  const filters = resolveFilters(input);
+  const stateFilters: DashboardFiltersLike = { ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" };
+  const { riskForecast, predictions } = buildDerivedDashboardData(stateFilters);
+  const stateHasHigh = riskForecast.some((r) => r.risk === "high");
+  const stateHasMod = riskForecast.some((r) => r.risk === "moderate");
+  const localHigh = predictions.filter((p) => p.risk === "high").length;
+  const localMod = predictions.filter((p) => p.risk === "moderate").length;
+
+  if (!stateHasHigh && !stateHasMod && localHigh > 0) {
+    return "Overall state burden is low, but localized clustering indicates elevated outbreak risk in select districts/blocks.";
+  }
+  if (!stateHasHigh && localHigh > 0) {
+    return `Low overall state burden expected; ${localHigh} district${localHigh > 1 ? "s" : ""} show elevated localized outbreak risk.`;
+  }
+  if (stateHasHigh) {
+    return `Elevated state-level risk expected; high-risk localized clusters in ${localHigh} district${localHigh === 1 ? "" : "s"}.`;
+  }
+  if (stateHasMod || localMod > 0) {
+    return "Moderate localized risk expected in select districts; overall state burden remains contained.";
+  }
+  return "Low overall state burden expected over the next 4 weeks with no major localized clusters.";
+}
+
 // ──────────────── QA / consistency report (debug-only) ────────────────
 export interface QAReport {
   state: string;
@@ -1819,6 +1848,10 @@ export interface QAReport {
   sumOfDistrictForecastSum: number;
   forecast_diff: number;
   perDistrict: Array<{ district: string; confirmed: number; forecastSum: number; childRows: number }>;
+  probabilityBands: { high: number; moderate: number; low: number };
+  bandConsistencyOk: boolean;
+  missingDataDistricts: number;
+  stateLocalNote: string;
 }
 
 export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
@@ -1846,6 +1879,17 @@ export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
   const sumOfDistrictConfirmed = perDistrict.reduce((s, d) => s + d.confirmed, 0);
   const sumOfDistrictForecastSum = perDistrict.reduce((s, d) => s + d.forecastSum, 0);
 
+  // Probability → risk band consistency check (>75 High, 50–75 Moderate, <50 Low)
+  const bands = { high: 0, moderate: 0, low: 0 };
+  let bandConsistencyOk = true;
+  statePredictions.forEach((p) => {
+    bands[p.risk] += 1;
+    const expected: OutbreakPrediction["risk"] = p.probability > 75 ? "high" : p.probability >= 50 ? "moderate" : "low";
+    if (expected !== p.risk) bandConsistencyOk = false;
+  });
+
+  const missingDataDistricts = stateRegions.filter((r) => r.confirmed === 0 && r.suspected === 0).length;
+
   return {
     state: bundle.label,
     windowLabel: `${format(window.from, "d MMM yyyy")} – ${format(window.to, "d MMM yyyy")}`,
@@ -1857,6 +1901,10 @@ export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
     sumOfDistrictForecastSum,
     forecast_diff: sumOfDistrictForecastSum - stateForecastSum,
     perDistrict,
+    probabilityBands: bands,
+    bandConsistencyOk,
+    missingDataDistricts,
+    stateLocalNote: getStateLocalRiskNote(baseFilters),
   };
 }
 

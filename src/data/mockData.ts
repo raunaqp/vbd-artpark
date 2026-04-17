@@ -1789,6 +1789,59 @@ export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacy
 export const getWeatherForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherForecast;
 export const getDataQualityIssues = (input?: DashboardFiltersLike | string, legacyBlock?: string): DataIssue[] => buildDerivedDashboardData(input, legacyBlock).dataQualityIssues;
 
+// ──────────────── QA / consistency report (debug-only) ────────────────
+export interface QAReport {
+  state: string;
+  windowLabel: string;
+  forecastLabel: string;
+  stateTotalConfirmed: number;
+  sumOfDistrictConfirmed: number;
+  cases_diff: number;
+  stateForecastSum: number;
+  sumOfDistrictForecastSum: number;
+  forecast_diff: number;
+  perDistrict: Array<{ district: string; confirmed: number; forecastSum: number; childRows: number }>;
+}
+
+export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
+  const bundle = S();
+  const baseFilters: DashboardFiltersLike = { ...resolveFilters(input), district: "All Districts", block: "All Blocks", ward: "All Wards" };
+  const window = getDateWindow(baseFilters);
+  const stateRegions = buildDerivedDashboardData(baseFilters).regions;
+  const statePredictions = buildDerivedDashboardData(baseFilters).predictions;
+
+  const stateTotalConfirmed = stateRegions.reduce((s, r) => s + r.confirmed, 0);
+  const stateForecastSum = statePredictions.reduce((s, p) => s + p.probability, 0);
+
+  const perDistrict = stateRegions.map((district) => {
+    const dFilters: DashboardFiltersLike = { ...baseFilters, district: district.name };
+    const childRegions = buildDerivedDashboardData(dFilters).regions;
+    const childPreds = buildDerivedDashboardData(dFilters).predictions;
+    return {
+      district: district.name,
+      confirmed: childRegions.reduce((s, r) => s + r.confirmed, 0),
+      forecastSum: childPreds.reduce((s, p) => s + p.probability, 0),
+      childRows: childRegions.length,
+    };
+  });
+
+  const sumOfDistrictConfirmed = perDistrict.reduce((s, d) => s + d.confirmed, 0);
+  const sumOfDistrictForecastSum = perDistrict.reduce((s, d) => s + d.forecastSum, 0);
+
+  return {
+    state: bundle.label,
+    windowLabel: `${format(window.from, "d MMM yyyy")} – ${format(window.to, "d MMM yyyy")}`,
+    forecastLabel: `${format(window.forecastStart, "d MMM yyyy")} – ${format(window.forecastEnd, "d MMM yyyy")}`,
+    stateTotalConfirmed,
+    sumOfDistrictConfirmed,
+    cases_diff: sumOfDistrictConfirmed - stateTotalConfirmed,
+    stateForecastSum,
+    sumOfDistrictForecastSum,
+    forecast_diff: sumOfDistrictForecastSum - stateForecastSum,
+    perDistrict,
+  };
+}
+
 // Backwards-compatible live proxies (default state slice with current 3-month window)
 export const riskForecast = liveArrayProxy(() => getRiskForecast());
 export const weeklyTimeSeries = liveArrayProxy(() => getWeeklyTimeSeries());

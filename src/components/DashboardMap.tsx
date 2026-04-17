@@ -284,16 +284,26 @@ export default function DashboardMap({ height = "400px", mode = "current" }: Das
   const onEachFeature = (feature: Feature<Geometry>, layer: Layer) => {
     const name = featureToMockName(feature);
     const { risk, cases } = resolveDistrictRisk(name);
-    const riskLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "Unknown";
+    const riskLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "Data not available";
+    const displayName = name || getFeatureDistrictName(feature);
 
-    const tooltip = `
-      <div style="font-size:12px;line-height:1.45;min-width:140px">
-        <div style="font-weight:700;margin-bottom:2px">${name || getFeatureDistrictName(feature)}</div>
-        <div>Risk: <strong>${riskLabel}</strong></div>
-        <div>Cases: <strong>${cases}</strong></div>
-        <div style="opacity:0.8">Date: ${tooltipDateRange}</div>
-        ${isStateLevel && !isLocked("district") ? `<div style="opacity:0.6;margin-top:3px;font-style:italic">Click to drill down</div>` : ""}
-      </div>`;
+    // Forecast tooltip → probability + week. Observed tooltip → cases + date.
+    const tooltip = mode === "forecast"
+      ? `
+        <div style="font-size:12px;line-height:1.45;min-width:160px">
+          <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
+          <div>Outbreak Probability: <strong>${cases.replace(" (forecast)", "")}</strong></div>
+          <div>Risk: <strong>${riskLabel}</strong></div>
+          <div style="opacity:0.8">Week: ${tooltipDateRange}</div>
+        </div>`
+      : `
+        <div style="font-size:12px;line-height:1.45;min-width:140px">
+          <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
+          <div>Risk: <strong>${riskLabel}</strong></div>
+          <div>Cases: <strong>${cases}</strong></div>
+          <div style="opacity:0.8">Date: ${tooltipDateRange}</div>
+          ${isStateLevel && !isLocked("district") ? `<div style="opacity:0.6;margin-top:3px;font-style:italic">Click to drill down</div>` : ""}
+        </div>`;
     layer.bindTooltip(tooltip, { sticky: true });
 
     layer.on({

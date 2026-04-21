@@ -1814,7 +1814,7 @@ export function getKpiFromRegions(regions: RegionData[]) {
  * KpiCards uses this so the headline KPI tiles always match seed.ts at the top level.
  */
 export function getFilteredKpi(input?: DashboardFiltersLike | string, legacyBlock?: string) {
-  const filters = normalizeFilterInput(input, legacyBlock);
+  const filters = resolveFilters(input, legacyBlock);
   const regions = getFilteredRegions(filters);
   const isStateWide = (filters?.district ?? "All Districts") === "All Districts";
   const seedKpis = S().seedKpis;

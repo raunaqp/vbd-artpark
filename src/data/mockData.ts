@@ -1808,6 +1808,20 @@ export function getKpiFromRegions(regions: RegionData[]) {
   };
 }
 
+/**
+ * Returns the canonical seed KPIs for the active state when filters are state-wide
+ * (no district selected). Falls back to summing the filtered regionData otherwise.
+ * KpiCards uses this so the headline KPI tiles always match seed.ts at the top level.
+ */
+export function getFilteredKpi(input?: DashboardFiltersLike | string, legacyBlock?: string) {
+  const filters = normalizeFilterInput(input, legacyBlock);
+  const regions = getFilteredRegions(filters);
+  const isStateWide = (filters?.district ?? "All Districts") === "All Districts";
+  const seedKpis = S().seedKpis;
+  if (isStateWide && seedKpis) return { ...seedKpis };
+  return getKpiFromRegions(regions);
+}
+
 export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number): RegionData[] {
   if (multiplier === 1) return regions;
   return regions.map((region) => ({

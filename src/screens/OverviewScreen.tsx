@@ -65,11 +65,11 @@ export default function OverviewScreen({ onNavigate }: Props) {
       {/* 2. Key Metrics */}
       <KpiCards />
 
-      {/* 3. Observed Hotspots — single map + summary line + table */}
+      {/* 3. High Risk Areas — aggregated map + table (district/block level) */}
       <div className="mb-6">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
-          <h3 className="section-title">Observed Hotspots (Last 4 Weeks)</h3>
-          <span className="text-[11px] text-muted-foreground">Based on confirmed cases and recent trends</span>
+          <h3 className="section-title">High Risk Areas (Last 4 Weeks)</h3>
+          <span className="text-[11px] text-muted-foreground">Aggregated by current geographic scope</span>
         </div>
         <div className="rounded-md border border-border bg-muted/30 px-3 py-2 mb-3 text-sm text-foreground">
           {actionLine}
@@ -80,8 +80,11 @@ export default function OverviewScreen({ onNavigate }: Props) {
         </div>
       </div>
 
-      {/* 4. Recommended Actions */}
-      <RecommendedActions />
+      {/* 4. Areas of Concern — new emergence + rising clusters */}
+      <AreasOfConcern />
+
+      {/* 5. Action Focus Areas — location-specific, hybrid curated/auto */}
+      <ActionFocusAreas />
 
       {/* 5. Forecast — lightweight cards only with CTA */}
       <div className="section-card p-5">

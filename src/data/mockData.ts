@@ -1,4 +1,5 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
+import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions } from "./seed";
 
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)
 // Active state is set via setActiveState(); all getters/proxies read from the active bundle.
@@ -1584,13 +1585,22 @@ function generateWeeklyTimeSeries(profile: TemporalProfile, window: DashboardDat
   return results;
 }
 
-function generateDailyTimeSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string): TimeSeriesPoint[] {
+function generateDailyTimeSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string, filters?: DashboardFiltersLike): TimeSeriesPoint[] {
   const dailyStart = differenceInCalendarDays(window.to, window.from) > 59 ? addDays(window.to, -59) : window.from;
   const days = eachDayOfInterval({ start: dailyStart, end: window.to });
+  const seedDaily = filters
+    ? getSeedDailyDist(activeStateId, { district: filters.district, block: filters.block, ward: filters.ward })
+    : undefined;
+  const seedTailLen = seedDaily?.length ?? 0;
+  const tailStartIdx = seedTailLen > 0 ? Math.max(0, days.length - seedTailLen) : -1;
   return days.map((day, index) => {
     const scalar = getRangeScalar(profile, day, day);
     const weekdayFactor = [0.92, 1.0, 1.08, 1.12, 1.04, 0.94, 0.82][day.getDay()];
-    const positive = Math.max(0, Math.round(profile.weeklyPositiveBase * 0.18 * scopeScale * scalar * weekdayFactor * seededBetween(`${seedKey}:daily:${formatISODate(day)}`, 0.9, 1.12)));
+    let positive = Math.max(0, Math.round(profile.weeklyPositiveBase * 0.18 * scopeScale * scalar * weekdayFactor * seededBetween(`${seedKey}:daily:${formatISODate(day)}`, 0.9, 1.12)));
+    if (seedDaily && index >= tailStartIdx) {
+      // Overlay seeded last-14-days positive count for this scope.
+      positive = seedDaily[index - tailStartIdx];
+    }
     const samples = Math.max(positive, Math.round(positive * profile.sampleMultiplier * seededBetween(`${seedKey}:daily:samples:${index}`, 0.95, 1.1)));
     return {
       date: format(day, "d MMM"),
@@ -1617,7 +1627,7 @@ function generateMonthlyTimeSeries(profile: TemporalProfile, window: DashboardDa
   });
 }
 
-function generateForecastSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string) {
+function generateForecastSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string, filters?: DashboardFiltersLike) {
   const historyStart = startOfWeek(addWeeks(window.to, -10), { weekStartsOn: 1 });
   const historyWeeks = eachWeekOfInterval({ start: historyStart < window.from ? window.from : historyStart, end: window.to }, { weekStartsOn: 1 });
   const actualHistory = historyWeeks.map((weekStart, index) => {
@@ -1634,18 +1644,38 @@ function generateForecastSeries(profile: TemporalProfile, window: DashboardDateW
   const forecastPoints: ForecastChartPoint[] = [];
   const riskPoints: RiskForecastPoint[] = [];
 
+  // Seed forecast block — only honored at district scope (not All Districts, not drilled below).
+  const seedForecast = filters && filters.district !== "All Districts" && filters.block === "All Blocks"
+    ? getSeedForecastForDistrict(activeStateId, filters.district)
+    : undefined;
+  const seedProbs = seedForecast
+    ? [seedForecast.w1_probability, seedForecast.w2_probability, seedForecast.w3_probability, seedForecast.w4_probability]
+    : undefined;
+
   profile.forecastBoost.forEach((boost, index) => {
     const weekStart = addWeeks(startOfWeek(window.forecastStart, { weekStartsOn: 1 }), index);
     const weekEnd = addDays(weekStart, 6);
     const futureSeason = getAverageRelativeCaseFactor(profile, weekStart, weekEnd);
     const currentSeason = getAverageRelativeCaseFactor(profile, addDays(window.to, -6), window.to) || 1;
-    const predicted = Math.max(0, Math.round(currentActual * boost * (futureSeason / currentSeason) * seededBetween(`${seedKey}:forecast:${index}`, 0.96, 1.05)));
+    let predicted = Math.max(0, Math.round(currentActual * boost * (futureSeason / currentSeason) * seededBetween(`${seedKey}:forecast:${index}`, 0.96, 1.05)));
+    if (seedProbs && index < seedProbs.length) {
+      // Re-anchor the predicted weekly cases to the seed's per-week probability
+      // (seed prob is in [0,1]; treat it as a multiplier on currentActual scaled by 1.6 so peak weeks ≈ 1.5–2× baseline).
+      predicted = Math.max(0, Math.round(currentActual * (0.6 + seedProbs[index] * 1.6)));
+    }
     const lower = Math.max(0, Math.round(predicted * seededBetween(`${seedKey}:forecast:lower:${index}`, 0.76, 0.86)));
     const upper = Math.max(predicted, Math.round(predicted * seededBetween(`${seedKey}:forecast:upper:${index}`, 1.14, 1.26)));
-    const scaleFloor = Math.max(scopeScale, 0.12);
-    const moderateThreshold = Math.max(3, profile.riskCardThresholds.moderate * scaleFloor);
-    const highThreshold = Math.max(6, profile.riskCardThresholds.high * scaleFloor);
-    const risk: RiskForecastPoint["risk"] = predicted >= highThreshold ? "high" : predicted >= moderateThreshold ? "moderate" : "low";
+    let risk: RiskForecastPoint["risk"];
+    if (seedProbs && index < seedProbs.length) {
+      // Seeded probability → risk band: ≥0.6 high, ≥0.4 moderate, else low.
+      const p = seedProbs[index];
+      risk = p >= 0.6 ? "high" : p >= 0.4 ? "moderate" : "low";
+    } else {
+      const scaleFloor = Math.max(scopeScale, 0.12);
+      const moderateThreshold = Math.max(3, profile.riskCardThresholds.moderate * scaleFloor);
+      const highThreshold = Math.max(6, profile.riskCardThresholds.high * scaleFloor);
+      risk = predicted >= highThreshold ? "high" : predicted >= moderateThreshold ? "moderate" : "low";
+    }
     const weekLabel = format(weekStart, "d MMM");
     const rangeLabel = formatRangeLabel(weekStart, weekEnd);
     forecastPoints.push({ week: weekLabel, actual: null, predicted, lower, upper, type: "Forecast" });
@@ -1754,9 +1784,9 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
     .sort((a, b) => b.probability - a.probability);
 
   const weeklyTimeSeries = generateWeeklyTimeSeries(profile, window, scopeScale || 1, seedKey);
-  const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey);
+  const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey, filters);
   const monthlyTimeSeries = generateMonthlyTimeSeries(profile, window, scopeScale || 1, seedKey);
-  const { forecastData, riskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey);
+  const { forecastData, riskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey, filters);
 
   const observedWeatherStart = addWeeks(startOfWeek(window.to, { weekStartsOn: 1 }), -7);
   const weatherObserved = generateWeatherSeries(profile, observedWeatherStart < window.from ? window.from : observedWeatherStart, window.to, "W-", `${seedKey}:observed`);
@@ -2140,6 +2170,32 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
 
   const out: ActionFocusItem[] = [];
   const seen = new Set<string>();
+
+  // ── Seed-driven entries (highest priority): districts in scope with curated `actions[]`.
+  const seedActionDistricts = getSeededDistrictsWithActions(activeStateId);
+  const inScope = (name: string) =>
+    base.district === "All Districts" || base.district === name;
+  const signalToFocusSignal: Record<string, ActionFocusItem["signal"]> = {
+    new_emergence: "new",
+    rising_cluster: "rising",
+    persistent: "persistent",
+    moderate: "rising",
+    stable_low: "persistent",
+  };
+  for (const sd of seedActionDistricts) {
+    if (!inScope(sd.name)) continue;
+    if (seen.has(sd.name)) continue;
+    out.push({
+      area: sd.name,
+      parent: undefined,
+      geoType: inferGeoType(sd.name),
+      signal: signalToFocusSignal[sd.signal] ?? "persistent",
+      actions: sd.actions.slice(0, 3),
+      source: "curated",
+    });
+    seen.add(sd.name);
+    if (out.length >= 5) return out;
+  }
 
   for (const { r } of ranked) {
     if (seen.has(r.name)) continue;

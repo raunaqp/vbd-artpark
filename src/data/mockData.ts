@@ -1778,15 +1778,24 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
     .map((item) => transformHotspot(bundle, profile, filters, window, item, 2))
     .filter((item): item is HotspotData => Boolean(item) && (item.currentCases > 0 || item.prevCases > 0));
 
-  const predictions = getBasePredictionsForScope(bundle, filters)
+  const rawPredictions = getBasePredictionsForScope(bundle, filters)
     .map((item) => transformPrediction(bundle, profile, filters, window, item))
     .filter((item): item is OutbreakPrediction => Boolean(item))
     .sort((a, b) => b.probability - a.probability);
 
+  // ── Forecast hierarchy clamp ──
+  // Predicted weekly cases must respect parent-child totals:
+  //   sum(district) ≤ state, sum(block) ≤ district, sum(ward) ≤ block.
+  // We approximate "predicted cases" via probability×scale, but the user-facing
+  // requirement is on the riskForecast cards (state/district aggregated).
+  // Here we ensure no child prediction exceeds its parent by scaling probabilities.
+  const predictions = clampPredictionHierarchy(rawPredictions, bundle, filters);
+
   const weeklyTimeSeries = generateWeeklyTimeSeries(profile, window, scopeScale || 1, seedKey);
   const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey, filters);
   const monthlyTimeSeries = generateMonthlyTimeSeries(profile, window, scopeScale || 1, seedKey);
-  const { forecastData, riskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey, filters);
+  const { forecastData, riskForecast: rawRiskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey, filters);
+  const riskForecast = clampRiskForecastAgainstParent(rawRiskForecast, profile, window, scopeScale || 1, seedKey, filters);
 
   const observedWeatherStart = addWeeks(startOfWeek(window.to, { weekStartsOn: 1 }), -7);
   const weatherObserved = generateWeatherSeries(profile, observedWeatherStart < window.from ? window.from : observedWeatherStart, window.to, "W-", `${seedKey}:observed`);

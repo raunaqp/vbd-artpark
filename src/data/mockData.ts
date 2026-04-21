@@ -1784,9 +1784,9 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
     .sort((a, b) => b.probability - a.probability);
 
   const weeklyTimeSeries = generateWeeklyTimeSeries(profile, window, scopeScale || 1, seedKey);
-  const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey);
+  const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey, filters);
   const monthlyTimeSeries = generateMonthlyTimeSeries(profile, window, scopeScale || 1, seedKey);
-  const { forecastData, riskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey);
+  const { forecastData, riskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey, filters);
 
   const observedWeatherStart = addWeeks(startOfWeek(window.to, { weekStartsOn: 1 }), -7);
   const weatherObserved = generateWeatherSeries(profile, observedWeatherStart < window.from ? window.from : observedWeatherStart, window.to, "W-", `${seedKey}:observed`);

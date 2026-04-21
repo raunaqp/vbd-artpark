@@ -1627,7 +1627,7 @@ function generateMonthlyTimeSeries(profile: TemporalProfile, window: DashboardDa
   });
 }
 
-function generateForecastSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string) {
+function generateForecastSeries(profile: TemporalProfile, window: DashboardDateWindow, scopeScale: number, seedKey: string, filters?: DashboardFiltersLike) {
   const historyStart = startOfWeek(addWeeks(window.to, -10), { weekStartsOn: 1 });
   const historyWeeks = eachWeekOfInterval({ start: historyStart < window.from ? window.from : historyStart, end: window.to }, { weekStartsOn: 1 });
   const actualHistory = historyWeeks.map((weekStart, index) => {
@@ -1644,18 +1644,38 @@ function generateForecastSeries(profile: TemporalProfile, window: DashboardDateW
   const forecastPoints: ForecastChartPoint[] = [];
   const riskPoints: RiskForecastPoint[] = [];
 
+  // Seed forecast block — only honored at district scope (not All Districts, not drilled below).
+  const seedForecast = filters && filters.district !== "All Districts" && filters.block === "All Blocks"
+    ? getSeedForecastForDistrict(activeStateId, filters.district)
+    : undefined;
+  const seedProbs = seedForecast
+    ? [seedForecast.w1_probability, seedForecast.w2_probability, seedForecast.w3_probability, seedForecast.w4_probability]
+    : undefined;
+
   profile.forecastBoost.forEach((boost, index) => {
     const weekStart = addWeeks(startOfWeek(window.forecastStart, { weekStartsOn: 1 }), index);
     const weekEnd = addDays(weekStart, 6);
     const futureSeason = getAverageRelativeCaseFactor(profile, weekStart, weekEnd);
     const currentSeason = getAverageRelativeCaseFactor(profile, addDays(window.to, -6), window.to) || 1;
-    const predicted = Math.max(0, Math.round(currentActual * boost * (futureSeason / currentSeason) * seededBetween(`${seedKey}:forecast:${index}`, 0.96, 1.05)));
+    let predicted = Math.max(0, Math.round(currentActual * boost * (futureSeason / currentSeason) * seededBetween(`${seedKey}:forecast:${index}`, 0.96, 1.05)));
+    if (seedProbs && index < seedProbs.length) {
+      // Re-anchor the predicted weekly cases to the seed's per-week probability
+      // (seed prob is in [0,1]; treat it as a multiplier on currentActual scaled by 1.6 so peak weeks ≈ 1.5–2× baseline).
+      predicted = Math.max(0, Math.round(currentActual * (0.6 + seedProbs[index] * 1.6)));
+    }
     const lower = Math.max(0, Math.round(predicted * seededBetween(`${seedKey}:forecast:lower:${index}`, 0.76, 0.86)));
     const upper = Math.max(predicted, Math.round(predicted * seededBetween(`${seedKey}:forecast:upper:${index}`, 1.14, 1.26)));
-    const scaleFloor = Math.max(scopeScale, 0.12);
-    const moderateThreshold = Math.max(3, profile.riskCardThresholds.moderate * scaleFloor);
-    const highThreshold = Math.max(6, profile.riskCardThresholds.high * scaleFloor);
-    const risk: RiskForecastPoint["risk"] = predicted >= highThreshold ? "high" : predicted >= moderateThreshold ? "moderate" : "low";
+    let risk: RiskForecastPoint["risk"];
+    if (seedProbs && index < seedProbs.length) {
+      // Seeded probability → risk band: ≥0.6 high, ≥0.4 moderate, else low.
+      const p = seedProbs[index];
+      risk = p >= 0.6 ? "high" : p >= 0.4 ? "moderate" : "low";
+    } else {
+      const scaleFloor = Math.max(scopeScale, 0.12);
+      const moderateThreshold = Math.max(3, profile.riskCardThresholds.moderate * scaleFloor);
+      const highThreshold = Math.max(6, profile.riskCardThresholds.high * scaleFloor);
+      risk = predicted >= highThreshold ? "high" : predicted >= moderateThreshold ? "moderate" : "low";
+    }
     const weekLabel = format(weekStart, "d MMM");
     const rangeLabel = formatRangeLabel(weekStart, weekEnd);
     forecastPoints.push({ week: weekLabel, actual: null, predicted, lower, upper, type: "Forecast" });

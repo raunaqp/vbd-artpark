@@ -2095,8 +2095,7 @@ export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): Con
   const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
-  const derived = recent
-    .filter((r) => r.confirmed >= 1 && r.confirmed <= 8 && (priorByName.get(r.name) ?? 0) <= 1)
+  const derived: ConcernArea[] = recent
     .sort((a, b) => b.confirmed - a.confirmed)
     .slice(0, 6)
     .map((r) => ({
@@ -2134,10 +2133,7 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
   const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
-  const derived = recent
-    .map((r) => {
-      const prev = priorByName.get(r.name) ?? 0;
-      const delta = r.confirmed - prev;
+  const derived: ConcernArea[] = recent
       const pct = prev > 0 ? (delta / prev) * 100 : (r.confirmed > 0 ? 100 : 0);
       return { region: r, prev, delta, pct };
     })

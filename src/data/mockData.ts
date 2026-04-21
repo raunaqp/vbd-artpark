@@ -1754,6 +1754,80 @@ function buildLineListing(bundle: StateBundle, profile: TemporalProfile, filters
   }).sort((a, b) => b.dateOfTesting.localeCompare(a.dateOfTesting));
 }
 
+/**
+ * Forecast hierarchy clamp:
+ *  - At state scope: probabilities for districts must sum to ≤ a state budget.
+ *  - At district scope: blocks must not collectively exceed the district probability.
+ *  - At block scope: wards/villages must not collectively exceed block probability.
+ * We rescale by a single multiplier so the relative ordering & trend are preserved.
+ */
+function clampPredictionHierarchy(
+  preds: OutbreakPrediction[],
+  bundle: StateBundle,
+  filters: DashboardFiltersLike,
+): OutbreakPrediction[] {
+  if (preds.length === 0) return preds;
+
+  // Determine the parent's predicted "headroom" probability (proxy for cases).
+  let parentProb: number | undefined;
+  if (filters.block !== "All Blocks") {
+    const parent = bundle.districtPredictions.find((p) => p.area === filters.block)
+      || bundle.statePredictions.find((p) => p.area === filters.district);
+    parentProb = parent?.probability;
+  } else if (filters.district !== "All Districts") {
+    const parent = bundle.statePredictions.find((p) => p.area === filters.district);
+    parentProb = parent?.probability;
+  } else {
+    // State-wide: cap aggregate districts at ~3× the highest district probability.
+    parentProb = Math.max(...preds.map((p) => p.probability)) * 3;
+  }
+  if (!parentProb || parentProb <= 0) return preds;
+
+  // Use a generous "child total" budget = 1.4× parent (children typically partition
+  // but each is a probability not a fraction). Only rescale if exceeded.
+  const budget = Math.round(parentProb * 1.4);
+  const childSum = preds.reduce((s, p) => s + p.probability, 0);
+  if (childSum <= budget) return preds;
+
+  const scale = budget / childSum;
+  return preds.map((p) => {
+    const newProb = clamp(Math.round(p.probability * scale), 5, 99);
+    const risk: OutbreakPrediction["risk"] = newProb > 75 ? "high" : newProb >= 50 ? "moderate" : "low";
+    return { ...p, probability: newProb, risk };
+  });
+}
+
+/**
+ * Ensure the riskForecast cards (4-week strip) at child scope do not exceed
+ * the equivalent parent-scope forecast totals for the same week index.
+ */
+function clampRiskForecastAgainstParent(
+  child: RiskForecastPoint[],
+  profile: TemporalProfile,
+  window: DashboardDateWindow,
+  scopeScale: number,
+  seedKey: string,
+  filters: DashboardFiltersLike,
+): RiskForecastPoint[] {
+  if (filters.district === "All Districts") return child; // already top of hierarchy
+  // Compute parent forecast for direct parent (district when child is block; state when child is district).
+  const parentFilters: DashboardFiltersLike = filters.block !== "All Blocks"
+    ? { ...filters, block: "All Blocks", ward: "All Wards" }
+    : { ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" };
+  // Parent uses its own scopeScale — recompute to mirror.
+  const parentBundle = S();
+  const parentScale = clamp(getSelectedBaseConfirmed(parentBundle, parentFilters) / Math.max(getStateBaseConfirmed(parentBundle), 1), 0.05, 1);
+  const parentSeed = `${parentBundle.id}:${parentFilters.district}:${parentFilters.block}:${parentFilters.ward}:${parentFilters.areaType}:${window.toDate}`;
+  const { riskForecast: parentForecast } = generateForecastSeries(profile, window, parentScale, parentSeed, parentFilters);
+  return child.map((c, i) => {
+    const cap = parentForecast[i]?.cases ?? c.cases;
+    if (c.cases <= cap) return c;
+    const capped = Math.max(0, cap);
+    const risk: RiskForecastPoint["risk"] = c.risk; // preserve risk semantics from seed/threshold
+    return { ...c, cases: capped, risk };
+  });
+}
+
 function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacyBlock?: string): DerivedDashboardData {
   const filters = resolveFilters(input, legacyBlock);
   const cacheKey = `${activeStateId}|${filters.district}|${filters.block}|${filters.ward}|${filters.areaType}|${filters.fromDate}|${filters.toDate}`;

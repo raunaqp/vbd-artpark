@@ -2134,6 +2134,9 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
   const derived: ConcernArea[] = recent
+    .map((r) => {
+      const prev = priorByName.get(r.name) ?? 0;
+      const delta = r.confirmed - prev;
       const pct = prev > 0 ? (delta / prev) * 100 : (r.confirmed > 0 ? 100 : 0);
       return { region: r, prev, delta, pct };
     })

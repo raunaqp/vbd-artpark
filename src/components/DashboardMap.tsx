@@ -296,12 +296,24 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   const hasSelection = !isStateLevel;
+  // Raw case views (current + hotspot) MUST NOT use forecast risk colors.
+  // Polygons render in neutral grey; case counts are encoded by overlay circles.
+  const useNeutralPolygons = mode !== "forecast";
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
     const { risk } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
     const dimmed = hasSelection && !isSelected;
+    if (useNeutralPolygons) {
+      return {
+        fillColor: NO_DATA_COLOR,
+        fillOpacity: isSelected ? 0.45 : dimmed ? 0.1 : 0.18,
+        color: isSelected ? "#0f172a" : dimmed ? "#94a3b8" : "#94a3b8",
+        weight: isSelected ? 2.5 : 1,
+        opacity: dimmed ? 0.55 : 1,
+      };
+    }
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
       fillOpacity: isSelected ? 0.82 : dimmed ? 0.15 : risk ? 0.6 : 0.3,

@@ -113,10 +113,12 @@ export default function HotspotsScreen() {
                   const TrendIcon = trendIcon[r.trend];
                   const sparkPoints = timeRange === "2weeks" ? 14 : 28;
                   const sparkValues = synthSparkSeries(r.area, r.currentCases, r.prevCases, r.trend, sparkPoints);
-                  // Resolve hierarchy from area metadata where available.
-                  const districtCol = r.parentDistrict || (r.areaType === "District" ? r.area : "—");
-                  const blockCol = r.parentBlock || (r.areaType === "Block" || r.areaType === "Municipality" ? r.area : "—");
-                  const villageCol = (r.areaType === "Village" || r.areaType === "Ward") ? r.area : "—";
+                  // Hierarchy column resolution based on current filter scope.
+                  const isWardLevel = appliedFilters.block !== "All Blocks";
+                  const isBlockLevel = !isWardLevel && appliedFilters.district !== "All Districts";
+                  const districtCol = r.parentDistrict || (isWardLevel || isBlockLevel ? appliedFilters.district : r.area);
+                  const blockCol = r.parentBlock || (isWardLevel ? appliedFilters.block : isBlockLevel ? r.area : "—");
+                  const villageCol = isWardLevel ? r.area : "—";
                   return (
                     <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-3 font-medium">{districtCol}</td>

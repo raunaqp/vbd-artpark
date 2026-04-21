@@ -1,14 +1,19 @@
 import { FileText, TestTube, CheckCircle, TrendingUp } from "lucide-react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
-import { getFilteredRegions, getKpiFromRegions, applyDiseaseMultiplier } from "@/data/mockData";
+import { getFilteredRegions, getFilteredKpi, applyDiseaseMultiplier } from "@/data/mockData";
 
 export default function KpiCards() {
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
   const rawRegions = getFilteredRegions(appliedFilters);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
-  const kpi = getKpiFromRegions(regions);
+  const baseKpi = getFilteredKpi(appliedFilters);
+  const kpi = {
+    suspected: Math.round(baseKpi.suspected * currentDisease.caseMultiplier),
+    tested: Math.round(baseKpi.tested * currentDisease.caseMultiplier),
+    confirmed: Math.round(baseKpi.confirmed * currentDisease.caseMultiplier),
+  };
   const highRiskAreas = regions.filter((r) => r.risk === "high").length;
 
   const cards = [

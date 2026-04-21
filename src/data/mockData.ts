@@ -88,6 +88,8 @@ export interface StateBundle {
    * Default: true. Set false for states with intentionally partial coverage.
    */
   coversAllDistricts?: boolean;
+  /** Optional canonical KPIs from seed.ts; if present, overrides regionData totals at state-wide scope. */
+  seedKpis?: { suspected: number; tested: number; confirmed: number };
 }
 
 // ──────────────── ANDHRA PRADESH ────────────────
@@ -936,6 +938,11 @@ const KARNATAKA: StateBundle = {
 
 // ──────────────── State registry & active state ────────────────
 export const stateBundles: Record<StateId, StateBundle> = { andhra_pradesh: AP, odisha: ODISHA, karnataka: KARNATAKA };
+
+// Apply canonical seed.ts overlay onto each bundle (cases, risk, coordinates,
+// hotspots, predictions, alerts). Non-seeded districts keep synthesized baselines.
+import { applySeedOverlayAll } from "./seedOverlay";
+applySeedOverlayAll(stateBundles);
 export const stateOptions: { id: StateId; label: string }[] = [
   { id: "andhra_pradesh", label: "Andhra Pradesh" },
   { id: "odisha", label: "Odisha" },
@@ -1799,6 +1806,20 @@ export function getKpiFromRegions(regions: RegionData[]) {
     tested: regions.reduce((sum, region) => sum + region.tested, 0),
     confirmed: regions.reduce((sum, region) => sum + region.confirmed, 0),
   };
+}
+
+/**
+ * Returns the canonical seed KPIs for the active state when filters are state-wide
+ * (no district selected). Falls back to summing the filtered regionData otherwise.
+ * KpiCards uses this so the headline KPI tiles always match seed.ts at the top level.
+ */
+export function getFilteredKpi(input?: DashboardFiltersLike | string, legacyBlock?: string) {
+  const filters = resolveFilters(input, legacyBlock);
+  const regions = getFilteredRegions(filters);
+  const isStateWide = (filters?.district ?? "All Districts") === "All Districts";
+  const seedKpis = S().seedKpis;
+  if (isStateWide && seedKpis) return { ...seedKpis };
+  return getKpiFromRegions(regions);
 }
 
 export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number): RegionData[] {

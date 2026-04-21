@@ -502,11 +502,16 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             <CircleMarker
               key={`${r.type}-${r.name}`}
               center={coords}
-              // Smaller, less dominant — boundaries remain the primary encoding.
-              radius={Math.max(4, Math.min(8, 4 + r.confirmed / 12))}
+              // Raw case views: size encodes case load with a neutral fill.
+              // Forecast view: keep risk-coloured fill.
+              radius={
+                useNeutralPolygons
+                  ? Math.max(5, Math.min(20, 4 + Math.sqrt(Math.max(r.confirmed, 0)) * 1.6))
+                  : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
+              }
               pathOptions={{
-                fillColor: riskColor[displayRisk],
-                fillOpacity: 0.9,
+                fillColor: useNeutralPolygons ? (mode === "hotspot" ? "#1e3a8a" : "#475569") : riskColor[displayRisk],
+                fillOpacity: useNeutralPolygons ? 0.55 : 0.9,
                 color: "#0f172a",
                 weight: 1,
               }}
@@ -543,18 +548,34 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         </MapContainer>
       )}
 
-      {/* Legend */}
+      {/* Legend — risk colours only in forecast mode; raw case views show case-load circles. */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3 items-center">
-        {(["low", "moderate", "high"] as const).map((level) => (
-          <div key={level} className="flex items-center gap-1.5 text-xs">
-            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: riskColor[level] }} />
-            <span className="capitalize">{level}</span>
-          </div>
-        ))}
-        <span className="flex items-center gap-1.5 text-xs">
-          <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: NO_DATA_COLOR }} />
-          <span>no data</span>
-        </span>
+        {mode === "forecast" ? (
+          <>
+            {(["low", "moderate", "high"] as const).map((level) => (
+              <div key={level} className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: riskColor[level] }} />
+                <span className="capitalize">{level}</span>
+              </div>
+            ))}
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: NO_DATA_COLOR }} />
+              <span>no data</span>
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span>fewer cases</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span>more cases</span>
+            </span>
+            <span className="text-xs text-muted-foreground">· circle size = case load</span>
+          </>
+        )}
       </div>
     </div>
   );

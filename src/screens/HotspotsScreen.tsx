@@ -103,7 +103,7 @@ export default function HotspotsScreen() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  {["Area", "Cases", "Prev Period", "Trend", `Trend (${timeRange === "2weeks" ? "14" : "28"}d)`, "Risk"].map((h) => (
+                  {["District", "Block / Municipality", "Village / Ward", "Cases", "Trend", `Sparkline (${timeRange === "2weeks" ? "14d" : "28d"})`, "Basis"].map((h) => (
                     <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                   ))}
                 </tr>
@@ -113,11 +113,16 @@ export default function HotspotsScreen() {
                   const TrendIcon = trendIcon[r.trend];
                   const sparkPoints = timeRange === "2weeks" ? 14 : 28;
                   const sparkValues = synthSparkSeries(r.area, r.currentCases, r.prevCases, r.trend, sparkPoints);
+                  // Resolve hierarchy from area metadata where available.
+                  const districtCol = r.parentDistrict || (r.areaType === "District" ? r.area : "—");
+                  const blockCol = r.parentBlock || (r.areaType === "Block" || r.areaType === "Municipality" ? r.area : "—");
+                  const villageCol = (r.areaType === "Village" || r.areaType === "Ward") ? r.area : "—";
                   return (
                     <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="py-2 px-3 font-medium">{r.area}</td>
-                      <td className="py-2 px-3">{r.currentCases}</td>
-                      <td className="py-2 px-3 text-muted-foreground">{r.prevCases}</td>
+                      <td className="py-2 px-3 font-medium">{districtCol}</td>
+                      <td className="py-2 px-3">{blockCol}</td>
+                      <td className="py-2 px-3">{villageCol}</td>
+                      <td className="py-2 px-3 font-semibold">{r.currentCases} <span className="text-muted-foreground text-xs">(prev {r.prevCases})</span></td>
                       <td className="py-2 px-3">
                         <span className="inline-flex items-center gap-1 text-xs">
                           <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
@@ -127,7 +132,7 @@ export default function HotspotsScreen() {
                       <td className="py-2 px-3">
                         <Sparkline values={sparkValues} trend={r.trend} width={90} height={22} />
                       </td>
-                      <td className="py-2 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
+                      <td className="py-2 px-3 text-xs text-muted-foreground">{timeRange === "2weeks" ? "2W" : "4W"}</td>
                     </tr>
                   );
                 })}

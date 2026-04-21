@@ -52,14 +52,15 @@ export default function WeatherScreen() {
   const weatherForecast = getWeatherForecast(appliedFilters);
   const observedLabel = `${fmtDate(dateWindow.fromDate)} – ${fmtDate(dateWindow.toDate)}`;
   const forecastLabel = `${fmtDate(dateWindow.forecastStartDate)} – ${fmtDate(dateWindow.forecastEndDate)}`;
+  void observedLabel; void forecastLabel;
   return (
     <div className="space-y-6">
       <GlobalFilters />
 
       {/* Section A: Observed */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Weather ({observedLabel})</h2>
-        <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations · Past 8 weeks</p>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Observed Climate (Last 8 Weeks)</h2>
+        <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="section-card p-5">
@@ -102,13 +103,13 @@ export default function WeatherScreen() {
           </div>
         </div>
 
-        <WeatherTable data={weatherObserved} label={`Observed Climate Data (${observedLabel})`} />
+        <WeatherTable data={weatherObserved} label="Observed Climate Data" />
       </div>
 
       {/* Section B: Forecast */}
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Weather Forecast ({forecastLabel})</h2>
-        <p className="text-xs text-muted-foreground mb-4">Projected meteorological data — source: IMD extended range forecast · Next 8 weeks</p>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Forecast Climate (Next 8 Weeks)</h2>
+        <p className="text-xs text-muted-foreground mb-4">Projected meteorological data — source: IMD extended range forecast</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="section-card p-5">
@@ -152,7 +153,7 @@ export default function WeatherScreen() {
           </div>
         </div>
 
-        <WeatherTable data={weatherForecast} label={`Forecast Climate Data (${forecastLabel})`} />
+        <WeatherTable data={weatherForecast} label="Forecast Climate Data" />
       </div>
     </div>
   );

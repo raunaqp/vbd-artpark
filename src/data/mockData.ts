@@ -1980,6 +1980,177 @@ export function getQAReport(input?: DashboardFiltersLike | string): QAReport {
   };
 }
 
+// ──────────────── Areas of Concern + Action Focus (Overview tab) ────────────────
+
+export interface ConcernArea {
+  name: string;
+  cases: number;
+  prevCases: number;
+  changePct: number; // positive = rising
+  parent?: string; // district / block context
+  level: "district" | "block" | "ward";
+}
+
+function buildWindowFilters(base: DashboardFiltersLike, daysBack: number, offsetDays = 0): DashboardFiltersLike {
+  const today = startOfDay(new Date());
+  const to = addDays(today, -offsetDays);
+  const from = addDays(to, -(daysBack - 1));
+  return { ...base, fromDate: formatISODate(from), toDate: formatISODate(to) };
+}
+
+function inferLevel(filters: DashboardFiltersLike): "district" | "block" | "ward" {
+  if (filters.block !== "All Blocks") return "ward";
+  if (filters.district !== "All Districts") return "block";
+  return "district";
+}
+
+/**
+ * Areas with new/sporadic cases in the LAST 14 days that had ~zero in the prior 14-day window.
+ * Even small counts (1–3) are surfaced — these are early-warning signals.
+ */
+export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): ConcernArea[] {
+  const base = resolveFilters(input);
+  const level = inferLevel(base);
+  const recent = getFilteredRegions(buildWindowFilters(base, 14, 0));
+  const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
+  const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
+
+  return recent
+    .filter((r) => r.confirmed >= 1 && r.confirmed <= 8 && (priorByName.get(r.name) ?? 0) <= 1)
+    .sort((a, b) => b.confirmed - a.confirmed)
+    .slice(0, 6)
+    .map((r) => ({
+      name: r.name,
+      cases: r.confirmed,
+      prevCases: priorByName.get(r.name) ?? 0,
+      changePct: 100,
+      parent: r.parentBlock || r.parentDistrict,
+      level,
+    }));
+}
+
+/**
+ * Areas where last 14 days > prior 14 days by a meaningful margin (top rising clusters).
+ */
+export function getRisingClusters(input?: DashboardFiltersLike | string): ConcernArea[] {
+  const base = resolveFilters(input);
+  const level = inferLevel(base);
+  const recent = getFilteredRegions(buildWindowFilters(base, 14, 0));
+  const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
+  const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
+
+  return recent
+    .map((r) => {
+      const prev = priorByName.get(r.name) ?? 0;
+      const delta = r.confirmed - prev;
+      const pct = prev > 0 ? (delta / prev) * 100 : (r.confirmed > 0 ? 100 : 0);
+      return { region: r, prev, delta, pct };
+    })
+    .filter(({ region, prev, delta, pct }) => region.confirmed >= 3 && delta >= 2 && (prev === 0 ? region.confirmed >= 4 : pct >= 30))
+    .sort((a, b) => b.pct - a.pct || b.delta - a.delta)
+    .slice(0, 5)
+    .map(({ region, prev, pct }) => ({
+      name: region.name,
+      cases: region.confirmed,
+      prevCases: prev,
+      changePct: Math.round(pct),
+      parent: region.parentBlock || region.parentDistrict,
+      level,
+    }));
+}
+
+// ──────────────── Action Focus engine ────────────────
+
+export interface ActionFocusItem {
+  area: string;
+  parent?: string;
+  geoType: "urban" | "rural" | "coastal" | "industrial";
+  signal: "new" | "rising" | "persistent";
+  actions: string[];
+  source: "curated" | "auto";
+}
+
+// Curated, location-specific actions. Substring match on area name (case-insensitive).
+const CURATED_ACTIONS: Array<{ match: RegExp; entry: Omit<ActionFocusItem, "area" | "parent"> & { parentHint?: string } }> = [
+  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", actions: ["Ward-level fogging in Gajuwaka high-density zones", "Drainage clearing along stormwater channels", "Container survey in commercial blocks"], parentHint: "Visakhapatnam" } },
+  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["Fogging across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
+  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", actions: ["Canal-side source reduction in Guntur villages", "Larval survey in irrigated rural blocks", "Fever camps at PHC level"] } },
+  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", actions: ["Water storage checks in Panposh/Chhend industrial colonies", "Container breeding survey in Rourkela steel township", "Targeted fogging on industrial periphery"] } },
+  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", actions: ["Drainage clearing in Malpe coastal stretch", "Mobility tracking among fishing community", "Container breeding checks in coastal storage"] } },
+  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", actions: ["Larval survey in Satapada and Bentapur villages", "Fever camps in Puri rural belt", "Source reduction in low-lying areas"] } },
+  { match: /bengaluru.*urban|bbmp/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["BBMP ward-level fogging cycle", "Construction-site water storage audit", "Apartment-complex container survey"] } },
+];
+
+function inferGeoType(name: string): ActionFocusItem["geoType"] {
+  if (/coast|port|fish|malpe|udupi|paradip/i.test(name)) return "coastal";
+  if (/steel|industrial|panposh|chhend|rourkela|jharsuguda/i.test(name)) return "industrial";
+  if (/\b(MC|City|Urban|Municipal|Town|Nagar|BBMP|Ward)\b/i.test(name)) return "urban";
+  return "rural";
+}
+
+function autoActionsFor(geoType: ActionFocusItem["geoType"], signal: ActionFocusItem["signal"], area: string): string[] {
+  const base: Record<ActionFocusItem["geoType"], string[]> = {
+    urban: [`Ward-level fogging in ${area}`, `Drainage clearing in ${area} hotspots`, `Container survey in dense pockets`],
+    rural: [`Larval survey across ${area} villages`, `Fever camps at sub-centre level`, `Community awareness drive`],
+    industrial: [`Water storage audit in ${area} colonies`, `Container breeding checks on industrial premises`, `Targeted fogging on periphery`],
+    coastal: [`Mobility & migrant tracking in ${area}`, `Container breeding checks in fish-storage areas`, `Drainage clearing along coastal stretch`],
+  };
+  const actions = [...base[geoType]];
+  if (signal === "new") actions.push("Active case search around index cases");
+  if (signal === "rising") actions.push("Daily monitoring & rapid response team deployment");
+  return actions.slice(0, 3);
+}
+
+/**
+ * Hybrid action engine: curated entries override auto-derived ones for known geographies.
+ * Returns up to 5 location-specific action bundles.
+ */
+export function getActionFocusAreas(input?: DashboardFiltersLike | string): ActionFocusItem[] {
+  const base = resolveFilters(input);
+  const recent = getFilteredRegions(buildWindowFilters(base, 14, 0));
+  const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
+  const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
+
+  // Rank by risk weight + case count
+  const ranked = [...recent]
+    .map((r) => ({ r, score: (r.risk === "high" ? 1000 : r.risk === "moderate" ? 100 : 10) + r.confirmed }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
+
+  const out: ActionFocusItem[] = [];
+  const seen = new Set<string>();
+
+  for (const { r } of ranked) {
+    if (seen.has(r.name)) continue;
+    const curated = CURATED_ACTIONS.find((c) => c.match.test(r.name) || (r.parentDistrict && c.match.test(r.parentDistrict)));
+    if (curated) {
+      out.push({
+        area: r.name,
+        parent: r.parentBlock || r.parentDistrict || curated.entry.parentHint,
+        geoType: curated.entry.geoType,
+        signal: curated.entry.signal,
+        actions: curated.entry.actions,
+        source: "curated",
+      });
+    } else if (r.risk !== "low" || r.confirmed >= 5) {
+      const prev = priorByName.get(r.name) ?? 0;
+      const signal: ActionFocusItem["signal"] = prev === 0 && r.confirmed > 0 ? "new" : r.confirmed > prev * 1.3 ? "rising" : "persistent";
+      const geoType = inferGeoType(r.name);
+      out.push({
+        area: r.name,
+        parent: r.parentBlock || r.parentDistrict,
+        geoType,
+        signal,
+        actions: autoActionsFor(geoType, signal, r.name),
+        source: "auto",
+      });
+    }
+    seen.add(r.name);
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
 // Backwards-compatible live proxies (default state slice with current 3-month window)
 export const riskForecast = liveArrayProxy(() => getRiskForecast());
 export const weeklyTimeSeries = liveArrayProxy(() => getWeeklyTimeSeries());

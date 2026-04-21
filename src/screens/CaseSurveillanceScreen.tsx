@@ -51,7 +51,12 @@ export default function CaseSurveillanceScreen() {
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={timeData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
+            <XAxis
+              dataKey={xKey}
+              tick={{ fontSize: 11 }}
+              interval={timeRange === "weekly" ? 1 : timeRange === "daily" ? Math.max(0, Math.floor(timeData.length / 8) - 1) : "preserveStartEnd"}
+              minTickGap={24}
+            />
             <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
             <Tooltip />

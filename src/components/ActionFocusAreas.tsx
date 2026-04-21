@@ -8,6 +8,8 @@ const geoLabel: Record<ActionFocusItem["geoType"], string> = {
   rural: "Rural",
   industrial: "Industrial",
   coastal: "Coastal",
+  periurban: "Peri-urban",
+  construction: "Construction",
 };
 
 const signalLabel: Record<ActionFocusItem["signal"], string> = {

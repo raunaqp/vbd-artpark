@@ -296,12 +296,24 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   const hasSelection = !isStateLevel;
+  // Raw case views (current + hotspot) MUST NOT use forecast risk colors.
+  // Polygons render in neutral grey; case counts are encoded by overlay circles.
+  const useNeutralPolygons = mode !== "forecast";
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
     const { risk } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
     const dimmed = hasSelection && !isSelected;
+    if (useNeutralPolygons) {
+      return {
+        fillColor: NO_DATA_COLOR,
+        fillOpacity: isSelected ? 0.45 : dimmed ? 0.1 : 0.18,
+        color: isSelected ? "#0f172a" : dimmed ? "#94a3b8" : "#94a3b8",
+        weight: isSelected ? 2.5 : 1,
+        opacity: dimmed ? 0.55 : 1,
+      };
+    }
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
       fillOpacity: isSelected ? 0.82 : dimmed ? 0.15 : risk ? 0.6 : 0.3,
@@ -441,13 +453,44 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
 
-          {/* Primary layer: district choropleth */}
+          {/* Primary layer: district choropleth (raw case views render neutral grey) */}
           <GeoJSON
             key={geoKey}
             data={geoData!}
             style={styleFeature as any}
             onEachFeature={onEachFeature}
           />
+
+          {/* Raw-case overlay: neutral case-load circles at state level for current/hotspot modes.
+              Size encodes case count. Forecast mode keeps polygon coloring instead. */}
+          {isStateLevel && useNeutralPolygons && geoData && geoData.features.map((feature) => {
+            const name = featureToMockName(feature);
+            if (!name) return null;
+            const { cases } = resolveDistrictRisk(name);
+            const numCases = Number(cases);
+            if (!Number.isFinite(numCases) || numCases <= 0) return null;
+            // Use polygon centroid (approximation via bounds)
+            try {
+              const layer = L.geoJSON(feature as any);
+              const center = layer.getBounds().getCenter();
+              // radius scales with case count (sqrt for area-proportional)
+              const radius = Math.max(5, Math.min(22, 4 + Math.sqrt(numCases) * 1.6));
+              return (
+                <CircleMarker
+                  key={`load-${name}`}
+                  center={[center.lat, center.lng]}
+                  radius={radius}
+                  pathOptions={{
+                    fillColor: mode === "hotspot" ? "#1e3a8a" : "#475569",
+                    fillOpacity: 0.55,
+                    color: "#0f172a",
+                    weight: 1,
+                  }}
+                  interactive={false}
+                />
+              );
+            } catch { return null; }
+          })}
 
           {/* Child markers (blocks, wards, villages) at lower levels */}
           {childPoints.map((r) => {
@@ -459,11 +502,16 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             <CircleMarker
               key={`${r.type}-${r.name}`}
               center={coords}
-              // Smaller, less dominant — boundaries remain the primary encoding.
-              radius={Math.max(4, Math.min(8, 4 + r.confirmed / 12))}
+              // Raw case views: size encodes case load with a neutral fill.
+              // Forecast view: keep risk-coloured fill.
+              radius={
+                useNeutralPolygons
+                  ? Math.max(5, Math.min(20, 4 + Math.sqrt(Math.max(r.confirmed, 0)) * 1.6))
+                  : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
+              }
               pathOptions={{
-                fillColor: riskColor[displayRisk],
-                fillOpacity: 0.9,
+                fillColor: useNeutralPolygons ? (mode === "hotspot" ? "#1e3a8a" : "#475569") : riskColor[displayRisk],
+                fillOpacity: useNeutralPolygons ? 0.55 : 0.9,
                 color: "#0f172a",
                 weight: 1,
               }}
@@ -500,18 +548,34 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         </MapContainer>
       )}
 
-      {/* Legend */}
+      {/* Legend — risk colours only in forecast mode; raw case views show case-load circles. */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3 items-center">
-        {(["low", "moderate", "high"] as const).map((level) => (
-          <div key={level} className="flex items-center gap-1.5 text-xs">
-            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: riskColor[level] }} />
-            <span className="capitalize">{level}</span>
-          </div>
-        ))}
-        <span className="flex items-center gap-1.5 text-xs">
-          <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: NO_DATA_COLOR }} />
-          <span>no data</span>
-        </span>
+        {mode === "forecast" ? (
+          <>
+            {(["low", "moderate", "high"] as const).map((level) => (
+              <div key={level} className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: riskColor[level] }} />
+                <span className="capitalize">{level}</span>
+              </div>
+            ))}
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: NO_DATA_COLOR }} />
+              <span>no data</span>
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span>fewer cases</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span>more cases</span>
+            </span>
+            <span className="text-xs text-muted-foreground">· circle size = case load</span>
+          </>
+        )}
       </div>
     </div>
   );

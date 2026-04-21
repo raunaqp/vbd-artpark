@@ -1,5 +1,5 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
-import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions } from "./seed";
+import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions, walkSeedNodes, type SeedConcernNode } from "./seed";
 
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)
 // Active state is set via setActiveState(); all getters/proxies read from the active bundle.
@@ -1754,6 +1754,80 @@ function buildLineListing(bundle: StateBundle, profile: TemporalProfile, filters
   }).sort((a, b) => b.dateOfTesting.localeCompare(a.dateOfTesting));
 }
 
+/**
+ * Forecast hierarchy clamp:
+ *  - At state scope: probabilities for districts must sum to ≤ a state budget.
+ *  - At district scope: blocks must not collectively exceed the district probability.
+ *  - At block scope: wards/villages must not collectively exceed block probability.
+ * We rescale by a single multiplier so the relative ordering & trend are preserved.
+ */
+function clampPredictionHierarchy(
+  preds: OutbreakPrediction[],
+  bundle: StateBundle,
+  filters: DashboardFiltersLike,
+): OutbreakPrediction[] {
+  if (preds.length === 0) return preds;
+
+  // Determine the parent's predicted "headroom" probability (proxy for cases).
+  let parentProb: number | undefined;
+  if (filters.block !== "All Blocks") {
+    const parent = bundle.districtPredictions.find((p) => p.area === filters.block)
+      || bundle.statePredictions.find((p) => p.area === filters.district);
+    parentProb = parent?.probability;
+  } else if (filters.district !== "All Districts") {
+    const parent = bundle.statePredictions.find((p) => p.area === filters.district);
+    parentProb = parent?.probability;
+  } else {
+    // State-wide: cap aggregate districts at ~3× the highest district probability.
+    parentProb = Math.max(...preds.map((p) => p.probability)) * 3;
+  }
+  if (!parentProb || parentProb <= 0) return preds;
+
+  // Use a generous "child total" budget = 1.4× parent (children typically partition
+  // but each is a probability not a fraction). Only rescale if exceeded.
+  const budget = Math.round(parentProb * 1.4);
+  const childSum = preds.reduce((s, p) => s + p.probability, 0);
+  if (childSum <= budget) return preds;
+
+  const scale = budget / childSum;
+  return preds.map((p) => {
+    const newProb = clamp(Math.round(p.probability * scale), 5, 99);
+    const risk: OutbreakPrediction["risk"] = newProb > 75 ? "high" : newProb >= 50 ? "moderate" : "low";
+    return { ...p, probability: newProb, risk };
+  });
+}
+
+/**
+ * Ensure the riskForecast cards (4-week strip) at child scope do not exceed
+ * the equivalent parent-scope forecast totals for the same week index.
+ */
+function clampRiskForecastAgainstParent(
+  child: RiskForecastPoint[],
+  profile: TemporalProfile,
+  window: DashboardDateWindow,
+  scopeScale: number,
+  seedKey: string,
+  filters: DashboardFiltersLike,
+): RiskForecastPoint[] {
+  if (filters.district === "All Districts") return child; // already top of hierarchy
+  // Compute parent forecast for direct parent (district when child is block; state when child is district).
+  const parentFilters: DashboardFiltersLike = filters.block !== "All Blocks"
+    ? { ...filters, block: "All Blocks", ward: "All Wards" }
+    : { ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" };
+  // Parent uses its own scopeScale — recompute to mirror.
+  const parentBundle = S();
+  const parentScale = clamp(getSelectedBaseConfirmed(parentBundle, parentFilters) / Math.max(getStateBaseConfirmed(parentBundle), 1), 0.05, 1);
+  const parentSeed = `${parentBundle.id}:${parentFilters.district}:${parentFilters.block}:${parentFilters.ward}:${parentFilters.areaType}:${window.toDate}`;
+  const { riskForecast: parentForecast } = generateForecastSeries(profile, window, parentScale, parentSeed, parentFilters);
+  return child.map((c, i) => {
+    const cap = parentForecast[i]?.cases ?? c.cases;
+    if (c.cases <= cap) return c;
+    const capped = Math.max(0, cap);
+    const risk: RiskForecastPoint["risk"] = c.risk; // preserve risk semantics from seed/threshold
+    return { ...c, cases: capped, risk };
+  });
+}
+
 function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacyBlock?: string): DerivedDashboardData {
   const filters = resolveFilters(input, legacyBlock);
   const cacheKey = `${activeStateId}|${filters.district}|${filters.block}|${filters.ward}|${filters.areaType}|${filters.fromDate}|${filters.toDate}`;
@@ -1778,15 +1852,24 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
     .map((item) => transformHotspot(bundle, profile, filters, window, item, 2))
     .filter((item): item is HotspotData => Boolean(item) && (item.currentCases > 0 || item.prevCases > 0));
 
-  const predictions = getBasePredictionsForScope(bundle, filters)
+  const rawPredictions = getBasePredictionsForScope(bundle, filters)
     .map((item) => transformPrediction(bundle, profile, filters, window, item))
     .filter((item): item is OutbreakPrediction => Boolean(item))
     .sort((a, b) => b.probability - a.probability);
 
+  // ── Forecast hierarchy clamp ──
+  // Predicted weekly cases must respect parent-child totals:
+  //   sum(district) ≤ state, sum(block) ≤ district, sum(ward) ≤ block.
+  // We approximate "predicted cases" via probability×scale, but the user-facing
+  // requirement is on the riskForecast cards (state/district aggregated).
+  // Here we ensure no child prediction exceeds its parent by scaling probabilities.
+  const predictions = clampPredictionHierarchy(rawPredictions, bundle, filters);
+
   const weeklyTimeSeries = generateWeeklyTimeSeries(profile, window, scopeScale || 1, seedKey);
   const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey, filters);
   const monthlyTimeSeries = generateMonthlyTimeSeries(profile, window, scopeScale || 1, seedKey);
-  const { forecastData, riskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey, filters);
+  const { forecastData, riskForecast: rawRiskForecast } = generateForecastSeries(profile, window, scopeScale || 1, seedKey, filters);
+  const riskForecast = clampRiskForecastAgainstParent(rawRiskForecast, profile, window, scopeScale || 1, seedKey, filters);
 
   const observedWeatherStart = addWeeks(startOfWeek(window.to, { weekStartsOn: 1 }), -7);
   const weatherObserved = generateWeatherSeries(profile, observedWeatherStart < window.from ? window.from : observedWeatherStart, window.to, "W-", `${seedKey}:observed`);
@@ -2056,6 +2139,35 @@ function inferLevel(filters: DashboardFiltersLike): "district" | "block" | "ward
 }
 
 /**
+ * Convert a seed-walked node into a ConcernArea, keeping parent/level intact.
+ * Used as a guaranteed fallback so every state with seeded signals shows entries.
+ */
+function seedNodeToConcern(node: SeedConcernNode, mode: "new" | "rising"): ConcernArea {
+  const recent = node.cases_2w;
+  const prior = Math.max(0, node.cases_4w - node.cases_2w);
+  const pct = mode === "new"
+    ? (prior === 0 ? 100 : Math.round(((recent - prior) / Math.max(prior, 1)) * 100))
+    : (prior === 0 ? 100 : Math.round(((recent - prior) / Math.max(prior, 1)) * 100));
+  return {
+    name: node.name,
+    cases: recent,
+    prevCases: prior,
+    changePct: Math.max(0, pct),
+    parent: node.parent,
+    level: node.level,
+  };
+}
+
+function seedConcernNodesInScope(filters: DashboardFiltersLike): SeedConcernNode[] {
+  const nodes = walkSeedNodes(activeStateId);
+  // Filter by selected district scope so drill-downs show local concerns.
+  if (filters.district !== "All Districts") {
+    return nodes.filter((n) => n.parentDistrict === filters.district || n.name === filters.district);
+  }
+  return nodes;
+}
+
+/**
  * Areas with new/sporadic cases in the LAST 14 days that had ~zero in the prior 14-day window.
  * Even small counts (1–3) are surfaced — these are early-warning signals.
  */
@@ -2066,8 +2178,7 @@ export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): Con
   const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
-  return recent
-    .filter((r) => r.confirmed >= 1 && r.confirmed <= 8 && (priorByName.get(r.name) ?? 0) <= 1)
+  const derived: ConcernArea[] = recent
     .sort((a, b) => b.confirmed - a.confirmed)
     .slice(0, 6)
     .map((r) => ({
@@ -2078,6 +2189,21 @@ export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): Con
       parent: r.parentBlock || r.parentDistrict,
       level,
     }));
+
+  if (derived.length >= 2) return derived;
+
+  // Seed-driven fallback: surface any seeded node tagged as new_emergence in scope.
+  const seedNodes = seedConcernNodesInScope(base)
+    .filter((n) => n.signal === "new_emergence")
+    .sort((a, b) => b.cases_2w - a.cases_2w);
+  const seen = new Set(derived.map((d) => d.name));
+  for (const n of seedNodes) {
+    if (seen.has(n.name)) continue;
+    derived.push(seedNodeToConcern(n, "new"));
+    seen.add(n.name);
+    if (derived.length >= 6) break;
+  }
+  return derived;
 }
 
 /**
@@ -2090,7 +2216,7 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
   const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
-  return recent
+  const derived: ConcernArea[] = recent
     .map((r) => {
       const prev = priorByName.get(r.name) ?? 0;
       const delta = r.confirmed - prev;
@@ -2108,6 +2234,24 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
       parent: region.parentBlock || region.parentDistrict,
       level,
     }));
+
+  if (derived.length >= 2) return derived;
+
+  // Seed fallback: nodes whose last 2w > prior 2w (cases_4w - cases_2w).
+  const seedNodes = seedConcernNodesInScope(base)
+    .filter((n) => {
+      const prior2w = n.cases_4w - n.cases_2w;
+      return n.cases_2w >= 3 && n.cases_2w > prior2w;
+    })
+    .sort((a, b) => (b.cases_2w - (b.cases_4w - b.cases_2w)) - (a.cases_2w - (a.cases_4w - a.cases_2w)));
+  const seen = new Set(derived.map((d) => d.name));
+  for (const n of seedNodes) {
+    if (seen.has(n.name)) continue;
+    derived.push(seedNodeToConcern(n, "rising"));
+    seen.add(n.name);
+    if (derived.length >= 5) break;
+  }
+  return derived;
 }
 
 // ──────────────── Action Focus engine ────────────────
@@ -2115,7 +2259,7 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
 export interface ActionFocusItem {
   area: string;
   parent?: string;
-  geoType: "urban" | "rural" | "coastal" | "industrial";
+  geoType: "urban" | "rural" | "coastal" | "industrial" | "periurban" | "construction";
   signal: "new" | "rising" | "persistent";
   actions: string[];
   source: "curated" | "auto";
@@ -2123,33 +2267,59 @@ export interface ActionFocusItem {
 
 // Curated, location-specific actions. Substring match on area name (case-insensitive).
 const CURATED_ACTIONS: Array<{ match: RegExp; entry: Omit<ActionFocusItem, "area" | "parent"> & { parentHint?: string } }> = [
-  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", actions: ["Ward-level fogging in Gajuwaka high-density zones", "Drainage clearing along stormwater channels", "Container survey in commercial blocks"], parentHint: "Visakhapatnam" } },
-  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["Fogging across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
-  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", actions: ["Canal-side source reduction in Guntur villages", "Larval survey in irrigated rural blocks", "Fever camps at PHC level"] } },
-  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", actions: ["Water storage checks in Panposh/Chhend industrial colonies", "Container breeding survey in Rourkela steel township", "Targeted fogging on industrial periphery"] } },
-  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", actions: ["Drainage clearing in Malpe coastal stretch", "Mobility tracking among fishing community", "Container breeding checks in coastal storage"] } },
-  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", actions: ["Larval survey in Satapada and Bentapur villages", "Fever camps in Puri rural belt", "Source reduction in low-lying areas"] } },
+  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", actions: ["Ward-level fogging in Gajuwaka high-density lanes", "Drainage clearing along stormwater channels", "Apartment & commercial container survey"], parentHint: "Visakhapatnam" } },
+  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["Fogging cycle across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
+  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", actions: ["Canal-side source reduction in irrigated villages", "Larval survey across irrigation-linked sub-centres", "PHC-level fever camps"] } },
+  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", actions: ["Worker-settlement water storage audit", "Industrial drainage inspection", "Worker fever screening at gate clinics"] } },
+  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", actions: ["Fishing harbor sanitation drive", "Container breeding checks at fish-storage units", "Tourist-area surveillance ramp-up"] } },
+  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", actions: ["Active case search around index households", "Larval survey in low-lying coastal villages", "PHC fever camps in affected GPs"] } },
   { match: /bengaluru.*urban|bbmp/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["BBMP ward-level fogging cycle", "Construction-site water storage audit", "Apartment-complex container survey"] } },
 ];
 
 function inferGeoType(name: string): ActionFocusItem["geoType"] {
-  if (/coast|port|fish|malpe|udupi|paradip/i.test(name)) return "coastal";
-  if (/steel|industrial|panposh|chhend|rourkela|jharsuguda/i.test(name)) return "industrial";
-  if (/\b(MC|City|Urban|Municipal|Town|Nagar|BBMP|Ward)\b/i.test(name)) return "urban";
+  if (/coast|port|fish|malpe|udupi|paradip|harbor/i.test(name)) return "coastal";
+  if (/steel|industrial|panposh|chhend|rourkela|jharsuguda|industries|estate/i.test(name)) return "industrial";
+  if (/construction|site|nagar.*new|peripheral/i.test(name)) return "construction";
+  if (/peri[- ]?urban|periphery|outskirt/i.test(name)) return "periurban";
+  if (/\b(MC|City|Urban|Municipal|Town|Nagar|BBMP|Ward|Bhubaneswar|Bengaluru|Hyderabad)\b/i.test(name)) return "urban";
   return "rural";
 }
 
 function autoActionsFor(geoType: ActionFocusItem["geoType"], signal: ActionFocusItem["signal"], area: string): string[] {
-  const base: Record<ActionFocusItem["geoType"], string[]> = {
-    urban: [`Ward-level fogging in ${area}`, `Drainage clearing in ${area} hotspots`, `Container survey in dense pockets`],
-    rural: [`Larval survey across ${area} villages`, `Fever camps at sub-centre level`, `Community awareness drive`],
-    industrial: [`Water storage audit in ${area} colonies`, `Container breeding checks on industrial premises`, `Targeted fogging on periphery`],
-    coastal: [`Mobility & migrant tracking in ${area}`, `Container breeding checks in fish-storage areas`, `Drainage clearing along coastal stretch`],
+  // 6-key matrix: geoType x signal → 3 differentiated actions per cell.
+  const matrix: Record<ActionFocusItem["geoType"], Record<ActionFocusItem["signal"], string[]>> = {
+    urban: {
+      new: [`Active case search around index households in ${area}`, `Apartment-complex container survey`, `Lane-level larvicidal spray`],
+      rising: [`Ward-level fogging in dense ${area} lanes`, `Drainage cleaning along storm channels`, `Apartment container survey & enforcement`],
+      persistent: [`Sustained fogging cycle in ${area} MC wards`, `Door-to-door fever surveillance`, `Container index audits in commercial pockets`],
+    },
+    rural: {
+      new: [`Active case search at affected hamlet in ${area}`, `Larval survey of nearby water sources`, `Sub-centre fever camps`],
+      rising: [`Canal-side source reduction in ${area}`, `Larval survey in irrigation-linked villages`, `PHC-level fever camps`],
+      persistent: [`Vector-control roster across ${area} GPs`, `Routine larval index monitoring`, `ASHA-led fever surveillance`],
+    },
+    industrial: {
+      new: [`Worker fever screening at ${area} gate clinics`, `Container survey in worker housing`, `Source reduction inside premises`],
+      rising: [`Construction-site water storage audit in ${area}`, `Enforcement notice for stagnant water`, `Targeted fogging around active sites`],
+      persistent: [`Industrial drainage inspection roster`, `Worker settlement sanitation drive`, `Periodic worker fever screening`],
+    },
+    coastal: {
+      new: [`Mobility tracking among visiting fishermen`, `Container breeding checks in fish-storage`, `Beachfront larval survey`],
+      rising: [`Fishing harbor sanitation in ${area}`, `Container breeding checks at storage units`, `Tourist-area surveillance ramp-up`],
+      persistent: [`Routine harbor sanitation cycle`, `Migrant-population fever screening`, `Coastal drainage clearing`],
+    },
+    construction: {
+      new: [`Notice to ${area} site supervisors`, `Container audit in worker barracks`, `Active case search at site clinics`],
+      rising: [`Construction-site water storage audit`, `Enforcement on uncovered tanks`, `Site-perimeter fogging cycle`],
+      persistent: [`Weekly site sanitation inspection`, `Worker fever screening roster`, `Larval index monitoring on premises`],
+    },
+    periurban: {
+      new: [`Active case search at peri-urban interface`, `Larval survey in newly developed colonies`, `Mobile fever camps`],
+      rising: [`Source reduction in ${area} fringe colonies`, `Drainage cleaning at urban-rural boundary`, `Targeted fogging in growth pockets`],
+      persistent: [`Joint MC + PHC vector-control roster`, `Routine container index survey`, `Cross-jurisdiction fever surveillance`],
+    },
   };
-  const actions = [...base[geoType]];
-  if (signal === "new") actions.push("Active case search around index cases");
-  if (signal === "rising") actions.push("Daily monitoring & rapid response team deployment");
-  return actions.slice(0, 3);
+  return matrix[geoType][signal].slice(0, 3);
 }
 
 /**

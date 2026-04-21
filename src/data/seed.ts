@@ -599,3 +599,83 @@ export function getSeededDistrictsWithActions(stateId: string): Array<{ name: st
     .filter((d) => d.actions && d.actions.length > 0)
     .map((d) => ({ name: d.name, actions: d.actions!, risk: d.risk, signal: d.signal }));
 }
+
+// ──────────────── Areas-of-Concern walker ────────────────
+
+export interface SeedConcernNode {
+  name: string;
+  cases_2w: number;
+  cases_4w: number;
+  signal: SeedSignal;
+  level: "district" | "block" | "ward";
+  parent?: string;
+  parentDistrict?: string;
+}
+
+/**
+ * Walk every seeded geography in a state and emit a flat list of nodes
+ * (district / block / municipality / ward / village) with their signal.
+ * Used by Areas of Concern to guarantee both buckets are populated for
+ * every state where the seed defines them — at any zoom level.
+ */
+export function walkSeedNodes(stateId: string): SeedConcernNode[] {
+  const state = getSeedStateById(stateId);
+  if (!state) return [];
+  const out: SeedConcernNode[] = [];
+  for (const d of state.districts) {
+    out.push({
+      name: d.name,
+      cases_2w: d.cases_2w,
+      cases_4w: d.cases_4w,
+      signal: d.signal,
+      level: "district",
+    });
+    for (const b of d.blocks ?? []) {
+      out.push({
+        name: b.name,
+        cases_2w: b.cases_2w,
+        cases_4w: b.cases_4w,
+        signal: b.signal,
+        level: "block",
+        parent: d.name,
+        parentDistrict: d.name,
+      });
+      for (const v of b.villages ?? []) {
+        out.push({
+          name: v.name,
+          cases_2w: v.cases_2w,
+          cases_4w: v.cases_4w,
+          signal: v.signal,
+          level: "ward",
+          parent: b.name,
+          parentDistrict: d.name,
+        });
+      }
+    }
+    for (const m of d.municipalities ?? []) {
+      if (m.signal) {
+        out.push({
+          name: m.name,
+          cases_2w: m.cases_2w,
+          cases_4w: m.cases_4w,
+          signal: m.signal,
+          level: "block",
+          parent: d.name,
+          parentDistrict: d.name,
+        });
+      }
+      for (const w of m.wards ?? []) {
+        out.push({
+          name: w.name,
+          cases_2w: w.cases_2w,
+          cases_4w: w.cases_4w,
+          signal: w.signal,
+          level: "ward",
+          parent: m.name,
+          parentDistrict: d.name,
+        });
+      }
+    }
+  }
+  return out;
+}

@@ -2171,6 +2171,32 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
   const out: ActionFocusItem[] = [];
   const seen = new Set<string>();
 
+  // ── Seed-driven entries (highest priority): districts in scope with curated `actions[]`.
+  const seedActionDistricts = getSeededDistrictsWithActions(activeStateId);
+  const inScope = (name: string) =>
+    base.district === "All Districts" || base.district === name;
+  const signalToFocusSignal: Record<string, ActionFocusItem["signal"]> = {
+    new_emergence: "new",
+    rising_cluster: "rising",
+    persistent: "persistent",
+    moderate: "rising",
+    stable_low: "persistent",
+  };
+  for (const sd of seedActionDistricts) {
+    if (!inScope(sd.name)) continue;
+    if (seen.has(sd.name)) continue;
+    out.push({
+      area: sd.name,
+      parent: undefined,
+      geoType: inferGeoType(sd.name),
+      signal: signalToFocusSignal[sd.signal] ?? "persistent",
+      actions: sd.actions.slice(0, 3),
+      source: "curated",
+    });
+    seen.add(sd.name);
+    if (out.length >= 5) return out;
+  }
+
   for (const { r } of ranked) {
     if (seen.has(r.name)) continue;
     const curated = CURATED_ACTIONS.find((c) => c.match.test(r.name) || (r.parentDistrict && c.match.test(r.parentDistrict)));

@@ -94,6 +94,8 @@ export default function HotspotsScreen() {
 
       <DashboardMap height="350px" mode="hotspot" hotspotLookbackWeeks={timeRange === "2weeks" ? 2 : 4} />
 
+      <HotspotDailyTrend lookbackDays={timeRange === "2weeks" ? 14 : 28} />
+
       {displayHotspots.length > 0 ? (
         <div className="section-card p-5">
           <h3 className="section-title mb-3">{diseaseName} Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks · {areaLabel}</h3>
@@ -101,7 +103,7 @@ export default function HotspotsScreen() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  {["Area", "Cases", "Prev Period", "Trend", "Risk"].map((h) => (
+                  {["Area", "Cases", "Prev Period", "Trend", `Trend (${timeRange === "2weeks" ? "14" : "28"}d)`, "Risk"].map((h) => (
                     <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                   ))}
                 </tr>
@@ -109,6 +111,8 @@ export default function HotspotsScreen() {
               <tbody>
                 {visibleHotspots.map((r) => {
                   const TrendIcon = trendIcon[r.trend];
+                  const sparkPoints = timeRange === "2weeks" ? 14 : 28;
+                  const sparkValues = synthSparkSeries(r.area, r.currentCases, r.prevCases, r.trend, sparkPoints);
                   return (
                     <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-3 font-medium">{r.area}</td>
@@ -119,6 +123,9 @@ export default function HotspotsScreen() {
                           <TrendIcon className={`h-4 w-4 ${r.trend === "up" ? "text-risk-high" : r.trend === "down" ? "text-risk-low" : "text-muted-foreground"}`} />
                           <span className="text-muted-foreground capitalize">{r.trend === "up" ? "Rising" : r.trend === "down" ? "Falling" : "Stable"}</span>
                         </span>
+                      </td>
+                      <td className="py-2 px-3">
+                        <Sparkline values={sparkValues} trend={r.trend} width={90} height={22} />
                       </td>
                       <td className="py-2 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
                     </tr>

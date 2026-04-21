@@ -453,13 +453,44 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
 
-          {/* Primary layer: district choropleth */}
+          {/* Primary layer: district choropleth (raw case views render neutral grey) */}
           <GeoJSON
             key={geoKey}
             data={geoData!}
             style={styleFeature as any}
             onEachFeature={onEachFeature}
           />
+
+          {/* Raw-case overlay: neutral case-load circles at state level for current/hotspot modes.
+              Size encodes case count. Forecast mode keeps polygon coloring instead. */}
+          {isStateLevel && useNeutralPolygons && geoData && geoData.features.map((feature) => {
+            const name = featureToMockName(feature);
+            if (!name) return null;
+            const { cases } = resolveDistrictRisk(name);
+            const numCases = Number(cases);
+            if (!Number.isFinite(numCases) || numCases <= 0) return null;
+            // Use polygon centroid (approximation via bounds)
+            try {
+              const layer = L.geoJSON(feature as any);
+              const center = layer.getBounds().getCenter();
+              // radius scales with case count (sqrt for area-proportional)
+              const radius = Math.max(5, Math.min(22, 4 + Math.sqrt(numCases) * 1.6));
+              return (
+                <CircleMarker
+                  key={`load-${name}`}
+                  center={[center.lat, center.lng]}
+                  radius={radius}
+                  pathOptions={{
+                    fillColor: mode === "hotspot" ? "#1e3a8a" : "#475569",
+                    fillOpacity: 0.55,
+                    color: "#0f172a",
+                    weight: 1,
+                  }}
+                  interactive={false}
+                />
+              );
+            } catch { return null; }
+          })}
 
           {/* Child markers (blocks, wards, villages) at lower levels */}
           {childPoints.map((r) => {

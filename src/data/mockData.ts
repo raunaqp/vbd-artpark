@@ -1,5 +1,5 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
-import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions } from "./seed";
+import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions, walkSeedNodes, type SeedConcernNode } from "./seed";
 
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)
 // Active state is set via setActiveState(); all getters/proxies read from the active bundle.
@@ -2056,6 +2056,35 @@ function inferLevel(filters: DashboardFiltersLike): "district" | "block" | "ward
 }
 
 /**
+ * Convert a seed-walked node into a ConcernArea, keeping parent/level intact.
+ * Used as a guaranteed fallback so every state with seeded signals shows entries.
+ */
+function seedNodeToConcern(node: SeedConcernNode, mode: "new" | "rising"): ConcernArea {
+  const recent = node.cases_2w;
+  const prior = Math.max(0, node.cases_4w - node.cases_2w);
+  const pct = mode === "new"
+    ? (prior === 0 ? 100 : Math.round(((recent - prior) / Math.max(prior, 1)) * 100))
+    : (prior === 0 ? 100 : Math.round(((recent - prior) / Math.max(prior, 1)) * 100));
+  return {
+    name: node.name,
+    cases: recent,
+    prevCases: prior,
+    changePct: Math.max(0, pct),
+    parent: node.parent,
+    level: node.level,
+  };
+}
+
+function seedConcernNodesInScope(filters: DashboardFiltersLike): SeedConcernNode[] {
+  const nodes = walkSeedNodes(activeStateId);
+  // Filter by selected district scope so drill-downs show local concerns.
+  if (filters.district !== "All Districts") {
+    return nodes.filter((n) => n.parentDistrict === filters.district || n.name === filters.district);
+  }
+  return nodes;
+}
+
+/**
  * Areas with new/sporadic cases in the LAST 14 days that had ~zero in the prior 14-day window.
  * Even small counts (1–3) are surfaced — these are early-warning signals.
  */
@@ -2066,7 +2095,7 @@ export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): Con
   const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
-  return recent
+  const derived = recent
     .filter((r) => r.confirmed >= 1 && r.confirmed <= 8 && (priorByName.get(r.name) ?? 0) <= 1)
     .sort((a, b) => b.confirmed - a.confirmed)
     .slice(0, 6)
@@ -2078,6 +2107,21 @@ export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): Con
       parent: r.parentBlock || r.parentDistrict,
       level,
     }));
+
+  if (derived.length >= 2) return derived;
+
+  // Seed-driven fallback: surface any seeded node tagged as new_emergence in scope.
+  const seedNodes = seedConcernNodesInScope(base)
+    .filter((n) => n.signal === "new_emergence")
+    .sort((a, b) => b.cases_2w - a.cases_2w);
+  const seen = new Set(derived.map((d) => d.name));
+  for (const n of seedNodes) {
+    if (seen.has(n.name)) continue;
+    derived.push(seedNodeToConcern(n, "new"));
+    seen.add(n.name);
+    if (derived.length >= 6) break;
+  }
+  return derived;
 }
 
 /**
@@ -2090,7 +2134,7 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
   const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
-  return recent
+  const derived = recent
     .map((r) => {
       const prev = priorByName.get(r.name) ?? 0;
       const delta = r.confirmed - prev;
@@ -2108,6 +2152,24 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
       parent: region.parentBlock || region.parentDistrict,
       level,
     }));
+
+  if (derived.length >= 2) return derived;
+
+  // Seed fallback: nodes whose last 2w > prior 2w (cases_4w - cases_2w).
+  const seedNodes = seedConcernNodesInScope(base)
+    .filter((n) => {
+      const prior2w = n.cases_4w - n.cases_2w;
+      return n.cases_2w >= 3 && n.cases_2w > prior2w;
+    })
+    .sort((a, b) => (b.cases_2w - (b.cases_4w - b.cases_2w)) - (a.cases_2w - (a.cases_4w - a.cases_2w)));
+  const seen = new Set(derived.map((d) => d.name));
+  for (const n of seedNodes) {
+    if (seen.has(n.name)) continue;
+    derived.push(seedNodeToConcern(n, "rising"));
+    seen.add(n.name);
+    if (derived.length >= 5) break;
+  }
+  return derived;
 }
 
 // ──────────────── Action Focus engine ────────────────

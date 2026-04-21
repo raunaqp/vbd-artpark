@@ -88,6 +88,8 @@ export interface StateBundle {
    * Default: true. Set false for states with intentionally partial coverage.
    */
   coversAllDistricts?: boolean;
+  /** Optional canonical KPIs from seed.ts; if present, overrides regionData totals at state-wide scope. */
+  seedKpis?: { suspected: number; tested: number; confirmed: number };
 }
 
 // ──────────────── ANDHRA PRADESH ────────────────
@@ -936,6 +938,11 @@ const KARNATAKA: StateBundle = {
 
 // ──────────────── State registry & active state ────────────────
 export const stateBundles: Record<StateId, StateBundle> = { andhra_pradesh: AP, odisha: ODISHA, karnataka: KARNATAKA };
+
+// Apply canonical seed.ts overlay onto each bundle (cases, risk, coordinates,
+// hotspots, predictions, alerts). Non-seeded districts keep synthesized baselines.
+import { applySeedOverlayAll } from "./seedOverlay";
+applySeedOverlayAll(stateBundles);
 export const stateOptions: { id: StateId; label: string }[] = [
   { id: "andhra_pradesh", label: "Andhra Pradesh" },
   { id: "odisha", label: "Odisha" },

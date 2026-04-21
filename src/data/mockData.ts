@@ -2176,7 +2176,7 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
 export interface ActionFocusItem {
   area: string;
   parent?: string;
-  geoType: "urban" | "rural" | "coastal" | "industrial";
+  geoType: "urban" | "rural" | "coastal" | "industrial" | "periurban" | "construction";
   signal: "new" | "rising" | "persistent";
   actions: string[];
   source: "curated" | "auto";
@@ -2184,33 +2184,59 @@ export interface ActionFocusItem {
 
 // Curated, location-specific actions. Substring match on area name (case-insensitive).
 const CURATED_ACTIONS: Array<{ match: RegExp; entry: Omit<ActionFocusItem, "area" | "parent"> & { parentHint?: string } }> = [
-  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", actions: ["Ward-level fogging in Gajuwaka high-density zones", "Drainage clearing along stormwater channels", "Container survey in commercial blocks"], parentHint: "Visakhapatnam" } },
-  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["Fogging across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
-  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", actions: ["Canal-side source reduction in Guntur villages", "Larval survey in irrigated rural blocks", "Fever camps at PHC level"] } },
-  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", actions: ["Water storage checks in Panposh/Chhend industrial colonies", "Container breeding survey in Rourkela steel township", "Targeted fogging on industrial periphery"] } },
-  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", actions: ["Drainage clearing in Malpe coastal stretch", "Mobility tracking among fishing community", "Container breeding checks in coastal storage"] } },
-  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", actions: ["Larval survey in Satapada and Bentapur villages", "Fever camps in Puri rural belt", "Source reduction in low-lying areas"] } },
+  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", actions: ["Ward-level fogging in Gajuwaka high-density lanes", "Drainage clearing along stormwater channels", "Apartment & commercial container survey"], parentHint: "Visakhapatnam" } },
+  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["Fogging cycle across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
+  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", actions: ["Canal-side source reduction in irrigated villages", "Larval survey across irrigation-linked sub-centres", "PHC-level fever camps"] } },
+  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", actions: ["Worker-settlement water storage audit", "Industrial drainage inspection", "Worker fever screening at gate clinics"] } },
+  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", actions: ["Fishing harbor sanitation drive", "Container breeding checks at fish-storage units", "Tourist-area surveillance ramp-up"] } },
+  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", actions: ["Active case search around index households", "Larval survey in low-lying coastal villages", "PHC fever camps in affected GPs"] } },
   { match: /bengaluru.*urban|bbmp/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["BBMP ward-level fogging cycle", "Construction-site water storage audit", "Apartment-complex container survey"] } },
 ];
 
 function inferGeoType(name: string): ActionFocusItem["geoType"] {
-  if (/coast|port|fish|malpe|udupi|paradip/i.test(name)) return "coastal";
-  if (/steel|industrial|panposh|chhend|rourkela|jharsuguda/i.test(name)) return "industrial";
-  if (/\b(MC|City|Urban|Municipal|Town|Nagar|BBMP|Ward)\b/i.test(name)) return "urban";
+  if (/coast|port|fish|malpe|udupi|paradip|harbor/i.test(name)) return "coastal";
+  if (/steel|industrial|panposh|chhend|rourkela|jharsuguda|industries|estate/i.test(name)) return "industrial";
+  if (/construction|site|nagar.*new|peripheral/i.test(name)) return "construction";
+  if (/peri[- ]?urban|periphery|outskirt/i.test(name)) return "periurban";
+  if (/\b(MC|City|Urban|Municipal|Town|Nagar|BBMP|Ward|Bhubaneswar|Bengaluru|Hyderabad)\b/i.test(name)) return "urban";
   return "rural";
 }
 
 function autoActionsFor(geoType: ActionFocusItem["geoType"], signal: ActionFocusItem["signal"], area: string): string[] {
-  const base: Record<ActionFocusItem["geoType"], string[]> = {
-    urban: [`Ward-level fogging in ${area}`, `Drainage clearing in ${area} hotspots`, `Container survey in dense pockets`],
-    rural: [`Larval survey across ${area} villages`, `Fever camps at sub-centre level`, `Community awareness drive`],
-    industrial: [`Water storage audit in ${area} colonies`, `Container breeding checks on industrial premises`, `Targeted fogging on periphery`],
-    coastal: [`Mobility & migrant tracking in ${area}`, `Container breeding checks in fish-storage areas`, `Drainage clearing along coastal stretch`],
+  // 6-key matrix: geoType x signal → 3 differentiated actions per cell.
+  const matrix: Record<ActionFocusItem["geoType"], Record<ActionFocusItem["signal"], string[]>> = {
+    urban: {
+      new: [`Active case search around index households in ${area}`, `Apartment-complex container survey`, `Lane-level larvicidal spray`],
+      rising: [`Ward-level fogging in dense ${area} lanes`, `Drainage cleaning along storm channels`, `Apartment container survey & enforcement`],
+      persistent: [`Sustained fogging cycle in ${area} MC wards`, `Door-to-door fever surveillance`, `Container index audits in commercial pockets`],
+    },
+    rural: {
+      new: [`Active case search at affected hamlet in ${area}`, `Larval survey of nearby water sources`, `Sub-centre fever camps`],
+      rising: [`Canal-side source reduction in ${area}`, `Larval survey in irrigation-linked villages`, `PHC-level fever camps`],
+      persistent: [`Vector-control roster across ${area} GPs`, `Routine larval index monitoring`, `ASHA-led fever surveillance`],
+    },
+    industrial: {
+      new: [`Worker fever screening at ${area} gate clinics`, `Container survey in worker housing`, `Source reduction inside premises`],
+      rising: [`Construction-site water storage audit in ${area}`, `Enforcement notice for stagnant water`, `Targeted fogging around active sites`],
+      persistent: [`Industrial drainage inspection roster`, `Worker settlement sanitation drive`, `Periodic worker fever screening`],
+    },
+    coastal: {
+      new: [`Mobility tracking among visiting fishermen`, `Container breeding checks in fish-storage`, `Beachfront larval survey`],
+      rising: [`Fishing harbor sanitation in ${area}`, `Container breeding checks at storage units`, `Tourist-area surveillance ramp-up`],
+      persistent: [`Routine harbor sanitation cycle`, `Migrant-population fever screening`, `Coastal drainage clearing`],
+    },
+    construction: {
+      new: [`Notice to ${area} site supervisors`, `Container audit in worker barracks`, `Active case search at site clinics`],
+      rising: [`Construction-site water storage audit`, `Enforcement on uncovered tanks`, `Site-perimeter fogging cycle`],
+      persistent: [`Weekly site sanitation inspection`, `Worker fever screening roster`, `Larval index monitoring on premises`],
+    },
+    periurban: {
+      new: [`Active case search at peri-urban interface`, `Larval survey in newly developed colonies`, `Mobile fever camps`],
+      rising: [`Source reduction in ${area} fringe colonies`, `Drainage cleaning at urban-rural boundary`, `Targeted fogging in growth pockets`],
+      persistent: [`Joint MC + PHC vector-control roster`, `Routine container index survey`, `Cross-jurisdiction fever surveillance`],
+    },
   };
-  const actions = [...base[geoType]];
-  if (signal === "new") actions.push("Active case search around index cases");
-  if (signal === "rising") actions.push("Daily monitoring & rapid response team deployment");
-  return actions.slice(0, 3);
+  return matrix[geoType][signal].slice(0, 3);
 }
 
 /**

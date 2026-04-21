@@ -541,3 +541,61 @@ export function classifyRisk(cases: number): SeedRisk {
   if (cases >= t.moderate.min) return "moderate";
   return "low";
 }
+
+/**
+ * Walk a seeded state and return the daily_14d array for the deepest matching scope.
+ * Lookup priority: ward → village → block → municipality → district.
+ * Returns undefined when no match (or no daily_14d on the matched node).
+ */
+export function getSeedDailyDist(
+  stateId: string,
+  scope: { district?: string; block?: string; ward?: string },
+): number[] | undefined {
+  const state = getSeedStateById(stateId);
+  if (!state) return undefined;
+  const districts = scope.district && scope.district !== "All Districts"
+    ? state.districts.filter((d) => d.name === scope.district)
+    : state.districts;
+
+  const inBlockScope = scope.block && scope.block !== "All Blocks";
+  const inWardScope = scope.ward && scope.ward !== "All Wards";
+
+  for (const d of districts) {
+    // Ward / village leaf level
+    if (inWardScope) {
+      for (const m of d.municipalities ?? []) {
+        for (const w of m.wards ?? []) if (w.name === scope.ward && w.daily_14d) return w.daily_14d;
+      }
+      for (const b of d.blocks ?? []) {
+        for (const v of b.villages ?? []) if (v.name === scope.ward && (v as { daily_14d?: number[] }).daily_14d) return (v as { daily_14d?: number[] }).daily_14d;
+      }
+    }
+    // Block / municipality level
+    if (inBlockScope) {
+      for (const b of d.blocks ?? []) if (b.name === scope.block && b.daily_14d) return b.daily_14d;
+      for (const m of d.municipalities ?? []) if (m.name === scope.block && m.daily_14d) return m.daily_14d;
+    }
+    // District level
+    if (!inBlockScope && !inWardScope && d.daily_14d) return d.daily_14d;
+  }
+  return undefined;
+}
+
+/** Return the seed forecast block for a district (when scope is at district level). */
+export function getSeedForecastForDistrict(stateId: string, districtName: string): SeedForecast | undefined {
+  return getSeedDistrict(stateId, districtName)?.forecast;
+}
+
+/** Return the curated `actions[]` for a district (when scope is at district level). */
+export function getSeedActionsForDistrict(stateId: string, districtName: string): string[] | undefined {
+  return getSeedDistrict(stateId, districtName)?.actions;
+}
+
+/** Return all seeded districts for a state that have actions[] defined. */
+export function getSeededDistrictsWithActions(stateId: string): Array<{ name: string; actions: string[]; risk: SeedRisk; signal: SeedSignal }> {
+  const state = getSeedStateById(stateId);
+  if (!state) return [];
+  return state.districts
+    .filter((d) => d.actions && d.actions.length > 0)
+    .map((d) => ({ name: d.name, actions: d.actions!, risk: d.risk, signal: d.signal }));
+}

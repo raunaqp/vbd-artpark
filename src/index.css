@@ -131,3 +131,24 @@
     @apply bg-card text-foreground shadow-sm;
   }
 }
+
+/* District name labels on state-level map — transparent pill, no border. */
+.leaflet-tooltip.district-name-tooltip {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: hsl(222 47% 11%);
+  text-shadow:
+    0 1px 2px hsl(0 0% 100% / 0.95),
+    0 0 3px hsl(0 0% 100% / 0.95),
+    1px 0 2px hsl(0 0% 100% / 0.9),
+    -1px 0 2px hsl(0 0% 100% / 0.9);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.leaflet-tooltip.district-name-tooltip::before {
+  display: none;
+}

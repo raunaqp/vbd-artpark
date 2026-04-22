@@ -699,13 +699,14 @@ const ODISHA: StateBundle = {
 // ──────────────── KARNATAKA ────────────────
 const KARNATAKA: StateBundle = {
   id: "karnataka", label: "Karnataka",
-  districts: ["All Districts", "Bengaluru Urban", "Mysuru", "Belagavi", "Udupi"],
+  districts: ["All Districts", "Bengaluru Urban", "Mysuru", "Belagavi", "Udupi", "Tumakuru"],
   blocks: ["All Blocks", "Yelahanka", "Nanjangud", "Kundapura", "BBMP East Zone", "Mysuru City", "Udupi City"],
   regionData: [
     { name: "Bengaluru Urban", suspected: 820, tested: 780, confirmed: 110, risk: "high", trend: "up", type: "district" },
-    { name: "Mysuru", suspected: 420, tested: 395, confirmed: 48, risk: "high", trend: "up", type: "district" },
     { name: "Udupi", suspected: 180, tested: 170, confirmed: 22, risk: "high", trend: "up", type: "district" },
+    { name: "Mysuru", suspected: 420, tested: 395, confirmed: 48, risk: "moderate", trend: "stable", type: "district" },
     { name: "Belagavi", suspected: 310, tested: 290, confirmed: 32, risk: "moderate", trend: "stable", type: "district" },
+    { name: "Tumakuru", suspected: 140, tested: 130, confirmed: 12, risk: "low", trend: "down", type: "district" },
   ],
   subDistrictData: [
     { name: "BBMP East Zone", suspected: 320, tested: 305, confirmed: 42, risk: "high", trend: "up", type: "municipality", parentDistrict: "Bengaluru Urban" },

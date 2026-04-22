@@ -208,8 +208,10 @@ export const seed: SeedRoot = {
       kpis: { suspected: 1240, tested: 910, confirmed: 287 },
       signals: [
         { title: "Clustering of fever cases reported in Visakhapatnam urban wards", geography: "Visakhapatnam", type: "urban_cluster" },
-        { title: "Increased mosquito breeding observed along canal networks in Guntur district", geography: "Guntur", type: "irrigation_breeding" },
+        { title: "Sharp 2-week rise in East Godavari fever cases — rising hotspot burden", geography: "East Godavari", type: "rising_hotspot" },
+        { title: "Persistent transmission in Guntur irrigation belt over multiple weeks", geography: "Guntur", type: "persistent" },
         { title: "Rural blocks in Kurnool reporting gradual increase in fever cases", geography: "Kurnool", type: "rural_spread" },
+        { title: "First fever cluster of the season detected in Anantapur — new emergence", geography: "Anantapur", type: "new_emergence" },
       ],
       districts: [
         {

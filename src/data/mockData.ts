@@ -1864,7 +1864,20 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
   // We approximate "predicted cases" via probability×scale, but the user-facing
   // requirement is on the riskForecast cards (state/district aggregated).
   // Here we ensure no child prediction exceeds its parent by scaling probabilities.
-  const predictions = clampPredictionHierarchy(rawPredictions, bundle, filters);
+  const clamped = clampPredictionHierarchy(rawPredictions, bundle, filters);
+  // Parent-child coherence safety (state view only):
+  //   If a parent district is High but ALL its child blocks are Low (max child prob < 50),
+  //   soften the parent to Moderate. Avoids "parent alarming, children all green".
+  const predictions = filters.district === "All Districts"
+    ? clamped.map((p) => {
+        if (p.risk !== "high") return p;
+        const kids = bundle.districtPredictions.filter((dp) => dp.parentDistrict === p.area);
+        if (kids.length === 0) return p;
+        const maxChild = Math.max(...kids.map((k) => k.probability));
+        if (maxChild >= 50) return p;
+        return { ...p, risk: "moderate" as const, probability: Math.min(p.probability, 55) };
+      })
+    : clamped;
 
   const weeklyTimeSeries = generateWeeklyTimeSeries(profile, window, scopeScale || 1, seedKey);
   const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey, filters);

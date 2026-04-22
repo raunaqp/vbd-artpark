@@ -40,26 +40,30 @@ function ConcernList({
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">{emptyText}</p>
       ) : (
-        <ul className="space-y-2">
-          {items.map((it) => (
-            <li key={`${it.name}-${it.parent || ""}`} className="flex items-start justify-between gap-3 text-sm">
-              <div className="min-w-0">
-                <div className="font-medium text-foreground truncate">{it.name}</div>
-                <div className="text-[11px] text-muted-foreground">
-                  {levelLabel(it.level)}
-                  {it.parent ? ` · ${it.parent}` : ""}
+        <ul className="space-y-2.5">
+          {items.map((it) => {
+            const summary = showDelta
+              ? `rising trend over prior 2 weeks; ${it.cases} now, up ${it.changePct}%`
+              : it.prevCases > 0
+              ? `new cases detected in the last 2 weeks; ${it.cases} now vs ${it.prevCases} prior`
+              : `newly emerging cases in the last 2 weeks; ${it.cases} now (none prior)`;
+            return (
+              <li key={`${it.name}-${it.parent || ""}`} className="text-sm">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-semibold text-foreground truncate">{it.name}</span>
+                  <span className={`text-xs font-medium ${accentText} flex-shrink-0`}>
+                    {it.cases} {showDelta ? `(↑${it.changePct}%)` : `now`}
+                  </span>
                 </div>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className={`text-sm font-semibold ${accentText}`}>{it.cases}</div>
-                <div className="text-[10px] text-muted-foreground">
-                  {showDelta
-                    ? `↑ ${it.changePct}% vs prior 2w`
-                    : `prev: ${it.prevCases}`}
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  {levelLabel(it.level)}{it.parent ? ` · ${it.parent}` : ""}
                 </div>
-              </div>
-            </li>
-          ))}
+                <div className="text-[12px] text-foreground/80 mt-1 leading-snug">
+                  {it.name} — {summary}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

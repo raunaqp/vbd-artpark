@@ -1779,8 +1779,10 @@ function clampPredictionHierarchy(
     const parent = bundle.statePredictions.find((p) => p.area === filters.district);
     parentProb = parent?.probability;
   } else {
-    // State-wide: cap aggregate districts at ~3× the highest district probability.
-    parentProb = Math.max(...preds.map((p) => p.probability)) * 3;
+    // State-wide view is the TOP of the hierarchy — there is no parent budget to
+    // enforce. Returning preds untouched preserves the seeded high/moderate/low mix
+    // (e.g. AP must keep its high-risk districts visible in the choropleth).
+    return preds;
   }
   if (!parentProb || parentProb <= 0) return preds;
 

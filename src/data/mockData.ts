@@ -747,9 +747,9 @@ const KARNATAKA: StateBundle = {
     { name: "Indrali", suspected: 18, tested: 17, confirmed: 2, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Udupi", parentBlock: "Udupi City" },
   ],
   statePredictions: [
-    { area: "Bengaluru Urban", probability: 90, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding in Bengaluru wards + dense urban clustering" },
-    { area: "Udupi", probability: 84, risk: "high", expectedWeek: "W+2", signal: "Rainfall-driven spike in Udupi coastal belt — rising trend post-rainfall" },
-    { area: "Mysuru", probability: 70, risk: "high", expectedWeek: "W+3", signal: "Peri-urban spread observed in Mysuru outskirts (Nanjangud, Hunsur)" },
+    { area: "Udupi", probability: 86, risk: "high", expectedWeek: "W+2", signal: "Rainfall-driven spike in Udupi coastal belt — rising trend post-rainfall" },
+    { area: "Bengaluru Urban", probability: 78, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding in Bengaluru wards + dense urban clustering" },
+    { area: "Mysuru", probability: 60, risk: "moderate", expectedWeek: "W+3", signal: "Peri-urban spread observed in Mysuru outskirts (Nanjangud, Hunsur)" },
     { area: "Belagavi", probability: 48, risk: "moderate", expectedWeek: "W+4", signal: "Rural vector patterns + moderate baseline" },
     { area: "Tumakuru", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Low baseline + declining trend" },
   ],

@@ -16,6 +16,7 @@ The platform enables officials to:
 🧭 Navigate from state → district → block → village/ward
 ⚡ Take specific, location-based actions
 
+
 🧠 Core Concept
 Data → Trends → Forecast → Signals → Actions
 
@@ -151,3 +152,7 @@ a. State Health Departments
 b. District Surveillance Units
 c. Public Health Programs
 d. Climate-health initiatives
+
+
+For more details, contact at: raunaq@artpark.in , https://www.linkedin.com/in/raunaqpradhan/
+

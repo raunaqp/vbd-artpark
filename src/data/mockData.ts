@@ -749,7 +749,8 @@ const KARNATAKA: StateBundle = {
     { area: "Bengaluru Urban", probability: 90, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding in Bengaluru wards + dense urban clustering" },
     { area: "Udupi", probability: 84, risk: "high", expectedWeek: "W+2", signal: "Rainfall-driven spike in Udupi coastal belt — rising trend post-rainfall" },
     { area: "Mysuru", probability: 70, risk: "high", expectedWeek: "W+3", signal: "Peri-urban spread observed in Mysuru outskirts (Nanjangud, Hunsur)" },
-    { area: "Belagavi", probability: 38, risk: "moderate", expectedWeek: "W+4", signal: "Rural vector patterns + stable baseline" },
+    { area: "Belagavi", probability: 48, risk: "moderate", expectedWeek: "W+4", signal: "Rural vector patterns + moderate baseline" },
+    { area: "Tumakuru", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Low baseline + declining trend" },
   ],
   districtPredictions: [
     { area: "BBMP East Zone", probability: 92, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding (Whitefield, Mahadevapura) + IT-corridor density", parentDistrict: "Bengaluru Urban", areaType: "Municipality" },

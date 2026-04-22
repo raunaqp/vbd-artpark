@@ -248,9 +248,9 @@ export const seed: SeedRoot = {
           ],
         },
         {
-          name: "Guntur", lat: 16.3067, lng: 80.4365, cases_2w: 31, cases_4w: 56, signal: "moderate", context: "irrigation_rural", risk: "moderate",
-          forecast: { w1_probability: 0.49, w2_probability: 0.57, w3_probability: 0.61, w4_probability: 0.54, expected_peak_week: "W+3", signal_text: "Moderate risk due to irrigation-driven breeding (Guntur)" },
-          daily_14d: [4, 5, 3, 6, 5, 4, 6, 5, 4, 5, 6, 4, 5, 4],
+          name: "Guntur", lat: 16.3067, lng: 80.4365, cases_2w: 28, cases_4w: 58, signal: "persistent", context: "irrigation_rural", risk: "moderate",
+          forecast: { w1_probability: 0.45, w2_probability: 0.48, w3_probability: 0.5, w4_probability: 0.47, expected_peak_week: "W+3", signal_text: "Persistent transmission in Guntur irrigation belt — sustained moderate burden" },
+          daily_14d: [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5],
           actions: [
             "Canal-side source reduction in Tenali and Amaravathi belt",
             "Village-level larval surveys in irrigation-linked settlements",
@@ -308,12 +308,20 @@ export const seed: SeedRoot = {
           forecast: { w1_probability: 0.59, w2_probability: 0.66, w3_probability: 0.63, w4_probability: 0.55, expected_peak_week: "W+2", signal_text: "Moderate-to-high risk due to sustained urban/peri-urban spread" },
         },
         {
-          name: "East Godavari", lat: 17.233, lng: 81.722, cases_2w: 47, cases_4w: 76, signal: "persistent", context: "mixed", risk: "moderate",
-          forecast: { w1_probability: 0.52, w2_probability: 0.55, w3_probability: 0.57, w4_probability: 0.5, expected_peak_week: "W+3", signal_text: "Persistent moderate risk driven by ongoing transmission" },
+          // East Godavari → Rising hotspot burden anchor (recent 2W cases dominate prior 2W).
+          name: "East Godavari", lat: 17.233, lng: 81.722, cases_2w: 58, cases_4w: 82, signal: "rising_cluster", context: "mixed", risk: "moderate",
+          forecast: { w1_probability: 0.5, w2_probability: 0.56, w3_probability: 0.6, w4_probability: 0.52, expected_peak_week: "W+3", signal_text: "Rising hotspot burden — recent 2-week surge after monsoon onset" },
+          daily_14d: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 10, 11, 12, 13],
         },
         {
           name: "West Godavari", lat: 16.71, lng: 81.1, cases_2w: 12, cases_4w: 21, signal: "stable_low", context: "baseline", risk: "low",
           forecast: { w1_probability: 0.21, w2_probability: 0.24, w3_probability: 0.22, w4_probability: 0.2, expected_peak_week: "W+2", signal_text: "Low baseline risk" },
+        },
+        {
+          // Anantapur → New emergence anchor (no prior 2-week activity, small recent cluster).
+          name: "Anantapur", lat: 14.6819, lng: 77.6006, cases_2w: 9, cases_4w: 9, signal: "new_emergence", context: "baseline", risk: "low",
+          forecast: { w1_probability: 0.28, w2_probability: 0.34, w3_probability: 0.31, w4_probability: 0.25, expected_peak_week: "W+3", signal_text: "Newly detected fever cluster — first cases of the season" },
+          daily_14d: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 1, 2, 1, 1],
         },
       ],
     },

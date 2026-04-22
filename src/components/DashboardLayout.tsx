@@ -2,7 +2,9 @@ import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, Alert
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { useFilters } from "@/contexts/FilterContext";
 import { getDataQualityIssues } from "@/data/mockData";
+import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecastCsv } from "@/lib/exportCsv";
 import { useEffect, useState } from "react";
 
 const tabs = [

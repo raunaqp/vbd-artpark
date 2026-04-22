@@ -1769,35 +1769,67 @@ function clampPredictionHierarchy(
 ): OutbreakPrediction[] {
   if (preds.length === 0) return preds;
 
-  // Determine the parent's predicted "headroom" probability (proxy for cases).
+  // Determine the parent's predicted outbreak probability for the current scope.
+  // Probabilities are per-area outbreak likelihoods (NOT additive case counts), so
+  // we do NOT clamp by sum-of-children. Instead we enforce two coherence rules:
+  //   1) No child's probability may meaningfully exceed the parent (allow small +5 headroom).
+  //   2) If the parent is high/moderate, at least one child must mirror that risk band
+  //      (otherwise the child map looks all-green while the district card is red).
   let parentProb: number | undefined;
+  let parentRisk: OutbreakPrediction["risk"] | undefined;
   if (filters.block !== "All Blocks") {
     const parent = bundle.districtPredictions.find((p) => p.area === filters.block)
       || bundle.statePredictions.find((p) => p.area === filters.district);
     parentProb = parent?.probability;
+    parentRisk = parent?.risk;
   } else if (filters.district !== "All Districts") {
     const parent = bundle.statePredictions.find((p) => p.area === filters.district);
     parentProb = parent?.probability;
+    parentRisk = parent?.risk;
   } else {
-    // State-wide view is the TOP of the hierarchy — there is no parent budget to
-    // enforce. Returning preds untouched preserves the seeded high/moderate/low mix
-    // (e.g. AP must keep its high-risk districts visible in the choropleth).
+    // State-wide view is the TOP of the hierarchy — preserve seeded mix.
     return preds;
   }
   if (!parentProb || parentProb <= 0) return preds;
 
-  // Strict child-sum ≤ parent rule. Children may not collectively exceed the parent
-  // forecast budget (probability proxy). Rescale uniformly to preserve ordering.
-  const budget = Math.round(parentProb * 1.0);
-  const childSum = preds.reduce((s, p) => s + p.probability, 0);
-  if (childSum <= budget) return preds;
-
-  const scale = budget / childSum;
-  return preds.map((p) => {
-    const newProb = clamp(Math.round(p.probability * scale), 3, 99);
+  // Rule 1: cap any individual child probability at parent + small headroom.
+  const ceiling = Math.min(99, parentProb + 5);
+  let adjusted = preds.map((p) => {
+    if (p.probability <= ceiling) return p;
+    const newProb = ceiling;
     const risk: OutbreakPrediction["risk"] = newProb > 75 ? "high" : newProb >= 50 ? "moderate" : "low";
     return { ...p, probability: newProb, risk };
   });
+
+  // Rule 2: parent-child risk coherence. If parent is high but no child reaches the
+  // high band, lift the strongest child(ren) so the child map reflects the district
+  // forecast risk. Same logic for moderate parents with all-low children.
+  const sorted = [...adjusted].sort((a, b) => b.probability - a.probability);
+  const top = sorted[0];
+  if (top) {
+    const hasHigh = adjusted.some((p) => p.risk === "high");
+    const hasModerateOrHigh = adjusted.some((p) => p.risk === "high" || p.risk === "moderate");
+
+    const lift = (area: string, target: OutbreakPrediction["risk"]) => {
+      adjusted = adjusted.map((p) => {
+        if (p.area !== area) return p;
+        const newProb = target === "high"
+          ? Math.max(p.probability, Math.min(ceiling, 78))
+          : Math.max(p.probability, 55);
+        return { ...p, probability: newProb, risk: target };
+      });
+    };
+
+    if (parentRisk === "high" && !hasHigh) {
+      // Lift top 1 to high; if a clear #2 exists, lift it to moderate.
+      lift(sorted[0].area, "high");
+      if (sorted[1]) lift(sorted[1].area, "moderate");
+    } else if (parentRisk === "moderate" && !hasModerateOrHigh) {
+      lift(sorted[0].area, "moderate");
+    }
+  }
+
+  return adjusted;
 }
 
 /**

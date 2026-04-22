@@ -858,7 +858,7 @@ const KARNATAKA: StateBundle = {
   mapCenter: [13.50, 76.50],
   mapZoom: 7,
   districtCoordinates: {
-    "Bengaluru Urban": [12.97, 77.59], "Mysuru": [12.30, 76.65], "Belagavi": [15.85, 74.50], "Udupi": [13.34, 74.74],
+    "Bengaluru Urban": [12.97, 77.59], "Mysuru": [12.30, 76.65], "Belagavi": [15.85, 74.50], "Udupi": [13.34, 74.74], "Tumakuru": [13.34, 77.10],
     "BBMP East Zone": [12.98, 77.70], "BBMP South Zone": [12.91, 77.58], "Yelahanka": [13.10, 77.59], "Anekal": [12.71, 77.69],
     "Mysuru City": [12.30, 76.65], "Nanjangud": [12.12, 76.68], "Hunsur": [12.30, 76.29],
     "Udupi City": [13.34, 74.74], "Kundapura": [13.62, 74.69], "Karkala": [13.21, 74.99],

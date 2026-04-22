@@ -2306,6 +2306,13 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
 
 // ──────────────── Action Focus engine ────────────────
 
+export type ActionFocusReason =
+  | "new_emergence"
+  | "rising_hotspot_burden"
+  | "high_forecast_risk"
+  | "persistent_transmission"
+  | "curated_priority";
+
 export interface ActionFocusItem {
   area: string;
   parent?: string;
@@ -2313,6 +2320,18 @@ export interface ActionFocusItem {
   signal: "new" | "rising" | "persistent";
   actions: string[];
   source: "curated" | "auto";
+  /**
+   * Cross-panel reason this area is prioritized. Derived from:
+   *   • Forecast predictions (high_forecast_risk)
+   *   • Hotspot table (rising_hotspot_burden)
+   *   • Recent emergence (new_emergence)
+   *   • Persistent transmission (persistent_transmission)
+   *   • Curated strategic entries (curated_priority)
+   * Ensures Action Focus never appears disconnected from the other 3 panels.
+   */
+  reason: ActionFocusReason;
+  /** Short human-readable reason hint shown alongside the tag. */
+  reasonHint?: string;
 }
 
 // Curated, location-specific actions. Substring match on area name (case-insensitive).

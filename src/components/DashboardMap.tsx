@@ -26,6 +26,14 @@ const riskColor: Record<string, string> = {
   moderate: "#eab308",
   high: "#ef4444",
 };
+// Hotspot burden colors — same green/yellow/red palette but represents recent
+// hotspot case load (last 2W / 4W), NOT predicted outbreak risk. The map legend
+// makes the distinction explicit.
+const hotspotBurdenColor: Record<string, string> = {
+  low: "#16a34a",
+  moderate: "#f59e0b",
+  high: "#dc2626",
+};
 const NO_DATA_COLOR = "#cbd5e1"; // neutral slate for unmatched polygons
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
 
@@ -570,29 +578,32 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
           {isStateLevel && mode === "hotspot" && geoData && geoData.features.map((feature) => {
             const name = featureToMockName(feature);
             if (!name) return null;
-            const { cases, trend } = resolveDistrictRisk(name);
+            const { cases, trend, risk } = resolveDistrictRisk(name);
             const numCases = Number(cases);
             if (!Number.isFinite(numCases) || numCases <= 0) return null;
             try {
               const layer = L.geoJSON(feature as any);
               const center = layer.getBounds().getCenter();
               const radius = circleRadius(numCases);
+              const burdenLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "—";
+              const fill = risk ? hotspotBurdenColor[risk] : "#1d4ed8";
               return (
                 <CircleMarker
                   key={`hot-${name}`}
                   center={[center.lat, center.lng]}
                   radius={radius}
                   pathOptions={{
-                    fillColor: "#1d4ed8",
-                    fillOpacity: 0.6,
+                    fillColor: fill,
+                    fillOpacity: 0.7,
                     color: "#0f172a",
                     weight: 1,
                   }}
                 >
                   <Tooltip sticky>
-                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 180 }}>
                       <div style={{ fontWeight: 700, marginBottom: 2 }}>{name}</div>
                       <div>Cases ({hotspotLookbackWeeks}W): <strong>{numCases}</strong></div>
+                      <div>Hotspot burden: <strong>{burdenLabel}</strong></div>
                       {trend && <div style={{ opacity: 0.8 }}>Trend: {trendLabel(trend)}</div>}
                     </div>
                   </Tooltip>
@@ -607,19 +618,25 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             if (!coords) return null;
             const pred = predByArea.get(r.name);
             const displayRisk = (mode === "forecast" && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
-            const useNeutral = mode !== "forecast";
+            const useNeutral = mode !== "forecast" && mode !== "hotspot";
             return (
               <CircleMarker
                 key={`${r.type}-${r.name}`}
                 center={coords}
                 radius={
-                  useNeutral
+                  mode === "hotspot"
+                    ? circleRadius(Math.max(r.confirmed, 0))
+                    : useNeutral
                     ? circleRadius(Math.max(r.confirmed, 0))
                     : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
                 }
                 pathOptions={{
-                  fillColor: useNeutral ? (mode === "hotspot" ? "#1d4ed8" : "#3b82f6") : riskColor[displayRisk],
-                  fillOpacity: useNeutral ? 0.6 : 0.9,
+                  fillColor: mode === "hotspot"
+                    ? hotspotBurdenColor[displayRisk] || "#1d4ed8"
+                    : useNeutral
+                    ? "#3b82f6"
+                    : riskColor[displayRisk],
+                  fillOpacity: mode === "hotspot" ? 0.7 : useNeutral ? 0.6 : 0.9,
                   color: "#0f172a",
                   weight: 1,
                 }}
@@ -638,6 +655,15 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                       <div>Forecast risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
                       <div>Outbreak probability: <strong>{pred.probability}%</strong></div>
                       <div style={{ opacity: 0.8 }}>Forecast window: {pred.expectedWeek}</div>
+                    </div>
+                  ) : mode === "hotspot" ? (
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 180 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                        {r.name}{r.type ? ` (${r.type})` : ""}
+                      </div>
+                      <div>Cases ({hotspotLookbackWeeks}W): <strong>{r.confirmed}</strong></div>
+                      <div>Hotspot burden: <strong>{(displayRisk || "—").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                      <div style={{ opacity: 0.8 }}>Trend: {trendLabel(r.trend)}</div>
                     </div>
                   ) : (
                     <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
@@ -687,15 +713,16 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
           </>
         ) : (
           <>
-            <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
-              <span>fewer cases</span>
+            <span className="text-[11px] font-medium text-foreground mr-1">
+              Hotspot burden (last {hotspotLookbackWeeks} weeks):
             </span>
-            <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
-              <span>more cases</span>
-            </span>
-            <span className="text-xs text-muted-foreground">· circle size = case load</span>
+            {(["low", "moderate", "high"] as const).map((level) => (
+              <div key={level} className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: hotspotBurdenColor[level] }} />
+                <span className="capitalize">{level}</span>
+              </div>
+            ))}
+            <span className="text-[11px] text-muted-foreground">· circle size = case load</span>
           </>
         )}
       </div>

@@ -699,13 +699,14 @@ const ODISHA: StateBundle = {
 // ──────────────── KARNATAKA ────────────────
 const KARNATAKA: StateBundle = {
   id: "karnataka", label: "Karnataka",
-  districts: ["All Districts", "Bengaluru Urban", "Mysuru", "Belagavi", "Udupi"],
+  districts: ["All Districts", "Bengaluru Urban", "Mysuru", "Belagavi", "Udupi", "Tumakuru"],
   blocks: ["All Blocks", "Yelahanka", "Nanjangud", "Kundapura", "BBMP East Zone", "Mysuru City", "Udupi City"],
   regionData: [
     { name: "Bengaluru Urban", suspected: 820, tested: 780, confirmed: 110, risk: "high", trend: "up", type: "district" },
-    { name: "Mysuru", suspected: 420, tested: 395, confirmed: 48, risk: "high", trend: "up", type: "district" },
     { name: "Udupi", suspected: 180, tested: 170, confirmed: 22, risk: "high", trend: "up", type: "district" },
+    { name: "Mysuru", suspected: 420, tested: 395, confirmed: 48, risk: "moderate", trend: "stable", type: "district" },
     { name: "Belagavi", suspected: 310, tested: 290, confirmed: 32, risk: "moderate", trend: "stable", type: "district" },
+    { name: "Tumakuru", suspected: 140, tested: 130, confirmed: 12, risk: "low", trend: "down", type: "district" },
   ],
   subDistrictData: [
     { name: "BBMP East Zone", suspected: 320, tested: 305, confirmed: 42, risk: "high", trend: "up", type: "municipality", parentDistrict: "Bengaluru Urban" },
@@ -746,9 +747,9 @@ const KARNATAKA: StateBundle = {
     { name: "Indrali", suspected: 18, tested: 17, confirmed: 2, risk: "moderate", trend: "stable", type: "ward", parentDistrict: "Udupi", parentBlock: "Udupi City" },
   ],
   statePredictions: [
-    { area: "Bengaluru Urban", probability: 90, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding in Bengaluru wards + dense urban clustering" },
-    { area: "Udupi", probability: 84, risk: "high", expectedWeek: "W+2", signal: "Rainfall-driven spike in Udupi coastal belt — rising trend post-rainfall" },
-    { area: "Mysuru", probability: 70, risk: "high", expectedWeek: "W+3", signal: "Peri-urban spread observed in Mysuru outskirts (Nanjangud, Hunsur)" },
+    { area: "Udupi", probability: 86, risk: "high", expectedWeek: "W+2", signal: "Rainfall-driven spike in Udupi coastal belt — rising trend post-rainfall" },
+    { area: "Bengaluru Urban", probability: 78, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding in Bengaluru wards + dense urban clustering" },
+    { area: "Mysuru", probability: 60, risk: "moderate", expectedWeek: "W+3", signal: "Peri-urban spread observed in Mysuru outskirts (Nanjangud, Hunsur)" },
     { area: "Belagavi", probability: 48, risk: "moderate", expectedWeek: "W+4", signal: "Rural vector patterns + moderate baseline" },
     { area: "Tumakuru", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Low baseline + declining trend" },
   ],
@@ -792,9 +793,10 @@ const KARNATAKA: StateBundle = {
   ],
   hotspotDistrictData: [
     { area: "Bengaluru Urban", currentCases: 110, prevCases: 78, trend: "up", risk: "high" },
-    { area: "Mysuru", currentCases: 48, prevCases: 32, trend: "up", risk: "high" },
+    { area: "Mysuru", currentCases: 48, prevCases: 32, trend: "up", risk: "moderate" },
     { area: "Udupi", currentCases: 22, prevCases: 12, trend: "up", risk: "high" },
     { area: "Belagavi", currentCases: 32, prevCases: 30, trend: "stable", risk: "moderate" },
+    { area: "Tumakuru", currentCases: 12, prevCases: 16, trend: "down", risk: "low" },
   ],
   hotspotSubDistrictData: [
     { area: "BBMP East Zone", currentCases: 42, prevCases: 26, trend: "up", risk: "high", parentDistrict: "Bengaluru Urban" },
@@ -856,7 +858,7 @@ const KARNATAKA: StateBundle = {
   mapCenter: [13.50, 76.50],
   mapZoom: 7,
   districtCoordinates: {
-    "Bengaluru Urban": [12.97, 77.59], "Mysuru": [12.30, 76.65], "Belagavi": [15.85, 74.50], "Udupi": [13.34, 74.74],
+    "Bengaluru Urban": [12.97, 77.59], "Mysuru": [12.30, 76.65], "Belagavi": [15.85, 74.50], "Udupi": [13.34, 74.74], "Tumakuru": [13.34, 77.10],
     "BBMP East Zone": [12.98, 77.70], "BBMP South Zone": [12.91, 77.58], "Yelahanka": [13.10, 77.59], "Anekal": [12.71, 77.69],
     "Mysuru City": [12.30, 76.65], "Nanjangud": [12.12, 76.68], "Hunsur": [12.30, 76.29],
     "Udupi City": [13.34, 74.74], "Kundapura": [13.62, 74.69], "Karkala": [13.21, 74.99],
@@ -1769,35 +1771,67 @@ function clampPredictionHierarchy(
 ): OutbreakPrediction[] {
   if (preds.length === 0) return preds;
 
-  // Determine the parent's predicted "headroom" probability (proxy for cases).
+  // Determine the parent's predicted outbreak probability for the current scope.
+  // Probabilities are per-area outbreak likelihoods (NOT additive case counts), so
+  // we do NOT clamp by sum-of-children. Instead we enforce two coherence rules:
+  //   1) No child's probability may meaningfully exceed the parent (allow small +5 headroom).
+  //   2) If the parent is high/moderate, at least one child must mirror that risk band
+  //      (otherwise the child map looks all-green while the district card is red).
   let parentProb: number | undefined;
+  let parentRisk: OutbreakPrediction["risk"] | undefined;
   if (filters.block !== "All Blocks") {
     const parent = bundle.districtPredictions.find((p) => p.area === filters.block)
       || bundle.statePredictions.find((p) => p.area === filters.district);
     parentProb = parent?.probability;
+    parentRisk = parent?.risk;
   } else if (filters.district !== "All Districts") {
     const parent = bundle.statePredictions.find((p) => p.area === filters.district);
     parentProb = parent?.probability;
+    parentRisk = parent?.risk;
   } else {
-    // State-wide view is the TOP of the hierarchy — there is no parent budget to
-    // enforce. Returning preds untouched preserves the seeded high/moderate/low mix
-    // (e.g. AP must keep its high-risk districts visible in the choropleth).
+    // State-wide view is the TOP of the hierarchy — preserve seeded mix.
     return preds;
   }
   if (!parentProb || parentProb <= 0) return preds;
 
-  // Strict child-sum ≤ parent rule. Children may not collectively exceed the parent
-  // forecast budget (probability proxy). Rescale uniformly to preserve ordering.
-  const budget = Math.round(parentProb * 1.0);
-  const childSum = preds.reduce((s, p) => s + p.probability, 0);
-  if (childSum <= budget) return preds;
-
-  const scale = budget / childSum;
-  return preds.map((p) => {
-    const newProb = clamp(Math.round(p.probability * scale), 3, 99);
+  // Rule 1: cap any individual child probability at parent + small headroom.
+  const ceiling = Math.min(99, parentProb + 5);
+  let adjusted = preds.map((p) => {
+    if (p.probability <= ceiling) return p;
+    const newProb = ceiling;
     const risk: OutbreakPrediction["risk"] = newProb > 75 ? "high" : newProb >= 50 ? "moderate" : "low";
     return { ...p, probability: newProb, risk };
   });
+
+  // Rule 2: parent-child risk coherence. If parent is high but no child reaches the
+  // high band, lift the strongest child(ren) so the child map reflects the district
+  // forecast risk. Same logic for moderate parents with all-low children.
+  const sorted = [...adjusted].sort((a, b) => b.probability - a.probability);
+  const top = sorted[0];
+  if (top) {
+    const hasHigh = adjusted.some((p) => p.risk === "high");
+    const hasModerateOrHigh = adjusted.some((p) => p.risk === "high" || p.risk === "moderate");
+
+    const lift = (area: string, target: OutbreakPrediction["risk"]) => {
+      adjusted = adjusted.map((p) => {
+        if (p.area !== area) return p;
+        const newProb = target === "high"
+          ? Math.max(p.probability, Math.min(ceiling, 78))
+          : Math.max(p.probability, 55);
+        return { ...p, probability: newProb, risk: target };
+      });
+    };
+
+    if (parentRisk === "high" && !hasHigh) {
+      // Lift top 1 to high; if a clear #2 exists, lift it to moderate.
+      lift(sorted[0].area, "high");
+      if (sorted[1]) lift(sorted[1].area, "moderate");
+    } else if (parentRisk === "moderate" && !hasModerateOrHigh) {
+      lift(sorted[0].area, "moderate");
+    }
+  }
+
+  return adjusted;
 }
 
 /**

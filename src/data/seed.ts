@@ -443,9 +443,11 @@ export const seed: SeedRoot = {
       name: "Karnataka", code: "KA", lat: 15.3173, lng: 75.7139, disease: "Dengue",
       kpis: { suspected: 1115, tested: 835, confirmed: 264 },
       signals: [
-        { title: "Construction-site breeding concerns reported in Bengaluru urban wards", geography: "Bengaluru Urban", type: "construction" },
-        { title: "Rain-linked increase in case reports from Mysuru outskirts", geography: "Mysuru", type: "periurban" },
-        { title: "Post-rainfall mosquito breeding reported in coastal Udupi belt", geography: "Udupi", type: "coastal_rainfall" },
+        { title: "Sustained construction-site breeding across Bengaluru urban wards — persistent transmission", geography: "Bengaluru Urban", type: "persistent" },
+        { title: "Sharp 2-week rise in Dakshina Kannada coastal cases — rising hotspot burden", geography: "Dakshina Kannada", type: "rising_hotspot" },
+        { title: "Post-rainfall mosquito breeding reported in coastal Udupi belt — high forecast risk", geography: "Udupi", type: "coastal_rainfall" },
+        { title: "First fever cluster of the season detected in Mysuru outskirts — new emergence", geography: "Mysuru", type: "new_emergence" },
+        { title: "Rural blocks in Belagavi reporting moderate emerging trend", geography: "Belagavi", type: "rural_emerging" },
       ],
       districts: [
         {

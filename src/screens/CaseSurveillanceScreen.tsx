@@ -20,8 +20,8 @@ export default function CaseSurveillanceScreen() {
   const [page, setPage] = useState(1);
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
-  const { stateId } = useStateSelection();
-  void stateId;
+  const { stateId, options: stateOptions } = useStateSelection();
+  const stateLabel = stateOptions.find((s) => s.id === stateId)?.label ?? "State";
 
   const timeData = (timeRange === "weekly" ? getWeeklyTimeSeries(appliedFilters) : timeRange === "daily" ? getDailyTimeSeries(appliedFilters) : getMonthlyTimeSeries(appliedFilters)) as any[];
   const xKey = timeRange === "weekly" ? "date" : timeRange === "daily" ? "date" : "month";
@@ -83,8 +83,11 @@ export default function CaseSurveillanceScreen() {
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 rounded-md border border-input px-3 text-sm w-48"
             />
-            <button className="h-8 px-3 rounded-md border border-input text-sm flex items-center gap-1 text-muted-foreground">
-              <Download className="h-3 w-3" /> Export
+            <button
+              onClick={() => exportLineListingCsv({ stateLabel, diseaseName, filters: appliedFilters })}
+              className="h-8 px-3 rounded-md border border-input text-sm flex items-center gap-1 text-foreground hover:bg-muted transition-colors"
+            >
+              <Download className="h-3 w-3" /> Export CSV
             </button>
           </div>
         </div>

@@ -40,27 +40,28 @@ function ConcernList({
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">{emptyText}</p>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="space-y-1.5">
           {items.map((it) => {
-            const summary = showDelta
-              ? `rising trend over prior 2 weeks; ${it.cases} now, up ${it.changePct}%`
+            const meta = showDelta
+              ? `↑${it.changePct}%`
               : it.prevCases > 0
-              ? `new cases detected in the last 2 weeks; ${it.cases} now vs ${it.prevCases} prior`
-              : `newly emerging cases in the last 2 weeks; ${it.cases} now (none prior)`;
+              ? `prev ${it.prevCases}`
+              : `new`;
             return (
-              <li key={`${it.name}-${it.parent || ""}`} className="text-sm">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-semibold text-foreground truncate">{it.name}</span>
-                  <span className={`text-xs font-medium ${accentText} flex-shrink-0`}>
-                    {it.cases} {showDelta ? `(↑${it.changePct}%)` : `now`}
+              <li
+                key={`${it.name}-${it.parent || ""}`}
+                className="text-sm flex items-baseline justify-between gap-2 py-1 border-b border-border/40 last:border-0"
+              >
+                <span className="min-w-0 truncate">
+                  <span className="font-semibold text-foreground">{it.name}</span>
+                  <span className="text-[11px] text-muted-foreground ml-1.5">
+                    · {levelLabel(it.level)}
+                    {it.parent ? ` · ${it.parent}` : ""}
                   </span>
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">
-                  {levelLabel(it.level)}{it.parent ? ` · ${it.parent}` : ""}
-                </div>
-                <div className="text-[12px] text-foreground/80 mt-1 leading-snug">
-                  {it.name} — {summary}
-                </div>
+                </span>
+                <span className={`text-xs font-medium ${accentText} flex-shrink-0 whitespace-nowrap`}>
+                  {it.cases} now · {meta}
+                </span>
               </li>
             );
           })}

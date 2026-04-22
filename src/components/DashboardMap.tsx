@@ -418,8 +418,10 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
 
   // District-name label centroids (state view only). Rendered as invisible CircleMarkers
   // with a permanent Leaflet Tooltip — keeps district names readable beneath bubbles.
+  // Hotspot mode: SKIP permanent labels — names appear in hover tooltip only,
+  // keeping the map visually lighter.
   const districtLabelPoints = useMemo(() => {
-    if (!isStateLevel || !geoData) return [] as Array<{ name: string; lat: number; lng: number }>;
+    if (!isStateLevel || !geoData || mode === "hotspot") return [] as Array<{ name: string; lat: number; lng: number }>;
     const pts: Array<{ name: string; lat: number; lng: number }> = [];
     geoData.features.forEach((f) => {
       const n = featureToMockName(f);
@@ -432,7 +434,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     });
     return pts;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geoData, isStateLevel]);
+  }, [geoData, isStateLevel, mode]);
 
   // ─── Child overlays at sub-district / ward levels ───
   // STRICT scope rule:

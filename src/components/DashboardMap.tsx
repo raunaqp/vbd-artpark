@@ -525,94 +525,104 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             onEachFeature={onEachFeature}
           />
 
-          {/* Raw-case overlay: neutral case-load circles at state level for current/hotspot modes.
-              Size encodes case count. Forecast mode keeps polygon coloring instead. */}
-          {isStateLevel && useNeutralPolygons && geoData && geoData.features.map((feature) => {
+          {/* Hotspot state-level overlay: neutral blue case-load circles, sized by case count.
+              Only shown for "hotspot" mode at state scope. Forecast / Overview do NOT use this. */}
+          {isStateLevel && mode === "hotspot" && geoData && geoData.features.map((feature) => {
             const name = featureToMockName(feature);
             if (!name) return null;
-            const { cases } = resolveDistrictRisk(name);
+            const { cases, trend } = resolveDistrictRisk(name);
             const numCases = Number(cases);
             if (!Number.isFinite(numCases) || numCases <= 0) return null;
-            // Use polygon centroid (approximation via bounds)
             try {
               const layer = L.geoJSON(feature as any);
               const center = layer.getBounds().getCenter();
-              // radius scales with case count (sqrt for area-proportional)
-              const radius = Math.max(5, Math.min(22, 4 + Math.sqrt(numCases) * 1.6));
+              const radius = circleRadius(numCases);
               return (
                 <CircleMarker
-                  key={`load-${name}`}
+                  key={`hot-${name}`}
                   center={[center.lat, center.lng]}
                   radius={radius}
                   pathOptions={{
-                    fillColor: mode === "hotspot" ? "#1e3a8a" : "#475569",
-                    fillOpacity: 0.55,
+                    fillColor: "#1d4ed8",
+                    fillOpacity: 0.6,
                     color: "#0f172a",
                     weight: 1,
                   }}
-                  interactive={false}
-                />
+                >
+                  <Tooltip sticky>
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>{name}</div>
+                      <div>Cases ({hotspotLookbackWeeks}W): <strong>{numCases}</strong></div>
+                      {trend && <div style={{ opacity: 0.8 }}>Trend: {trendLabel(trend)}</div>}
+                    </div>
+                  </Tooltip>
+                </CircleMarker>
               );
             } catch { return null; }
           })}
 
-          {/* Child markers (blocks, wards, villages) at lower levels */}
+          {/* Child markers (blocks/municipalities, or villages/wards) — strictly the level of current scope */}
           {childPoints.map((r) => {
-          const coords = districtCoordinates[r.name];
-          if (!coords) return null;
-          const pred = predByArea.get(r.name);
-          const displayRisk = (mode === "forecast" && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
-          return (
-            <CircleMarker
-              key={`${r.type}-${r.name}`}
-              center={coords}
-              // Raw case views: size encodes case load with a neutral fill.
-              // Forecast view: keep risk-coloured fill.
-              radius={
-                useNeutralPolygons
-                  ? Math.max(5, Math.min(20, 4 + Math.sqrt(Math.max(r.confirmed, 0)) * 1.6))
-                  : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
-              }
-              pathOptions={{
-                fillColor: useNeutralPolygons ? (mode === "hotspot" ? "#1e3a8a" : "#475569") : riskColor[displayRisk],
-                fillOpacity: useNeutralPolygons ? 0.55 : 0.9,
-                color: "#0f172a",
-                weight: 1,
-              }}
-              eventHandlers={
-                isDistrictLevel && r.type !== "village" && r.type !== "ward" && !isLocked("block")
-                  ? { click: () => drillDown(r.name, "block") }
-                  : {}
-              }
-            >
-              <Tooltip sticky>
-                {mode === "forecast" && pred ? (
-                  <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 2 }}>
-                      {r.name}{r.type ? ` (${r.type})` : ""}
+            const coords = districtCoordinates[r.name];
+            if (!coords) return null;
+            const pred = predByArea.get(r.name);
+            const displayRisk = (mode === "forecast" && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
+            const useNeutral = mode !== "forecast";
+            return (
+              <CircleMarker
+                key={`${r.type}-${r.name}`}
+                center={coords}
+                radius={
+                  useNeutral
+                    ? circleRadius(Math.max(r.confirmed, 0))
+                    : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
+                }
+                pathOptions={{
+                  fillColor: useNeutral ? (mode === "hotspot" ? "#1d4ed8" : "#3b82f6") : riskColor[displayRisk],
+                  fillOpacity: useNeutral ? 0.6 : 0.9,
+                  color: "#0f172a",
+                  weight: 1,
+                }}
+                eventHandlers={
+                  isDistrictLevel && (r.type === "block" || r.type === "municipality") && !isLocked("block")
+                    ? { click: () => drillDown(r.name, "block") }
+                    : {}
+                }
+              >
+                <Tooltip sticky>
+                  {mode === "forecast" && pred ? (
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                        {r.name}{r.type ? ` (${r.type})` : ""}
+                      </div>
+                      <div>Forecast risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                      <div>Outbreak probability: <strong>{pred.probability}%</strong></div>
+                      <div style={{ opacity: 0.8 }}>Forecast window: {pred.expectedWeek}</div>
                     </div>
-                    <div>Outbreak Probability: <strong>{pred.probability}%</strong></div>
-                    <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Week: {pred.expectedWeek}</div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 2 }}>
-                      {r.name}{r.type ? ` (${r.type})` : ""}
+                  ) : (
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                        {r.name}{r.type ? ` (${r.type})` : ""}
+                      </div>
+                      <div>Cases: <strong>{r.confirmed} {trendArrow[r.trend] || ""}</strong></div>
+                      <div style={{ opacity: 0.7, fontSize: 11 }}>Period: {`${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`}</div>
                     </div>
-                    <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                    <div>Cases: <strong>{r.confirmed} {trendArrow[r.trend] || ""}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Date: {`${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`}</div>
-                  </div>
-                )}
-              </Tooltip>
-            </CircleMarker>
-          );
+                  )}
+                </Tooltip>
+              </CircleMarker>
+            );
           })}
         </MapContainer>
       )}
 
-      {/* Legend — risk colours only in forecast mode; raw case views show case-load circles. */}
+      {/* Scope label (top-center) */}
+      {geoReady && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1 text-[11px] text-foreground font-medium pointer-events-none">
+          {scopeLabel}
+        </div>
+      )}
+
+      {/* Legend — risk colours only in forecast mode; current = blue intensity; hotspot = blue circles. */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3 items-center">
         {mode === "forecast" ? (
           <>
@@ -627,14 +637,22 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
               <span>no data</span>
             </span>
           </>
+        ) : mode === "current" ? (
+          <>
+            <span className="text-[11px] text-muted-foreground mr-1">Cases:</span>
+            {BLUE_SCALE.map((c, i) => (
+              <span key={c} className="w-4 h-3" style={{ backgroundColor: c, opacity: 0.85, borderRight: i === BLUE_SCALE.length - 1 ? undefined : "1px solid rgba(255,255,255,0.4)" }} />
+            ))}
+            <span className="text-[11px] text-muted-foreground">fewer → more</span>
+          </>
         ) : (
           <>
             <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
               <span>fewer cases</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
               <span>more cases</span>
             </span>
             <span className="text-xs text-muted-foreground">· circle size = case load</span>

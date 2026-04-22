@@ -451,8 +451,9 @@ export const seed: SeedRoot = {
       ],
       districts: [
         {
-          name: "Bengaluru Urban", lat: 12.9716, lng: 77.5946, cases_2w: 72, cases_4w: 126, signal: "rising_cluster", context: "urban", risk: "high",
-          forecast: { w1_probability: 0.61, w2_probability: 0.68, w3_probability: 0.64, w4_probability: 0.58, expected_peak_week: "W+2", signal_text: "Moderate-to-high urban clustering risk" },
+          // Bengaluru Urban → Persistent transmission anchor (sustained 4W burden, flat day-by-day).
+          name: "Bengaluru Urban", lat: 12.9716, lng: 77.5946, cases_2w: 62, cases_4w: 124, signal: "persistent", context: "urban", risk: "high",
+          forecast: { w1_probability: 0.55, w2_probability: 0.58, w3_probability: 0.6, w4_probability: 0.56, expected_peak_week: "W+3", signal_text: "Persistent urban transmission — sustained dengue burden across BBMP wards" },
           actions: [
             "Construction-site inspections in high-risk wards",
             "Ward surveillance and fogging in dense localities",
@@ -480,16 +481,21 @@ export const seed: SeedRoot = {
           ],
         },
         {
-          name: "Mysuru", lat: 12.2958, lng: 76.6394, cases_2w: 9, cases_4w: 18, signal: "stable_low", context: "periurban", risk: "low",
-          forecast: { w1_probability: 0.24, w2_probability: 0.28, w3_probability: 0.32, w4_probability: 0.27, expected_peak_week: "W+3", signal_text: "Low-to-moderate peri-urban spread" },
+          // Mysuru → New emergence anchor (no prior 2W activity, recent small cluster).
+          name: "Mysuru", lat: 12.2958, lng: 76.6394, cases_2w: 8, cases_4w: 8, signal: "new_emergence", context: "periurban", risk: "low",
+          forecast: { w1_probability: 0.27, w2_probability: 0.32, w3_probability: 0.3, w4_probability: 0.26, expected_peak_week: "W+3", signal_text: "Newly detected fever cluster on Mysuru outskirts — first cases of the season" },
+          daily_14d: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 1, 2, 1, 1],
         },
         {
-          name: "Belagavi", lat: 15.8497, lng: 74.4977, cases_2w: 11, cases_4w: 22, signal: "stable_low", context: "rural", risk: "low",
-          forecast: { w1_probability: 0.23, w2_probability: 0.26, w3_probability: 0.29, w4_probability: 0.24, expected_peak_week: "W+3", signal_text: "Low baseline rural vector pattern" },
+          // Belagavi → Moderate emerging anchor (rising trend, moderate burden).
+          name: "Belagavi", lat: 15.8497, lng: 74.4977, cases_2w: 21, cases_4w: 33, signal: "rising_cluster", context: "rural", risk: "moderate",
+          forecast: { w1_probability: 0.4, w2_probability: 0.46, w3_probability: 0.5, w4_probability: 0.43, expected_peak_week: "W+3", signal_text: "Moderate emerging risk in rural blocks — rising 2-week trend" },
+          daily_14d: [1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5],
         },
         {
-          name: "Udupi", lat: 13.3409, lng: 74.7421, cases_2w: 26, cases_4w: 43, signal: "moderate", context: "coastal_rainfall", risk: "moderate",
-          forecast: { w1_probability: 0.46, w2_probability: 0.69, w3_probability: 0.72, w4_probability: 0.58, expected_peak_week: "W+3", signal_text: "High risk due to recent rainfall + humidity spike" },
+          // Udupi → High forecast risk anchor (climate spike drives projected outbreak).
+          name: "Udupi", lat: 13.3409, lng: 74.7421, cases_2w: 30, cases_4w: 48, signal: "rising_cluster", context: "coastal_rainfall", risk: "high",
+          forecast: { w1_probability: 0.62, w2_probability: 0.78, w3_probability: 0.82, w4_probability: 0.7, expected_peak_week: "W+3", signal_text: "High forecast risk — rainfall + humidity spike on coastal Udupi belt" },
           daily_14d: [4, 5, 3, 6, 5, 4, 6, 5, 4, 5, 6, 4, 5, 4],
           actions: [
             "Coastal drainage clearing in Udupi belt",

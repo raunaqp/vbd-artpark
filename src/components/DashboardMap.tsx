@@ -578,29 +578,32 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
           {isStateLevel && mode === "hotspot" && geoData && geoData.features.map((feature) => {
             const name = featureToMockName(feature);
             if (!name) return null;
-            const { cases, trend } = resolveDistrictRisk(name);
+            const { cases, trend, risk } = resolveDistrictRisk(name);
             const numCases = Number(cases);
             if (!Number.isFinite(numCases) || numCases <= 0) return null;
             try {
               const layer = L.geoJSON(feature as any);
               const center = layer.getBounds().getCenter();
               const radius = circleRadius(numCases);
+              const burdenLabel = risk ? risk.charAt(0).toUpperCase() + risk.slice(1) : "—";
+              const fill = risk ? hotspotBurdenColor[risk] : "#1d4ed8";
               return (
                 <CircleMarker
                   key={`hot-${name}`}
                   center={[center.lat, center.lng]}
                   radius={radius}
                   pathOptions={{
-                    fillColor: "#1d4ed8",
-                    fillOpacity: 0.6,
+                    fillColor: fill,
+                    fillOpacity: 0.7,
                     color: "#0f172a",
                     weight: 1,
                   }}
                 >
                   <Tooltip sticky>
-                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 180 }}>
                       <div style={{ fontWeight: 700, marginBottom: 2 }}>{name}</div>
                       <div>Cases ({hotspotLookbackWeeks}W): <strong>{numCases}</strong></div>
+                      <div>Hotspot burden: <strong>{burdenLabel}</strong></div>
                       {trend && <div style={{ opacity: 0.8 }}>Trend: {trendLabel(trend)}</div>}
                     </div>
                   </Tooltip>
@@ -615,7 +618,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             if (!coords) return null;
             const pred = predByArea.get(r.name);
             const displayRisk = (mode === "forecast" && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
-            const useNeutral = mode !== "forecast";
+            const useNeutral = mode !== "forecast" && mode !== "hotspot";
             return (
               <CircleMarker
                 key={`${r.type}-${r.name}`}

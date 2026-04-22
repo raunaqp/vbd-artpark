@@ -314,24 +314,59 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   const hasSelection = !isStateLevel;
-  // Raw case views (current + hotspot) MUST NOT use forecast risk colors.
-  // Polygons render in neutral grey; case counts are encoded by overlay circles.
-  const useNeutralPolygons = mode !== "forecast";
+  // Forecast = risk choropleth. Hotspot = grey polygons + sized circles. Current = blue-intensity choropleth.
+  const useNeutralPolygons = mode === "hotspot";
+  const useBlueChoropleth = mode === "current";
+
+  // Max case count across districts → drives blue intensity scale at state level.
+  const maxDistrictCases = useMemo(() => {
+    if (!geoData) return 0;
+    let max = 0;
+    geoData.features.forEach((f) => {
+      const name = featureToMockName(f);
+      if (!name) return;
+      const fb = getDistrictRiskFallback(name, { ...appliedFilters, district: "All Districts", block: "All Blocks", ward: "All Wards" });
+      if (fb.synthesized && !stateCoversAllDistricts()) return;
+      max = Math.max(max, fb.confirmed || 0);
+    });
+    return max;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geoData, stateId, appliedFilters.fromDate, appliedFilters.toDate]);
+
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
-    const { risk } = resolveDistrictRisk(name);
+    const { risk, cases } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
     const dimmed = hasSelection && !isSelected;
+
     if (useNeutralPolygons) {
+      // Hotspots map: light grey base, circles do the work.
       return {
         fillColor: NO_DATA_COLOR,
         fillOpacity: isSelected ? 0.45 : dimmed ? 0.1 : 0.18,
-        color: isSelected ? "#0f172a" : dimmed ? "#94a3b8" : "#94a3b8",
+        color: isSelected ? "#0f172a" : "#94a3b8",
         weight: isSelected ? 2.5 : 1,
         opacity: dimmed ? 0.55 : 1,
       };
     }
+
+    if (useBlueChoropleth) {
+      // Overview "current" map: single-hue blue scale, light → dark = fewer → more cases.
+      const numCases = Number(cases);
+      const fill = Number.isFinite(numCases) && numCases > 0
+        ? blueForIntensity(numCases, maxDistrictCases)
+        : NO_DATA_COLOR;
+      return {
+        fillColor: fill,
+        fillOpacity: isSelected ? 0.9 : dimmed ? 0.2 : 0.78,
+        color: isSelected ? "#0f172a" : dimmed ? "#94a3b8" : "#475569",
+        weight: isSelected ? 2.5 : 1,
+        opacity: dimmed ? 0.55 : 1,
+      };
+    }
+
+    // Forecast risk choropleth
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
       fillOpacity: isSelected ? 0.82 : dimmed ? 0.15 : risk ? 0.6 : 0.3,
@@ -352,28 +387,26 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     const observedDateRange = `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
     const trendStr = trendLabel(trend);
 
-    // Forecast tooltip → probability + per-prediction expected week (no global range).
-    // Observed/Hotspot tooltip → cases + observation date range.
     const tooltip = mode === "forecast"
       ? `
-        <div style="font-size:12px;line-height:1.45;min-width:160px">
+        <div style="font-size:12px;line-height:1.45;min-width:180px">
           <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
-          <div>Outbreak Probability: <strong>${risk ? cases : "—"}</strong></div>
-          <div>Risk: <strong>${riskLabel}</strong></div>
-          ${week ? `<div style="opacity:0.8">Week: ${week}</div>` : ""}
+          <div>Forecast risk: <strong>${riskLabel}</strong></div>
+          <div>Outbreak probability: <strong>${risk ? cases : "—"}</strong></div>
+          ${week ? `<div style="opacity:0.8">Forecast window: ${week}</div>` : ""}
         </div>`
       : `
-        <div style="font-size:12px;line-height:1.45;min-width:140px">
+        <div style="font-size:12px;line-height:1.45;min-width:160px">
           <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
-          <div>Risk: <strong>${riskLabel}</strong></div>
-          <div>Cases: <strong>${cases}${trendStr ? ` <span style="opacity:0.7">(${trendStr})</span>` : ""}</strong></div>
-          <div style="opacity:0.8">Date: ${observedDateRange}</div>
+          <div>Cases (last 4 weeks): <strong>${cases}</strong></div>
+          ${trendStr ? `<div style="opacity:0.8">Trend vs prior 4 weeks: ${trendStr}</div>` : ""}
+          <div style="opacity:0.7;font-size:11px">Period: ${observedDateRange}</div>
           ${isStateLevel && !isLocked("district") ? `<div style="opacity:0.6;margin-top:3px;font-style:italic">Click to drill down</div>` : ""}
         </div>`;
     layer.bindTooltip(tooltip, { sticky: true });
 
     layer.on({
-      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.85 }); },
+      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.92 }); },
       mouseout: (e) => { (e.target as any).setStyle(styleFeature(feature)); },
       click: () => {
         if (isStateLevel && !isLocked("district") && name) {
@@ -384,15 +417,28 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   // ─── Child overlays at sub-district / ward levels ───
-  // At district view: show block-level points (subDistrictData filtered to this district).
-  // At block view: show villages or wards (already returned by getFilteredRegions).
+  // STRICT scope rule:
+  //  - State view → only district-level data (polygons; no child markers)
+  //  - District selected → only block + municipality dots
+  //  - Block selected → only village / ward dots
+  // We do NOT mix multiple geographic levels in the same view.
   const childPoints = useMemo(() => {
-    if (isStateLevel) return []; // primary layer handles districts
-    return regions.filter((r) => r.type && r.type !== "district");
-  }, [regions, isStateLevel]);
+    if (isStateLevel) return [];
+    if (isBlockLevel) {
+      return regions.filter((r) => r.type === "village" || r.type === "ward");
+    }
+    return regions.filter((r) => r.type === "block" || r.type === "municipality");
+  }, [regions, isStateLevel, isBlockLevel]);
+
+  // Scope label shown above the map.
+  const scopeLabel = isBlockLevel
+    ? "Showing: Village / Ward distribution"
+    : !isStateLevel
+    ? "Showing: Block & Municipality distribution"
+    : "Showing: District-level distribution";
 
   // Force GeoJSON layer to re-style when filter changes (key trick).
-  const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}`;
+  const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}-${maxDistrictCases}`;
 
   // Breadcrumb navigation
   const handleBreadcrumb = (index: number) => {

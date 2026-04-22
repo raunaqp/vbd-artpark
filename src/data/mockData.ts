@@ -2336,13 +2336,13 @@ export interface ActionFocusItem {
 
 // Curated, location-specific actions. Substring match on area name (case-insensitive).
 const CURATED_ACTIONS: Array<{ match: RegExp; entry: Omit<ActionFocusItem, "area" | "parent"> & { parentHint?: string } }> = [
-  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", actions: ["Ward-level fogging in Gajuwaka high-density lanes", "Drainage clearing along stormwater channels", "Apartment & commercial container survey"], parentHint: "Visakhapatnam" } },
-  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["Fogging cycle across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
-  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", actions: ["Canal-side source reduction in irrigated villages", "Larval survey across irrigation-linked sub-centres", "PHC-level fever camps"] } },
-  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", actions: ["Worker-settlement water storage audit", "Industrial drainage inspection", "Worker fever screening at gate clinics"] } },
-  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", actions: ["Fishing harbor sanitation drive", "Container breeding checks at fish-storage units", "Tourist-area surveillance ramp-up"] } },
-  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", actions: ["Active case search around index households", "Larval survey in low-lying coastal villages", "PHC fever camps in affected GPs"] } },
-  { match: /bengaluru.*urban|bbmp/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["BBMP ward-level fogging cycle", "Construction-site water storage audit", "Apartment-complex container survey"] } },
+  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Ward-level fogging in Gajuwaka high-density lanes", "Drainage clearing along stormwater channels", "Apartment & commercial container survey"], parentHint: "Visakhapatnam" } },
+  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", reason: "curated_priority", actions: ["Fogging cycle across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
+  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Canal-side source reduction in irrigated villages", "Larval survey across irrigation-linked sub-centres", "PHC-level fever camps"] } },
+  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Worker-settlement water storage audit", "Industrial drainage inspection", "Worker fever screening at gate clinics"] } },
+  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Fishing harbor sanitation drive", "Container breeding checks at fish-storage units", "Tourist-area surveillance ramp-up"] } },
+  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", reason: "curated_priority", actions: ["Active case search around index households", "Larval survey in low-lying coastal villages", "PHC fever camps in affected GPs"] } },
+  { match: /bengaluru.*urban|bbmp/i, entry: { geoType: "urban", signal: "persistent", source: "curated", reason: "curated_priority", actions: ["BBMP ward-level fogging cycle", "Construction-site water storage audit", "Apartment-complex container survey"] } },
 ];
 
 function inferGeoType(name: string): ActionFocusItem["geoType"] {

@@ -624,13 +624,19 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                 key={`${r.type}-${r.name}`}
                 center={coords}
                 radius={
-                  useNeutral
+                  mode === "hotspot"
+                    ? circleRadius(Math.max(r.confirmed, 0))
+                    : useNeutral
                     ? circleRadius(Math.max(r.confirmed, 0))
                     : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
                 }
                 pathOptions={{
-                  fillColor: useNeutral ? (mode === "hotspot" ? "#1d4ed8" : "#3b82f6") : riskColor[displayRisk],
-                  fillOpacity: useNeutral ? 0.6 : 0.9,
+                  fillColor: mode === "hotspot"
+                    ? hotspotBurdenColor[displayRisk] || "#1d4ed8"
+                    : useNeutral
+                    ? "#3b82f6"
+                    : riskColor[displayRisk],
+                  fillOpacity: mode === "hotspot" ? 0.7 : useNeutral ? 0.6 : 0.9,
                   color: "#0f172a",
                   weight: 1,
                 }}
@@ -649,6 +655,15 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                       <div>Forecast risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
                       <div>Outbreak probability: <strong>{pred.probability}%</strong></div>
                       <div style={{ opacity: 0.8 }}>Forecast window: {pred.expectedWeek}</div>
+                    </div>
+                  ) : mode === "hotspot" ? (
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 180 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                        {r.name}{r.type ? ` (${r.type})` : ""}
+                      </div>
+                      <div>Cases ({hotspotLookbackWeeks}W): <strong>{r.confirmed}</strong></div>
+                      <div>Hotspot burden: <strong>{(displayRisk || "—").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                      <div style={{ opacity: 0.8 }}>Trend: {trendLabel(r.trend)}</div>
                     </div>
                   ) : (
                     <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>

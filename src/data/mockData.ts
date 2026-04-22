@@ -793,9 +793,10 @@ const KARNATAKA: StateBundle = {
   ],
   hotspotDistrictData: [
     { area: "Bengaluru Urban", currentCases: 110, prevCases: 78, trend: "up", risk: "high" },
-    { area: "Mysuru", currentCases: 48, prevCases: 32, trend: "up", risk: "high" },
+    { area: "Mysuru", currentCases: 48, prevCases: 32, trend: "up", risk: "moderate" },
     { area: "Udupi", currentCases: 22, prevCases: 12, trend: "up", risk: "high" },
     { area: "Belagavi", currentCases: 32, prevCases: 30, trend: "stable", risk: "moderate" },
+    { area: "Tumakuru", currentCases: 12, prevCases: 16, trend: "down", risk: "low" },
   ],
   hotspotSubDistrictData: [
     { area: "BBMP East Zone", currentCases: 42, prevCases: 26, trend: "up", risk: "high", parentDistrict: "Bengaluru Urban" },

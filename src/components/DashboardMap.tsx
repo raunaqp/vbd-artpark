@@ -416,6 +416,24 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     });
   };
 
+  // District-name label centroids (state view only). Rendered as invisible CircleMarkers
+  // with a permanent Leaflet Tooltip — keeps district names readable beneath bubbles.
+  const districtLabelPoints = useMemo(() => {
+    if (!isStateLevel || !geoData) return [] as Array<{ name: string; lat: number; lng: number }>;
+    const pts: Array<{ name: string; lat: number; lng: number }> = [];
+    geoData.features.forEach((f) => {
+      const n = featureToMockName(f);
+      if (!n) return;
+      try {
+        const lyr = L.geoJSON(f as any);
+        const c = lyr.getBounds().getCenter();
+        pts.push({ name: n, lat: c.lat, lng: c.lng });
+      } catch { /* ignore */ }
+    });
+    return pts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geoData, isStateLevel]);
+
   // ─── Child overlays at sub-district / ward levels ───
   // STRICT scope rule:
   //  - State view → only district-level data (polygons; no child markers)

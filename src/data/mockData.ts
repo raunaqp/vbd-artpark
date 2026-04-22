@@ -1783,15 +1783,15 @@ function clampPredictionHierarchy(
   }
   if (!parentProb || parentProb <= 0) return preds;
 
-  // Use a generous "child total" budget = 1.4× parent (children typically partition
-  // but each is a probability not a fraction). Only rescale if exceeded.
-  const budget = Math.round(parentProb * 1.4);
+  // Strict child-sum ≤ parent rule. Children may not collectively exceed the parent
+  // forecast budget (probability proxy). Rescale uniformly to preserve ordering.
+  const budget = Math.round(parentProb * 1.0);
   const childSum = preds.reduce((s, p) => s + p.probability, 0);
   if (childSum <= budget) return preds;
 
   const scale = budget / childSum;
   return preds.map((p) => {
-    const newProb = clamp(Math.round(p.probability * scale), 5, 99);
+    const newProb = clamp(Math.round(p.probability * scale), 3, 99);
     const risk: OutbreakPrediction["risk"] = newProb > 75 ? "high" : newProb >= 50 ? "moderate" : "low";
     return { ...p, probability: newProb, risk };
   });

@@ -66,9 +66,9 @@ export default function ForecastScreen() {
             : "border-risk-low bg-risk-low/5 text-risk-low";
           return (
             <div key={f.week} className={`rounded-lg border-2 p-3 text-center ${riskClass}`}>
-              <div className="text-xs font-semibold">{f.label}</div>
+              <div className="text-xs font-semibold">Forecast risk · {f.label}</div>
               <div className="text-lg font-bold">{f.cases}</div>
-              <div className="text-xs opacity-80">cases (predicted)</div>
+              <div className="text-xs opacity-80">projected cases</div>
               <div className="mt-1"><span className={`risk-badge-${f.risk}`}>{f.risk}</span></div>
             </div>
           );
@@ -120,7 +120,7 @@ export default function ForecastScreen() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {[areaLabel, "Probability (%)", "Risk Level", "Expected Window", "Signal"].map((h) => (
+                {[areaLabel, "Outbreak Probability", "Forecast Risk", "Forecast Window", "Drivers"].map((h) => (
                   <th key={h} className="text-left py-2.5 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>

@@ -2,7 +2,9 @@ import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, Alert
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { useFilters } from "@/contexts/FilterContext";
 import { getDataQualityIssues } from "@/data/mockData";
+import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecastCsv } from "@/lib/exportCsv";
 import { useEffect, useState } from "react";
 
 const tabs = [
@@ -27,6 +29,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const { currentRole, setRole, availableRoles } = useRole();
   const { currentDisease, setDisease } = useDisease();
   const { stateId, setStateId, options: stateOptions } = useStateSelection();
+  const { appliedFilters } = useFilters();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [showDiseaseMenu, setShowDiseaseMenu] = useState(false);
@@ -34,11 +37,23 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const [pendingStateId, setPendingStateId] = useState(stateId);
   const [dataIssuesExpanded, setDataIssuesExpanded] = useState(false);
 
-  const reportOptions = ["Weekly Report", "District Summary", "NVBDCP Format", "Line Listing"];
   const currentStateLabel = stateOptions.find((s) => s.id === stateId)?.label || "State";
   const dataQualityIssues = getDataQualityIssues();
-  void stateId; // re-evaluate on state change
+  void stateId;
   useEffect(() => { setPendingStateId(stateId); }, [stateId]);
+
+  const exportCtx = {
+    stateLabel: currentStateLabel,
+    diseaseName: currentDisease.label,
+    filters: appliedFilters,
+  };
+  const reportOptions: Array<{ label: string; run: () => void }> = [
+    { label: "Filtered Summary (CSV)", run: () => exportSummaryCsv(exportCtx) },
+    { label: "Line Listing (CSV)", run: () => exportLineListingCsv(exportCtx) },
+    { label: "Hotspots — 4W (CSV)", run: () => exportHotspotCsv({ ...exportCtx, hotspotLookbackWeeks: 4 }) },
+    { label: "Hotspots — 2W (CSV)", run: () => exportHotspotCsv({ ...exportCtx, hotspotLookbackWeeks: 2 }) },
+    { label: "Forecast Table (CSV)", run: () => exportForecastCsv(exportCtx) },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -127,10 +142,17 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
               <ChevronDown className="h-3 w-3" />
             </button>
             {showReportMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+              <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+                <div className="px-3 py-2 text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
+                  Exports respect current filters
+                </div>
                 {reportOptions.map((r) => (
-                  <button key={r} onClick={() => setShowReportMenu(false)} className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
-                    {r}
+                  <button
+                    key={r.label}
+                    onClick={() => { r.run(); setShowReportMenu(false); }}
+                    className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    {r.label}
                   </button>
                 ))}
               </div>

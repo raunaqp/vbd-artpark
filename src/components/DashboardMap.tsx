@@ -20,6 +20,7 @@ import { useStateSelection } from "@/contexts/StateContext";
 import "leaflet/dist/leaflet.css";
 
 // ──────────────── Risk colors (semantic but inline-required by leaflet) ────────────────
+// Forecast-only semantic colors (low/moderate/high). Raw case + hotspot maps must NOT use these.
 const riskColor: Record<string, string> = {
   low: "#22c55e",
   moderate: "#eab308",
@@ -27,6 +28,23 @@ const riskColor: Record<string, string> = {
 };
 const NO_DATA_COLOR = "#cbd5e1"; // neutral slate for unmatched polygons
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
+
+// Single-hue blue intensity scale for case-load encoding (Overview "current" mode).
+// Light → dark = fewer → more cases.
+const BLUE_SCALE = ["#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#1d4ed8"];
+function blueForIntensity(value: number, max: number): string {
+  if (max <= 0 || value <= 0) return BLUE_SCALE[0];
+  // sqrt scaling so a few large districts don't crush smaller ones
+  const t = Math.min(1, Math.sqrt(value) / Math.sqrt(max));
+  const idx = Math.min(BLUE_SCALE.length - 1, Math.floor(t * BLUE_SCALE.length));
+  return BLUE_SCALE[idx];
+}
+// Sub-linear circle radius (sqrt + log) so big counts don't dominate the map.
+function circleRadius(numCases: number): number {
+  if (!Number.isFinite(numCases) || numCases <= 0) return 3;
+  const r = 3 + Math.sqrt(numCases) * 0.9 + Math.log2(numCases + 1) * 0.6;
+  return Math.max(4, Math.min(16, r));
+}
 
 // ──────────────── GeoJSON URLs (datameet-style mirror via jsDelivr CDN) ────────────────
 const GEOJSON_URLS: Record<string, string> = {
@@ -296,24 +314,59 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   const hasSelection = !isStateLevel;
-  // Raw case views (current + hotspot) MUST NOT use forecast risk colors.
-  // Polygons render in neutral grey; case counts are encoded by overlay circles.
-  const useNeutralPolygons = mode !== "forecast";
+  // Forecast = risk choropleth. Hotspot = grey polygons + sized circles. Current = blue-intensity choropleth.
+  const useNeutralPolygons = mode === "hotspot";
+  const useBlueChoropleth = mode === "current";
+
+  // Max case count across districts → drives blue intensity scale at state level.
+  const maxDistrictCases = useMemo(() => {
+    if (!geoData) return 0;
+    let max = 0;
+    geoData.features.forEach((f) => {
+      const name = featureToMockName(f);
+      if (!name) return;
+      const fb = getDistrictRiskFallback(name, { ...appliedFilters, district: "All Districts", block: "All Blocks", ward: "All Wards" });
+      if (fb.synthesized && !stateCoversAllDistricts()) return;
+      max = Math.max(max, fb.confirmed || 0);
+    });
+    return max;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geoData, stateId, appliedFilters.fromDate, appliedFilters.toDate]);
+
   const styleFeature = (feature?: Feature): PathOptions => {
     if (!feature) return {};
     const name = featureToMockName(feature);
-    const { risk } = resolveDistrictRisk(name);
+    const { risk, cases } = resolveDistrictRisk(name);
     const isSelected = name === appliedFilters.district;
     const dimmed = hasSelection && !isSelected;
+
     if (useNeutralPolygons) {
+      // Hotspots map: light grey base, circles do the work.
       return {
         fillColor: NO_DATA_COLOR,
         fillOpacity: isSelected ? 0.45 : dimmed ? 0.1 : 0.18,
-        color: isSelected ? "#0f172a" : dimmed ? "#94a3b8" : "#94a3b8",
+        color: isSelected ? "#0f172a" : "#94a3b8",
         weight: isSelected ? 2.5 : 1,
         opacity: dimmed ? 0.55 : 1,
       };
     }
+
+    if (useBlueChoropleth) {
+      // Overview "current" map: single-hue blue scale, light → dark = fewer → more cases.
+      const numCases = Number(cases);
+      const fill = Number.isFinite(numCases) && numCases > 0
+        ? blueForIntensity(numCases, maxDistrictCases)
+        : NO_DATA_COLOR;
+      return {
+        fillColor: fill,
+        fillOpacity: isSelected ? 0.9 : dimmed ? 0.2 : 0.78,
+        color: isSelected ? "#0f172a" : dimmed ? "#94a3b8" : "#475569",
+        weight: isSelected ? 2.5 : 1,
+        opacity: dimmed ? 0.55 : 1,
+      };
+    }
+
+    // Forecast risk choropleth
     return {
       fillColor: risk ? riskColor[risk] : NO_DATA_COLOR,
       fillOpacity: isSelected ? 0.82 : dimmed ? 0.15 : risk ? 0.6 : 0.3,
@@ -334,28 +387,26 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     const observedDateRange = `${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`;
     const trendStr = trendLabel(trend);
 
-    // Forecast tooltip → probability + per-prediction expected week (no global range).
-    // Observed/Hotspot tooltip → cases + observation date range.
     const tooltip = mode === "forecast"
       ? `
-        <div style="font-size:12px;line-height:1.45;min-width:160px">
+        <div style="font-size:12px;line-height:1.45;min-width:180px">
           <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
-          <div>Outbreak Probability: <strong>${risk ? cases : "—"}</strong></div>
-          <div>Risk: <strong>${riskLabel}</strong></div>
-          ${week ? `<div style="opacity:0.8">Week: ${week}</div>` : ""}
+          <div>Forecast risk: <strong>${riskLabel}</strong></div>
+          <div>Outbreak probability: <strong>${risk ? cases : "—"}</strong></div>
+          ${week ? `<div style="opacity:0.8">Forecast window: ${week}</div>` : ""}
         </div>`
       : `
-        <div style="font-size:12px;line-height:1.45;min-width:140px">
+        <div style="font-size:12px;line-height:1.45;min-width:160px">
           <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
-          <div>Risk: <strong>${riskLabel}</strong></div>
-          <div>Cases: <strong>${cases}${trendStr ? ` <span style="opacity:0.7">(${trendStr})</span>` : ""}</strong></div>
-          <div style="opacity:0.8">Date: ${observedDateRange}</div>
+          <div>Cases (last 4 weeks): <strong>${cases}</strong></div>
+          ${trendStr ? `<div style="opacity:0.8">Trend vs prior 4 weeks: ${trendStr}</div>` : ""}
+          <div style="opacity:0.7;font-size:11px">Period: ${observedDateRange}</div>
           ${isStateLevel && !isLocked("district") ? `<div style="opacity:0.6;margin-top:3px;font-style:italic">Click to drill down</div>` : ""}
         </div>`;
     layer.bindTooltip(tooltip, { sticky: true });
 
     layer.on({
-      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.85 }); },
+      mouseover: (e) => { (e.target as any).setStyle({ weight: 3, color: "#0f172a", fillOpacity: 0.92 }); },
       mouseout: (e) => { (e.target as any).setStyle(styleFeature(feature)); },
       click: () => {
         if (isStateLevel && !isLocked("district") && name) {
@@ -366,15 +417,28 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   // ─── Child overlays at sub-district / ward levels ───
-  // At district view: show block-level points (subDistrictData filtered to this district).
-  // At block view: show villages or wards (already returned by getFilteredRegions).
+  // STRICT scope rule:
+  //  - State view → only district-level data (polygons; no child markers)
+  //  - District selected → only block + municipality dots
+  //  - Block selected → only village / ward dots
+  // We do NOT mix multiple geographic levels in the same view.
   const childPoints = useMemo(() => {
-    if (isStateLevel) return []; // primary layer handles districts
-    return regions.filter((r) => r.type && r.type !== "district");
-  }, [regions, isStateLevel]);
+    if (isStateLevel) return [];
+    if (isBlockLevel) {
+      return regions.filter((r) => r.type === "village" || r.type === "ward");
+    }
+    return regions.filter((r) => r.type === "block" || r.type === "municipality");
+  }, [regions, isStateLevel, isBlockLevel]);
+
+  // Scope label shown above the map.
+  const scopeLabel = isBlockLevel
+    ? "Showing: Village / Ward distribution"
+    : !isStateLevel
+    ? "Showing: Block & Municipality distribution"
+    : "Showing: District-level distribution";
 
   // Force GeoJSON layer to re-style when filter changes (key trick).
-  const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}`;
+  const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}-${maxDistrictCases}`;
 
   // Breadcrumb navigation
   const handleBreadcrumb = (index: number) => {
@@ -461,94 +525,104 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             onEachFeature={onEachFeature}
           />
 
-          {/* Raw-case overlay: neutral case-load circles at state level for current/hotspot modes.
-              Size encodes case count. Forecast mode keeps polygon coloring instead. */}
-          {isStateLevel && useNeutralPolygons && geoData && geoData.features.map((feature) => {
+          {/* Hotspot state-level overlay: neutral blue case-load circles, sized by case count.
+              Only shown for "hotspot" mode at state scope. Forecast / Overview do NOT use this. */}
+          {isStateLevel && mode === "hotspot" && geoData && geoData.features.map((feature) => {
             const name = featureToMockName(feature);
             if (!name) return null;
-            const { cases } = resolveDistrictRisk(name);
+            const { cases, trend } = resolveDistrictRisk(name);
             const numCases = Number(cases);
             if (!Number.isFinite(numCases) || numCases <= 0) return null;
-            // Use polygon centroid (approximation via bounds)
             try {
               const layer = L.geoJSON(feature as any);
               const center = layer.getBounds().getCenter();
-              // radius scales with case count (sqrt for area-proportional)
-              const radius = Math.max(5, Math.min(22, 4 + Math.sqrt(numCases) * 1.6));
+              const radius = circleRadius(numCases);
               return (
                 <CircleMarker
-                  key={`load-${name}`}
+                  key={`hot-${name}`}
                   center={[center.lat, center.lng]}
                   radius={radius}
                   pathOptions={{
-                    fillColor: mode === "hotspot" ? "#1e3a8a" : "#475569",
-                    fillOpacity: 0.55,
+                    fillColor: "#1d4ed8",
+                    fillOpacity: 0.6,
                     color: "#0f172a",
                     weight: 1,
                   }}
-                  interactive={false}
-                />
+                >
+                  <Tooltip sticky>
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>{name}</div>
+                      <div>Cases ({hotspotLookbackWeeks}W): <strong>{numCases}</strong></div>
+                      {trend && <div style={{ opacity: 0.8 }}>Trend: {trendLabel(trend)}</div>}
+                    </div>
+                  </Tooltip>
+                </CircleMarker>
               );
             } catch { return null; }
           })}
 
-          {/* Child markers (blocks, wards, villages) at lower levels */}
+          {/* Child markers (blocks/municipalities, or villages/wards) — strictly the level of current scope */}
           {childPoints.map((r) => {
-          const coords = districtCoordinates[r.name];
-          if (!coords) return null;
-          const pred = predByArea.get(r.name);
-          const displayRisk = (mode === "forecast" && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
-          return (
-            <CircleMarker
-              key={`${r.type}-${r.name}`}
-              center={coords}
-              // Raw case views: size encodes case load with a neutral fill.
-              // Forecast view: keep risk-coloured fill.
-              radius={
-                useNeutralPolygons
-                  ? Math.max(5, Math.min(20, 4 + Math.sqrt(Math.max(r.confirmed, 0)) * 1.6))
-                  : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
-              }
-              pathOptions={{
-                fillColor: useNeutralPolygons ? (mode === "hotspot" ? "#1e3a8a" : "#475569") : riskColor[displayRisk],
-                fillOpacity: useNeutralPolygons ? 0.55 : 0.9,
-                color: "#0f172a",
-                weight: 1,
-              }}
-              eventHandlers={
-                isDistrictLevel && r.type !== "village" && r.type !== "ward" && !isLocked("block")
-                  ? { click: () => drillDown(r.name, "block") }
-                  : {}
-              }
-            >
-              <Tooltip sticky>
-                {mode === "forecast" && pred ? (
-                  <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 2 }}>
-                      {r.name}{r.type ? ` (${r.type})` : ""}
+            const coords = districtCoordinates[r.name];
+            if (!coords) return null;
+            const pred = predByArea.get(r.name);
+            const displayRisk = (mode === "forecast" && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
+            const useNeutral = mode !== "forecast";
+            return (
+              <CircleMarker
+                key={`${r.type}-${r.name}`}
+                center={coords}
+                radius={
+                  useNeutral
+                    ? circleRadius(Math.max(r.confirmed, 0))
+                    : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
+                }
+                pathOptions={{
+                  fillColor: useNeutral ? (mode === "hotspot" ? "#1d4ed8" : "#3b82f6") : riskColor[displayRisk],
+                  fillOpacity: useNeutral ? 0.6 : 0.9,
+                  color: "#0f172a",
+                  weight: 1,
+                }}
+                eventHandlers={
+                  isDistrictLevel && (r.type === "block" || r.type === "municipality") && !isLocked("block")
+                    ? { click: () => drillDown(r.name, "block") }
+                    : {}
+                }
+              >
+                <Tooltip sticky>
+                  {mode === "forecast" && pred ? (
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                        {r.name}{r.type ? ` (${r.type})` : ""}
+                      </div>
+                      <div>Forecast risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
+                      <div>Outbreak probability: <strong>{pred.probability}%</strong></div>
+                      <div style={{ opacity: 0.8 }}>Forecast window: {pred.expectedWeek}</div>
                     </div>
-                    <div>Outbreak Probability: <strong>{pred.probability}%</strong></div>
-                    <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Week: {pred.expectedWeek}</div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 140 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 2 }}>
-                      {r.name}{r.type ? ` (${r.type})` : ""}
+                  ) : (
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                        {r.name}{r.type ? ` (${r.type})` : ""}
+                      </div>
+                      <div>Cases: <strong>{r.confirmed} {trendArrow[r.trend] || ""}</strong></div>
+                      <div style={{ opacity: 0.7, fontSize: 11 }}>Period: {`${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`}</div>
                     </div>
-                    <div>Risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                    <div>Cases: <strong>{r.confirmed} {trendArrow[r.trend] || ""}</strong></div>
-                    <div style={{ opacity: 0.8 }}>Date: {`${fmtShort(dateWindow.fromDate)} - ${fmtFull(dateWindow.toDate)}`}</div>
-                  </div>
-                )}
-              </Tooltip>
-            </CircleMarker>
-          );
+                  )}
+                </Tooltip>
+              </CircleMarker>
+            );
           })}
         </MapContainer>
       )}
 
-      {/* Legend — risk colours only in forecast mode; raw case views show case-load circles. */}
+      {/* Scope label (top-center) */}
+      {geoReady && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1 text-[11px] text-foreground font-medium pointer-events-none">
+          {scopeLabel}
+        </div>
+      )}
+
+      {/* Legend — risk colours only in forecast mode; current = blue intensity; hotspot = blue circles. */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3 items-center">
         {mode === "forecast" ? (
           <>
@@ -563,14 +637,22 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
               <span>no data</span>
             </span>
           </>
+        ) : mode === "current" ? (
+          <>
+            <span className="text-[11px] text-muted-foreground mr-1">Cases:</span>
+            {BLUE_SCALE.map((c, i) => (
+              <span key={c} className="w-4 h-3" style={{ backgroundColor: c, opacity: 0.85, borderRight: i === BLUE_SCALE.length - 1 ? undefined : "1px solid rgba(255,255,255,0.4)" }} />
+            ))}
+            <span className="text-[11px] text-muted-foreground">fewer → more</span>
+          </>
         ) : (
           <>
             <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
               <span>fewer cases</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: mode === "hotspot" ? "#1e3a8a" : "#475569" }} />
+              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
               <span>more cases</span>
             </span>
             <span className="text-xs text-muted-foreground">· circle size = case load</span>

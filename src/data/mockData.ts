@@ -2306,6 +2306,13 @@ export function getRisingClusters(input?: DashboardFiltersLike | string): Concer
 
 // ──────────────── Action Focus engine ────────────────
 
+export type ActionFocusReason =
+  | "new_emergence"
+  | "rising_hotspot_burden"
+  | "high_forecast_risk"
+  | "persistent_transmission"
+  | "curated_priority";
+
 export interface ActionFocusItem {
   area: string;
   parent?: string;
@@ -2313,17 +2320,29 @@ export interface ActionFocusItem {
   signal: "new" | "rising" | "persistent";
   actions: string[];
   source: "curated" | "auto";
+  /**
+   * Cross-panel reason this area is prioritized. Derived from:
+   *   • Forecast predictions (high_forecast_risk)
+   *   • Hotspot table (rising_hotspot_burden)
+   *   • Recent emergence (new_emergence)
+   *   • Persistent transmission (persistent_transmission)
+   *   • Curated strategic entries (curated_priority)
+   * Ensures Action Focus never appears disconnected from the other 3 panels.
+   */
+  reason: ActionFocusReason;
+  /** Short human-readable reason hint shown alongside the tag. */
+  reasonHint?: string;
 }
 
 // Curated, location-specific actions. Substring match on area name (case-insensitive).
 const CURATED_ACTIONS: Array<{ match: RegExp; entry: Omit<ActionFocusItem, "area" | "parent"> & { parentHint?: string } }> = [
-  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", actions: ["Ward-level fogging in Gajuwaka high-density lanes", "Drainage clearing along stormwater channels", "Apartment & commercial container survey"], parentHint: "Visakhapatnam" } },
-  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["Fogging cycle across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
-  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", actions: ["Canal-side source reduction in irrigated villages", "Larval survey across irrigation-linked sub-centres", "PHC-level fever camps"] } },
-  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", actions: ["Worker-settlement water storage audit", "Industrial drainage inspection", "Worker fever screening at gate clinics"] } },
-  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", actions: ["Fishing harbor sanitation drive", "Container breeding checks at fish-storage units", "Tourist-area surveillance ramp-up"] } },
-  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", actions: ["Active case search around index households", "Larval survey in low-lying coastal villages", "PHC fever camps in affected GPs"] } },
-  { match: /bengaluru.*urban|bbmp/i, entry: { geoType: "urban", signal: "persistent", source: "curated", actions: ["BBMP ward-level fogging cycle", "Construction-site water storage audit", "Apartment-complex container survey"] } },
+  { match: /gajuwaka/i, entry: { geoType: "urban", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Ward-level fogging in Gajuwaka high-density lanes", "Drainage clearing along stormwater channels", "Apartment & commercial container survey"], parentHint: "Visakhapatnam" } },
+  { match: /vizag|visakhapatnam/i, entry: { geoType: "urban", signal: "persistent", source: "curated", reason: "curated_priority", actions: ["Fogging cycle across Vizag MC wards", "Door-to-door fever surveillance", "Larval source reduction near port area"] } },
+  { match: /guntur/i, entry: { geoType: "rural", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Canal-side source reduction in irrigated villages", "Larval survey across irrigation-linked sub-centres", "PHC-level fever camps"] } },
+  { match: /panposh|chhend|rourkela/i, entry: { geoType: "industrial", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Worker-settlement water storage audit", "Industrial drainage inspection", "Worker fever screening at gate clinics"] } },
+  { match: /malpe|udupi/i, entry: { geoType: "coastal", signal: "rising", source: "curated", reason: "curated_priority", actions: ["Fishing harbor sanitation drive", "Container breeding checks at fish-storage units", "Tourist-area surveillance ramp-up"] } },
+  { match: /satapada|bentapur|puri/i, entry: { geoType: "rural", signal: "new", source: "curated", reason: "curated_priority", actions: ["Active case search around index households", "Larval survey in low-lying coastal villages", "PHC fever camps in affected GPs"] } },
+  { match: /bengaluru.*urban|bbmp/i, entry: { geoType: "urban", signal: "persistent", source: "curated", reason: "curated_priority", actions: ["BBMP ward-level fogging cycle", "Construction-site water storage audit", "Apartment-complex container survey"] } },
 ];
 
 function inferGeoType(name: string): ActionFocusItem["geoType"] {
@@ -2374,7 +2393,10 @@ function autoActionsFor(geoType: ActionFocusItem["geoType"], signal: ActionFocus
 
 /**
  * Hybrid action engine: curated entries override auto-derived ones for known geographies.
- * Returns up to 5 location-specific action bundles.
+ * Returns up to 5 location-specific action bundles. Each item carries a `reason`
+ * tag derived from cross-panel signals (forecast risk, hotspot trend, new
+ * emergence, persistent transmission, curated priority) so Action Focus is
+ * never disconnected from Hotspot / Forecast panels.
  */
 export function getActionFocusAreas(input?: DashboardFiltersLike | string): ActionFocusItem[] {
   const base = resolveFilters(input);
@@ -2382,7 +2404,62 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
   const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
   const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
 
-  // Rank by risk weight + case count
+  // ── Cross-panel signal tables (state scope so Action Focus matches the maps users see).
+  const stateScope: DashboardFiltersLike = { ...base, district: "All Districts", block: "All Blocks", ward: "All Wards" };
+  const forecastPreds = getOutbreakPredictions(stateScope);
+  const forecastByArea = new Map(forecastPreds.map((p) => [p.area, p]));
+  const hotspots4w = getFilteredHotspots(stateScope, 4);
+  const hotspotByArea = new Map(hotspots4w.map((h) => [h.area, h]));
+
+  /**
+   * Derive the cross-panel reason for an area. Priority order:
+   *   1. High forecast risk          (Forecast panel says: future risk)
+   *   2. New emergence               (no prior cases, recent cases > 0)
+   *   3. Rising hotspot burden       (hotspot trend = up, or recent > prior * 1.3)
+   *   4. Persistent transmission     (sustained burden, no clear rise)
+   *   5. Curated priority            (fallback for curated entries)
+   */
+  const deriveReason = (
+    areaName: string,
+    parentDistrict: string | undefined,
+    recentCases: number,
+    prevCases: number,
+    isCurated: boolean,
+  ): { reason: ActionFocusReason; hint: string } => {
+    const fcSelf = forecastByArea.get(areaName);
+    const fcParent = parentDistrict ? forecastByArea.get(parentDistrict) : undefined;
+    if (fcSelf?.risk === "high") {
+      return { reason: "high_forecast_risk", hint: `${fcSelf.probability}% outbreak probability · ${fcSelf.expectedWeek}` };
+    }
+    if (fcParent?.risk === "high") {
+      return { reason: "high_forecast_risk", hint: `${parentDistrict}: ${fcParent.probability}% outbreak probability` };
+    }
+
+    if (prevCases === 0 && recentCases > 0) {
+      return { reason: "new_emergence", hint: `${recentCases} new cases · no prior 2-week activity` };
+    }
+
+    const hs = hotspotByArea.get(areaName) ?? (parentDistrict ? hotspotByArea.get(parentDistrict) : undefined);
+    if (hs && hs.trend === "up") {
+      const pct = hs.prevCases > 0 ? Math.round(((hs.currentCases - hs.prevCases) / hs.prevCases) * 100) : 100;
+      return { reason: "rising_hotspot_burden", hint: `${hs.currentCases} cases · ↑${pct}% vs prior period` };
+    }
+    if (recentCases > prevCases * 1.3 && prevCases > 0) {
+      const pct = Math.round(((recentCases - prevCases) / prevCases) * 100);
+      return { reason: "rising_hotspot_burden", hint: `${recentCases} cases · ↑${pct}% vs prior period` };
+    }
+
+    if (recentCases >= 5 || (hs && hs.currentCases >= 5)) {
+      return { reason: "persistent_transmission", hint: `${recentCases || hs?.currentCases || 0} cases · sustained activity` };
+    }
+
+    if (isCurated) {
+      return { reason: "curated_priority", hint: "Strategic priority area" };
+    }
+
+    return { reason: "persistent_transmission", hint: `${recentCases} cases reported` };
+  };
+
   const ranked = [...recent]
     .map((r) => ({ r, score: (r.risk === "high" ? 1000 : r.risk === "moderate" ? 100 : 10) + r.confirmed }))
     .sort((a, b) => b.score - a.score)
@@ -2391,7 +2468,6 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
   const out: ActionFocusItem[] = [];
   const seen = new Set<string>();
 
-  // ── Seed-driven entries (highest priority): districts in scope with curated `actions[]`.
   const seedActionDistricts = getSeededDistrictsWithActions(activeStateId);
   const inScope = (name: string) =>
     base.district === "All Districts" || base.district === name;
@@ -2405,6 +2481,10 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
   for (const sd of seedActionDistricts) {
     if (!inScope(sd.name)) continue;
     if (seen.has(sd.name)) continue;
+    const recentR = recent.find((r) => r.name === sd.name);
+    const recentCases = recentR?.confirmed ?? 0;
+    const prevCases = priorByName.get(sd.name) ?? 0;
+    const { reason, hint } = deriveReason(sd.name, undefined, recentCases, prevCases, true);
     out.push({
       area: sd.name,
       parent: undefined,
@@ -2412,6 +2492,8 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
       signal: signalToFocusSignal[sd.signal] ?? "persistent",
       actions: sd.actions.slice(0, 3),
       source: "curated",
+      reason,
+      reasonHint: hint,
     });
     seen.add(sd.name);
     if (out.length >= 5) return out;
@@ -2420,7 +2502,9 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
   for (const { r } of ranked) {
     if (seen.has(r.name)) continue;
     const curated = CURATED_ACTIONS.find((c) => c.match.test(r.name) || (r.parentDistrict && c.match.test(r.parentDistrict)));
+    const prev = priorByName.get(r.name) ?? 0;
     if (curated) {
+      const { reason, hint } = deriveReason(r.name, r.parentDistrict, r.confirmed, prev, true);
       out.push({
         area: r.name,
         parent: r.parentBlock || r.parentDistrict || curated.entry.parentHint,
@@ -2428,11 +2512,13 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
         signal: curated.entry.signal,
         actions: curated.entry.actions,
         source: "curated",
+        reason,
+        reasonHint: hint,
       });
     } else if (r.risk !== "low" || r.confirmed >= 5) {
-      const prev = priorByName.get(r.name) ?? 0;
       const signal: ActionFocusItem["signal"] = prev === 0 && r.confirmed > 0 ? "new" : r.confirmed > prev * 1.3 ? "rising" : "persistent";
       const geoType = inferGeoType(r.name);
+      const { reason, hint } = deriveReason(r.name, r.parentDistrict, r.confirmed, prev, false);
       out.push({
         area: r.name,
         parent: r.parentBlock || r.parentDistrict,
@@ -2440,6 +2526,8 @@ export function getActionFocusAreas(input?: DashboardFiltersLike | string): Acti
         signal,
         actions: autoActionsFor(geoType, signal, r.name),
         source: "auto",
+        reason,
+        reasonHint: hint,
       });
     }
     seen.add(r.name);

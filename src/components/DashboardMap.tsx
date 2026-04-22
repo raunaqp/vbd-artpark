@@ -26,6 +26,14 @@ const riskColor: Record<string, string> = {
   moderate: "#eab308",
   high: "#ef4444",
 };
+// Hotspot burden colors — same green/yellow/red palette but represents recent
+// hotspot case load (last 2W / 4W), NOT predicted outbreak risk. The map legend
+// makes the distinction explicit.
+const hotspotBurdenColor: Record<string, string> = {
+  low: "#16a34a",
+  moderate: "#f59e0b",
+  high: "#dc2626",
+};
 const NO_DATA_COLOR = "#cbd5e1"; // neutral slate for unmatched polygons
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
 

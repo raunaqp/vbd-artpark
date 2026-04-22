@@ -525,10 +525,13 @@ export const seed: SeedRoot = {
             { name: "Karkala", lat: 13.2137, lng: 74.9952, cases_2w: 4, cases_4w: 7, signal: "stable_low", risk: "low" },
           ],
         },
+        {
+          // Dakshina Kannada → Rising hotspot burden anchor (recent 2W cases dominate prior 2W).
+          name: "Dakshina Kannada", lat: 12.8703, lng: 74.8806, cases_2w: 52, cases_4w: 76, signal: "rising_cluster", context: "coastal_urban", risk: "moderate",
+          forecast: { w1_probability: 0.48, w2_probability: 0.55, w3_probability: 0.58, w4_probability: 0.5, expected_peak_week: "W+3", signal_text: "Rising hotspot burden — sharp 2-week surge across Mangaluru coastal wards" },
+          daily_14d: [2, 2, 3, 3, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        },
       ],
-    },
-  ],
-};
 
 // ──────────────── Convenience helpers ────────────────
 export type SeedStateName = "Andhra Pradesh" | "Odisha" | "Karnataka";

@@ -208,8 +208,10 @@ export const seed: SeedRoot = {
       kpis: { suspected: 1240, tested: 910, confirmed: 287 },
       signals: [
         { title: "Clustering of fever cases reported in Visakhapatnam urban wards", geography: "Visakhapatnam", type: "urban_cluster" },
-        { title: "Increased mosquito breeding observed along canal networks in Guntur district", geography: "Guntur", type: "irrigation_breeding" },
+        { title: "Sharp 2-week rise in East Godavari fever cases — rising hotspot burden", geography: "East Godavari", type: "rising_hotspot" },
+        { title: "Persistent transmission in Guntur irrigation belt over multiple weeks", geography: "Guntur", type: "persistent" },
         { title: "Rural blocks in Kurnool reporting gradual increase in fever cases", geography: "Kurnool", type: "rural_spread" },
+        { title: "First fever cluster of the season detected in Anantapur — new emergence", geography: "Anantapur", type: "new_emergence" },
       ],
       districts: [
         {
@@ -246,9 +248,9 @@ export const seed: SeedRoot = {
           ],
         },
         {
-          name: "Guntur", lat: 16.3067, lng: 80.4365, cases_2w: 31, cases_4w: 56, signal: "moderate", context: "irrigation_rural", risk: "moderate",
-          forecast: { w1_probability: 0.49, w2_probability: 0.57, w3_probability: 0.61, w4_probability: 0.54, expected_peak_week: "W+3", signal_text: "Moderate risk due to irrigation-driven breeding (Guntur)" },
-          daily_14d: [4, 5, 3, 6, 5, 4, 6, 5, 4, 5, 6, 4, 5, 4],
+          name: "Guntur", lat: 16.3067, lng: 80.4365, cases_2w: 28, cases_4w: 58, signal: "persistent", context: "irrigation_rural", risk: "moderate",
+          forecast: { w1_probability: 0.45, w2_probability: 0.48, w3_probability: 0.5, w4_probability: 0.47, expected_peak_week: "W+3", signal_text: "Persistent transmission in Guntur irrigation belt — sustained moderate burden" },
+          daily_14d: [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5],
           actions: [
             "Canal-side source reduction in Tenali and Amaravathi belt",
             "Village-level larval surveys in irrigation-linked settlements",
@@ -306,12 +308,20 @@ export const seed: SeedRoot = {
           forecast: { w1_probability: 0.59, w2_probability: 0.66, w3_probability: 0.63, w4_probability: 0.55, expected_peak_week: "W+2", signal_text: "Moderate-to-high risk due to sustained urban/peri-urban spread" },
         },
         {
-          name: "East Godavari", lat: 17.233, lng: 81.722, cases_2w: 47, cases_4w: 76, signal: "persistent", context: "mixed", risk: "moderate",
-          forecast: { w1_probability: 0.52, w2_probability: 0.55, w3_probability: 0.57, w4_probability: 0.5, expected_peak_week: "W+3", signal_text: "Persistent moderate risk driven by ongoing transmission" },
+          // East Godavari → Rising hotspot burden anchor (recent 2W cases dominate prior 2W).
+          name: "East Godavari", lat: 17.233, lng: 81.722, cases_2w: 58, cases_4w: 82, signal: "rising_cluster", context: "mixed", risk: "moderate",
+          forecast: { w1_probability: 0.5, w2_probability: 0.56, w3_probability: 0.6, w4_probability: 0.52, expected_peak_week: "W+3", signal_text: "Rising hotspot burden — recent 2-week surge after monsoon onset" },
+          daily_14d: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 10, 11, 12, 13],
         },
         {
           name: "West Godavari", lat: 16.71, lng: 81.1, cases_2w: 12, cases_4w: 21, signal: "stable_low", context: "baseline", risk: "low",
           forecast: { w1_probability: 0.21, w2_probability: 0.24, w3_probability: 0.22, w4_probability: 0.2, expected_peak_week: "W+2", signal_text: "Low baseline risk" },
+        },
+        {
+          // Anantapur → New emergence anchor (no prior 2-week activity, small recent cluster).
+          name: "Anantapur", lat: 14.6819, lng: 77.6006, cases_2w: 9, cases_4w: 9, signal: "new_emergence", context: "baseline", risk: "low",
+          forecast: { w1_probability: 0.28, w2_probability: 0.34, w3_probability: 0.31, w4_probability: 0.25, expected_peak_week: "W+3", signal_text: "Newly detected fever cluster — first cases of the season" },
+          daily_14d: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 1, 2, 1, 1],
         },
       ],
     },
@@ -433,14 +443,17 @@ export const seed: SeedRoot = {
       name: "Karnataka", code: "KA", lat: 15.3173, lng: 75.7139, disease: "Dengue",
       kpis: { suspected: 1115, tested: 835, confirmed: 264 },
       signals: [
-        { title: "Construction-site breeding concerns reported in Bengaluru urban wards", geography: "Bengaluru Urban", type: "construction" },
-        { title: "Rain-linked increase in case reports from Mysuru outskirts", geography: "Mysuru", type: "periurban" },
-        { title: "Post-rainfall mosquito breeding reported in coastal Udupi belt", geography: "Udupi", type: "coastal_rainfall" },
+        { title: "Sustained construction-site breeding across Bengaluru urban wards — persistent transmission", geography: "Bengaluru Urban", type: "persistent" },
+        { title: "Sharp 2-week rise in Dakshina Kannada coastal cases — rising hotspot burden", geography: "Dakshina Kannada", type: "rising_hotspot" },
+        { title: "Post-rainfall mosquito breeding reported in coastal Udupi belt — high forecast risk", geography: "Udupi", type: "coastal_rainfall" },
+        { title: "First fever cluster of the season detected in Mysuru outskirts — new emergence", geography: "Mysuru", type: "new_emergence" },
+        { title: "Rural blocks in Belagavi reporting moderate emerging trend", geography: "Belagavi", type: "rural_emerging" },
       ],
       districts: [
         {
-          name: "Bengaluru Urban", lat: 12.9716, lng: 77.5946, cases_2w: 72, cases_4w: 126, signal: "rising_cluster", context: "urban", risk: "high",
-          forecast: { w1_probability: 0.61, w2_probability: 0.68, w3_probability: 0.64, w4_probability: 0.58, expected_peak_week: "W+2", signal_text: "Moderate-to-high urban clustering risk" },
+          // Bengaluru Urban → Persistent transmission anchor (sustained 4W burden, flat day-by-day).
+          name: "Bengaluru Urban", lat: 12.9716, lng: 77.5946, cases_2w: 62, cases_4w: 124, signal: "persistent", context: "urban", risk: "high",
+          forecast: { w1_probability: 0.55, w2_probability: 0.58, w3_probability: 0.6, w4_probability: 0.56, expected_peak_week: "W+3", signal_text: "Persistent urban transmission — sustained dengue burden across BBMP wards" },
           actions: [
             "Construction-site inspections in high-risk wards",
             "Ward surveillance and fogging in dense localities",
@@ -468,16 +481,21 @@ export const seed: SeedRoot = {
           ],
         },
         {
-          name: "Mysuru", lat: 12.2958, lng: 76.6394, cases_2w: 9, cases_4w: 18, signal: "stable_low", context: "periurban", risk: "low",
-          forecast: { w1_probability: 0.24, w2_probability: 0.28, w3_probability: 0.32, w4_probability: 0.27, expected_peak_week: "W+3", signal_text: "Low-to-moderate peri-urban spread" },
+          // Mysuru → New emergence anchor (no prior 2W activity, recent small cluster).
+          name: "Mysuru", lat: 12.2958, lng: 76.6394, cases_2w: 8, cases_4w: 8, signal: "new_emergence", context: "periurban", risk: "low",
+          forecast: { w1_probability: 0.27, w2_probability: 0.32, w3_probability: 0.3, w4_probability: 0.26, expected_peak_week: "W+3", signal_text: "Newly detected fever cluster on Mysuru outskirts — first cases of the season" },
+          daily_14d: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 1, 2, 1, 1],
         },
         {
-          name: "Belagavi", lat: 15.8497, lng: 74.4977, cases_2w: 11, cases_4w: 22, signal: "stable_low", context: "rural", risk: "low",
-          forecast: { w1_probability: 0.23, w2_probability: 0.26, w3_probability: 0.29, w4_probability: 0.24, expected_peak_week: "W+3", signal_text: "Low baseline rural vector pattern" },
+          // Belagavi → Moderate emerging anchor (rising trend, moderate burden).
+          name: "Belagavi", lat: 15.8497, lng: 74.4977, cases_2w: 21, cases_4w: 33, signal: "rising_cluster", context: "rural", risk: "moderate",
+          forecast: { w1_probability: 0.4, w2_probability: 0.46, w3_probability: 0.5, w4_probability: 0.43, expected_peak_week: "W+3", signal_text: "Moderate emerging risk in rural blocks — rising 2-week trend" },
+          daily_14d: [1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5],
         },
         {
-          name: "Udupi", lat: 13.3409, lng: 74.7421, cases_2w: 26, cases_4w: 43, signal: "moderate", context: "coastal_rainfall", risk: "moderate",
-          forecast: { w1_probability: 0.46, w2_probability: 0.69, w3_probability: 0.72, w4_probability: 0.58, expected_peak_week: "W+3", signal_text: "High risk due to recent rainfall + humidity spike" },
+          // Udupi → High forecast risk anchor (climate spike drives projected outbreak).
+          name: "Udupi", lat: 13.3409, lng: 74.7421, cases_2w: 30, cases_4w: 48, signal: "rising_cluster", context: "coastal_rainfall", risk: "high",
+          forecast: { w1_probability: 0.62, w2_probability: 0.78, w3_probability: 0.82, w4_probability: 0.7, expected_peak_week: "W+3", signal_text: "High forecast risk — rainfall + humidity spike on coastal Udupi belt" },
           daily_14d: [4, 5, 3, 6, 5, 4, 6, 5, 4, 5, 6, 4, 5, 4],
           actions: [
             "Coastal drainage clearing in Udupi belt",
@@ -506,6 +524,12 @@ export const seed: SeedRoot = {
             },
             { name: "Karkala", lat: 13.2137, lng: 74.9952, cases_2w: 4, cases_4w: 7, signal: "stable_low", risk: "low" },
           ],
+        },
+        {
+          // Dakshina Kannada → Rising hotspot burden anchor (recent 2W cases dominate prior 2W).
+          name: "Dakshina Kannada", lat: 12.8703, lng: 74.8806, cases_2w: 52, cases_4w: 76, signal: "rising_cluster", context: "coastal_urban", risk: "moderate",
+          forecast: { w1_probability: 0.48, w2_probability: 0.55, w3_probability: 0.58, w4_probability: 0.5, expected_peak_week: "W+3", signal_text: "Rising hotspot burden — sharp 2-week surge across Mangaluru coastal wards" },
+          daily_14d: [2, 2, 3, 3, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11],
         },
       ],
     },

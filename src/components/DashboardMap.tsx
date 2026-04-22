@@ -110,9 +110,15 @@ const DISTRICT_ALIASES: Record<string, string> = {
   "ysrkadapa": "Y.S.R.",
   "kadapa": "Y.S.R.",
   // Odisha
-  "balasore": "Baleshwar",
-  "baleshwar": "Baleshwar",
-  "baleswar": "Baleshwar",
+  // GeoJSON polygon names (Baleshwar / Baleswar) must resolve to our seed/data
+  // district name "Balasore" so the polygon for Balasore picks up the correct
+  // hotspot / forecast / case-load values across every tab. Previously these
+  // mapped to "Baleshwar", leaving the Balasore polygon unmatched while the
+  // adjacent Ganjam polygon (also unmatched/synthesized) appeared to "absorb"
+  // the high-risk styling.
+  "balasore": "Balasore",
+  "baleshwar": "Balasore",
+  "baleswar": "Balasore",
   "jagatsinghpur": "Jagatsinghapur",
   "jagatsinghapur": "Jagatsinghapur",
   "jajapur": "Jajpur",

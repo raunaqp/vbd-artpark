@@ -1,7 +1,7 @@
 import { MapPin, Zap } from "lucide-react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
-import { getActionFocusAreas, type ActionFocusItem } from "@/data/mockData";
+import { getActionFocusAreas, type ActionFocusItem, type ActionFocusReason } from "@/data/mockData";
 
 const geoLabel: Record<ActionFocusItem["geoType"], string> = {
   urban: "Urban",
@@ -12,16 +12,21 @@ const geoLabel: Record<ActionFocusItem["geoType"], string> = {
   construction: "Construction",
 };
 
-const signalLabel: Record<ActionFocusItem["signal"], string> = {
-  new: "New emergence",
-  rising: "Rising trend",
-  persistent: "Persistent",
+// Cross-panel reason tags — connect Action Focus back to Hotspot/Forecast/etc.
+const reasonLabel: Record<ActionFocusReason, string> = {
+  new_emergence: "New emergence",
+  rising_hotspot_burden: "Rising hotspot burden",
+  high_forecast_risk: "High forecast risk",
+  persistent_transmission: "Persistent transmission",
+  curated_priority: "Curated priority",
 };
 
-const signalClass: Record<ActionFocusItem["signal"], string> = {
-  new: "bg-primary/10 text-primary border-primary/30",
-  rising: "bg-risk-high/10 text-risk-high border-risk-high/30",
-  persistent: "bg-risk-moderate/10 text-risk-moderate border-risk-moderate/30",
+const reasonClass: Record<ActionFocusReason, string> = {
+  new_emergence: "bg-primary/10 text-primary border-primary/30",
+  rising_hotspot_burden: "bg-risk-high/10 text-risk-high border-risk-high/30",
+  high_forecast_risk: "bg-risk-high/10 text-risk-high border-risk-high/30",
+  persistent_transmission: "bg-risk-moderate/10 text-risk-moderate border-risk-moderate/30",
+  curated_priority: "bg-muted text-muted-foreground border-border",
 };
 
 export default function ActionFocusAreas() {
@@ -35,7 +40,7 @@ export default function ActionFocusAreas() {
         <div>
           <h3 className="section-title">Action Focus Areas — {diseaseName}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Location-specific actions tied to current geography and signal
+            Each area carries an explicit reason tag tied to Hotspot, Forecast, or curated signals
           </p>
         </div>
         <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
@@ -66,10 +71,15 @@ export default function ActionFocusAreas() {
                     </div>
                   )}
                 </div>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${signalClass[item.signal]} flex-shrink-0`}>
-                  {signalLabel[item.signal]}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${reasonClass[item.reason]} flex-shrink-0 font-medium`}>
+                  {reasonLabel[item.reason]}
                 </span>
               </div>
+              {item.reasonHint && (
+                <div className="text-[11px] text-muted-foreground mb-2 leading-snug">
+                  Why prioritized: {item.reasonHint}
+                </div>
+              )}
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">
                   {geoLabel[item.geoType]}

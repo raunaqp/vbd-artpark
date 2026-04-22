@@ -8,6 +8,7 @@ import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineL
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { exportLineListingCsv } from "@/lib/exportCsv";
 import { Download } from "lucide-react";
 
 type TimeRange = "daily" | "weekly" | "monthly";

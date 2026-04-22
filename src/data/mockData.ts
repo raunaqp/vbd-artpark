@@ -749,7 +749,8 @@ const KARNATAKA: StateBundle = {
     { area: "Bengaluru Urban", probability: 90, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding in Bengaluru wards + dense urban clustering" },
     { area: "Udupi", probability: 84, risk: "high", expectedWeek: "W+2", signal: "Rainfall-driven spike in Udupi coastal belt — rising trend post-rainfall" },
     { area: "Mysuru", probability: 70, risk: "high", expectedWeek: "W+3", signal: "Peri-urban spread observed in Mysuru outskirts (Nanjangud, Hunsur)" },
-    { area: "Belagavi", probability: 38, risk: "moderate", expectedWeek: "W+4", signal: "Rural vector patterns + stable baseline" },
+    { area: "Belagavi", probability: 48, risk: "moderate", expectedWeek: "W+4", signal: "Rural vector patterns + moderate baseline" },
+    { area: "Tumakuru", probability: 22, risk: "low", expectedWeek: "W+4", signal: "Low baseline + declining trend" },
   ],
   districtPredictions: [
     { area: "BBMP East Zone", probability: 92, risk: "high", expectedWeek: "W+2", signal: "Construction-site breeding (Whitefield, Mahadevapura) + IT-corridor density", parentDistrict: "Bengaluru Urban", areaType: "Municipality" },
@@ -1863,7 +1864,20 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
   // We approximate "predicted cases" via probability×scale, but the user-facing
   // requirement is on the riskForecast cards (state/district aggregated).
   // Here we ensure no child prediction exceeds its parent by scaling probabilities.
-  const predictions = clampPredictionHierarchy(rawPredictions, bundle, filters);
+  const clamped = clampPredictionHierarchy(rawPredictions, bundle, filters);
+  // Parent-child coherence safety (state view only):
+  //   If a parent district is High but ALL its child blocks are Low (max child prob < 50),
+  //   soften the parent to Moderate. Avoids "parent alarming, children all green".
+  const predictions = filters.district === "All Districts"
+    ? clamped.map((p) => {
+        if (p.risk !== "high") return p;
+        const kids = bundle.districtPredictions.filter((dp) => dp.parentDistrict === p.area);
+        if (kids.length === 0) return p;
+        const maxChild = Math.max(...kids.map((k) => k.probability));
+        if (maxChild >= 50) return p;
+        return { ...p, risk: "moderate" as const, probability: Math.min(p.probability, 55) };
+      })
+    : clamped;
 
   const weeklyTimeSeries = generateWeeklyTimeSeries(profile, window, scopeScale || 1, seedKey);
   const dailyTimeSeries = generateDailyTimeSeries(profile, window, scopeScale || 1, seedKey, filters);

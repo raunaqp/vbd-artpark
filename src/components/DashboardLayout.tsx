@@ -29,6 +29,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const { currentRole, setRole, availableRoles } = useRole();
   const { currentDisease, setDisease } = useDisease();
   const { stateId, setStateId, options: stateOptions } = useStateSelection();
+  const { appliedFilters } = useFilters();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [showDiseaseMenu, setShowDiseaseMenu] = useState(false);
@@ -36,11 +37,23 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const [pendingStateId, setPendingStateId] = useState(stateId);
   const [dataIssuesExpanded, setDataIssuesExpanded] = useState(false);
 
-  const reportOptions = ["Weekly Report", "District Summary", "NVBDCP Format", "Line Listing"];
   const currentStateLabel = stateOptions.find((s) => s.id === stateId)?.label || "State";
   const dataQualityIssues = getDataQualityIssues();
-  void stateId; // re-evaluate on state change
+  void stateId;
   useEffect(() => { setPendingStateId(stateId); }, [stateId]);
+
+  const exportCtx = {
+    stateLabel: currentStateLabel,
+    diseaseName: currentDisease.label,
+    filters: appliedFilters,
+  };
+  const reportOptions: Array<{ label: string; run: () => void }> = [
+    { label: "Filtered Summary (CSV)", run: () => exportSummaryCsv(exportCtx) },
+    { label: "Line Listing (CSV)", run: () => exportLineListingCsv(exportCtx) },
+    { label: "Hotspots — 4W (CSV)", run: () => exportHotspotCsv({ ...exportCtx, hotspotLookbackWeeks: 4 }) },
+    { label: "Hotspots — 2W (CSV)", run: () => exportHotspotCsv({ ...exportCtx, hotspotLookbackWeeks: 2 }) },
+    { label: "Forecast Table (CSV)", run: () => exportForecastCsv(exportCtx) },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col">

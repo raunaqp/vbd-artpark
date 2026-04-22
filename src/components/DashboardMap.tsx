@@ -543,6 +543,26 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             onEachFeature={onEachFeature}
           />
 
+          {/* Permanent district-name labels at state-level view (any mode). */}
+          {districtLabelPoints.map((p) => (
+            <CircleMarker
+              key={`label-${p.name}`}
+              center={[p.lat, p.lng]}
+              radius={0}
+              pathOptions={{ opacity: 0, fillOpacity: 0 }}
+              interactive={false}
+            >
+              <Tooltip
+                permanent
+                direction="center"
+                opacity={1}
+                className="district-name-tooltip"
+              >
+                {p.name}
+              </Tooltip>
+            </CircleMarker>
+          ))}
+
           {/* Hotspot state-level overlay: neutral blue case-load circles, sized by case count.
               Only shown for "hotspot" mode at state scope. Forecast / Overview do NOT use this. */}
           {isStateLevel && mode === "hotspot" && geoData && geoData.features.map((feature) => {

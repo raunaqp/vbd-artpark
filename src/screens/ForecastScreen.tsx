@@ -120,7 +120,7 @@ export default function ForecastScreen() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {[areaLabel, "Probability (%)", "Risk Level", "Expected Window", "Signal"].map((h) => (
+                {[areaLabel, "Outbreak Probability", "Forecast Risk", "Forecast Window", "Drivers"].map((h) => (
                   <th key={h} className="text-left py-2.5 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>

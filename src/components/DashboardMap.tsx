@@ -20,6 +20,7 @@ import { useStateSelection } from "@/contexts/StateContext";
 import "leaflet/dist/leaflet.css";
 
 // ──────────────── Risk colors (semantic but inline-required by leaflet) ────────────────
+// Forecast-only semantic colors (low/moderate/high). Raw case + hotspot maps must NOT use these.
 const riskColor: Record<string, string> = {
   low: "#22c55e",
   moderate: "#eab308",
@@ -27,6 +28,23 @@ const riskColor: Record<string, string> = {
 };
 const NO_DATA_COLOR = "#cbd5e1"; // neutral slate for unmatched polygons
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
+
+// Single-hue blue intensity scale for case-load encoding (Overview "current" mode).
+// Light → dark = fewer → more cases.
+const BLUE_SCALE = ["#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#1d4ed8"];
+function blueForIntensity(value: number, max: number): string {
+  if (max <= 0 || value <= 0) return BLUE_SCALE[0];
+  // sqrt scaling so a few large districts don't crush smaller ones
+  const t = Math.min(1, Math.sqrt(value) / Math.sqrt(max));
+  const idx = Math.min(BLUE_SCALE.length - 1, Math.floor(t * BLUE_SCALE.length));
+  return BLUE_SCALE[idx];
+}
+// Sub-linear circle radius (sqrt + log) so big counts don't dominate the map.
+function circleRadius(numCases: number): number {
+  if (!Number.isFinite(numCases) || numCases <= 0) return 3;
+  const r = 3 + Math.sqrt(numCases) * 0.9 + Math.log2(numCases + 1) * 0.6;
+  return Math.max(4, Math.min(16, r));
+}
 
 // ──────────────── GeoJSON URLs (datameet-style mirror via jsDelivr CDN) ────────────────
 const GEOJSON_URLS: Record<string, string> = {

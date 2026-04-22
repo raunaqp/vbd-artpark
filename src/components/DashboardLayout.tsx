@@ -142,10 +142,17 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
               <ChevronDown className="h-3 w-3" />
             </button>
             {showReportMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+              <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+                <div className="px-3 py-2 text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
+                  Exports respect current filters
+                </div>
                 {reportOptions.map((r) => (
-                  <button key={r} onClick={() => setShowReportMenu(false)} className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
-                    {r}
+                  <button
+                    key={r.label}
+                    onClick={() => { r.run(); setShowReportMenu(false); }}
+                    className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    {r.label}
                   </button>
                 ))}
               </div>

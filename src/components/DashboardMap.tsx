@@ -713,15 +713,16 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
           </>
         ) : (
           <>
-            <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
-              <span>fewer cases</span>
+            <span className="text-[11px] font-medium text-foreground mr-1">
+              Hotspot burden (last {hotspotLookbackWeeks} weeks):
             </span>
-            <span className="flex items-center gap-1.5 text-xs">
-              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: "#1d4ed8" }} />
-              <span>more cases</span>
-            </span>
-            <span className="text-xs text-muted-foreground">· circle size = case load</span>
+            {(["low", "moderate", "high"] as const).map((level) => (
+              <div key={level} className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: hotspotBurdenColor[level] }} />
+                <span className="capitalize">{level}</span>
+              </div>
+            ))}
+            <span className="text-[11px] text-muted-foreground">· circle size = case load</span>
           </>
         )}
       </div>

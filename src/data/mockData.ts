@@ -953,7 +953,7 @@ export const stateOptions: { id: StateId; label: string }[] = [
   { id: "karnataka", label: "Karnataka" },
 ];
 
-let activeStateId: StateId = "odisha";
+let activeStateId: StateId = "andhra_pradesh";
 const stateChangeListeners = new Set<() => void>();
 export function setActiveState(id: StateId) {
   if (id === activeStateId) return;

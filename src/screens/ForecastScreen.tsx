@@ -6,6 +6,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
@@ -17,6 +18,8 @@ export default function ForecastScreen() {
   const { appliedFilters, dateWindow } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId } = useStateSelection();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("forecast", id);
   void stateId;
 
   const riskForecast = getRiskForecast(appliedFilters);

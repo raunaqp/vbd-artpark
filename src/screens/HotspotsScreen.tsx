@@ -8,6 +8,7 @@ import Sparkline, { synthSparkSeries } from "@/components/Sparkline";
 import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 
 const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
@@ -17,6 +18,8 @@ export default function HotspotsScreen() {
   const [page, setPage] = useState(1);
   const { appliedFilters } = useFilters();
   const { diseaseName, currentDisease } = useDisease();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("hotspots", id);
 
   const hotspots = getFilteredHotspots(appliedFilters, timeRange === "2weeks" ? 2 : 4);
   const filteredAlerts = getHotspotAlerts(appliedFilters);
@@ -69,7 +72,7 @@ export default function HotspotsScreen() {
         </div>
       )}
 
-      {filteredAlerts.length > 0 && (
+      {show("hotspot_alerts") && filteredAlerts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {filteredAlerts.map((a) => (
             <div key={a.id} className={`section-card p-4 border-l-4 ${
@@ -92,11 +95,15 @@ export default function HotspotsScreen() {
         </div>
       )}
 
-      <DashboardMap height="350px" mode="hotspot" hotspotLookbackWeeks={timeRange === "2weeks" ? 2 : 4} />
+      {show("hotspot_map") && (
+        <DashboardMap height="350px" mode="hotspot" hotspotLookbackWeeks={timeRange === "2weeks" ? 2 : 4} />
+      )}
 
-      <HotspotDailyTrend lookbackDays={timeRange === "2weeks" ? 14 : 28} />
+      {show("hotspot_daily_trend") && (
+        <HotspotDailyTrend lookbackDays={timeRange === "2weeks" ? 14 : 28} />
+      )}
 
-      {displayHotspots.length > 0 ? (
+      {show("hotspot_table") && (displayHotspots.length > 0 ? (
         <div className="section-card p-5">
           <h3 className="section-title mb-3">{diseaseName} Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks · {areaLabel}</h3>
           <div className="overflow-auto">

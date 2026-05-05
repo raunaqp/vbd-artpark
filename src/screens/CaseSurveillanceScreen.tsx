@@ -129,6 +129,7 @@ export default function CaseSurveillanceScreen() {
         </div>
         <TablePagination page={page} pageSize={PAGE_SIZE} total={filteredListing.length} onPageChange={setPage} />
       </div>
+      )}
     </div>
   );
 }

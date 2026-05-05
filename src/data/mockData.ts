@@ -970,7 +970,7 @@ export function getActiveStateId(): StateId { return activeStateId; }
 export function subscribeStateChange(fn: () => void): () => void { stateChangeListeners.add(fn); return () => { stateChangeListeners.delete(fn); }; }
 function S(): StateBundle { return stateBundles[activeStateId]; }
 
-function normalizeDistrictName(district: string) {
+export function normalizeDistrictName(district: string) {
   return DISTRICT_ALIASES[district] ?? district;
 }
 

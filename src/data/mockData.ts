@@ -1145,7 +1145,7 @@ function parseDateOr(value: string | undefined, fallback: Date) {
 export function getDefaultHistoricalDateRange(baseDate = new Date()) {
   const today = startOfDay(baseDate);
   return {
-    fromDate: formatISODate(subMonths(today, 3)),
+    fromDate: formatISODate(subMonths(today, 6)),
     toDate: formatISODate(today),
   };
 }

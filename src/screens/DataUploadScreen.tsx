@@ -173,8 +173,10 @@ export default function DataUploadScreen() {
           </div>
         )}
       </div>
+      )}
 
       {/* Manual Entry — Editable Table */}
+      {show("manual_entry") && (
       <div className="section-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div>

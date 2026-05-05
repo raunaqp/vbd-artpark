@@ -27,20 +27,37 @@ export default function ViewSettingsScreen() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className="flex items-start justify-between gap-3 flex-wrap sticky top-0 bg-background z-10 py-2">
         <div>
           <h2 className="text-lg font-semibold text-foreground">View Settings — {stateLabel}</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Per-user visibility for <span className="font-medium text-foreground">{currentRole.userName}</span>.
-            Changes apply only to <span className="font-medium text-foreground">{stateLabel}</span> and persist on this device.
+            Signed in as <span className="font-medium text-foreground">{currentRole.userName}</span>.
+            Changes apply to <span className="font-medium text-foreground">{stateLabel}</span> for <span className="font-medium text-foreground">all users</span> once saved.
+            {isDirty && <span className="ml-2 text-amber-600 font-medium">• Unsaved changes</span>}
           </p>
         </div>
-        <button
-          onClick={resetAll}
-          className="h-8 px-3 rounded-md border border-input text-xs flex items-center gap-1.5 text-muted-foreground hover:bg-muted/50 transition-colors"
-        >
-          <RotateCcw className="h-3.5 w-3.5" /> Reset everything
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={resetAll}
+            className="h-8 px-3 rounded-md border border-input text-xs flex items-center gap-1.5 text-muted-foreground hover:bg-muted/50 transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Reset everything
+          </button>
+          <button
+            onClick={discardChanges}
+            disabled={!isDirty}
+            className="h-8 px-3 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Discard
+          </button>
+          <button
+            onClick={saveChanges}
+            disabled={!isDirty}
+            className="h-8 px-4 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Save changes
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

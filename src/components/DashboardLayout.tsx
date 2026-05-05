@@ -225,7 +225,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
 
       <nav className="bg-card border-b border-border px-6 py-2">
         <div className="tab-nav inline-flex">
-          {tabs.map((tab) => (
+          {[...baseTabs, ...(isAnalyst ? [settingsTab] : [])].map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}

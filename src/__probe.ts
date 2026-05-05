@@ -13,3 +13,18 @@ console.log("Hotspots4w:", getFilteredHotspots(f, 4).length);
 console.log("Weather obs:", getWeatherObserved(f).length);
 console.log("HotspotAlerts:", getHotspotAlerts(f).length);
 console.log("LineListing:", getLineListing(f).length);
+
+console.log("\n--- Weekly TS values ---");
+console.log(getWeeklyTimeSeries(f).map(p => `${p.week}/${p.date}: pos=${p.positive} samples=${p.samples}`).join("\n"));
+console.log("\n--- All monthly ---");
+console.log(getMonthlyTimeSeries(f));
+console.log("\n--- Weather obs ---");
+console.log(getWeatherObserved(f).slice(0,3));
+console.log("\n--- Predictions sample ---");
+console.log(getOutbreakPredictions(f).slice(0,3));
+console.log("\n--- Hotspots sample ---");
+console.log(getFilteredHotspots(f, 4).slice(0,3));
+console.log("\n--- HotspotAlerts ---");
+console.log(getHotspotAlerts(f));
+console.log("\n--- News ---");
+console.log(getNewsAlerts(f));

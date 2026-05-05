@@ -50,6 +50,12 @@ export interface ForecastChartPoint { week: string; actual: number | null; predi
 export interface WeatherPoint { week: string; endDate: string; rainfall: number; temp: number; maxT: number; minT: number; humidity: number; }
 export interface DataIssue { type: string; message: string; severity: "high" | "moderate" | "low"; }
 
+const DISTRICT_ALIASES: Record<string, string> = {
+  Bangalore: "Bengaluru Urban",
+  "Bangalore Urban": "Bengaluru Urban",
+  Bengaluru: "Bengaluru Urban",
+};
+
 export interface StateBundle {
   id: StateId;
   label: string;
@@ -963,6 +969,10 @@ export function setActiveState(id: StateId) {
 export function getActiveStateId(): StateId { return activeStateId; }
 export function subscribeStateChange(fn: () => void): () => void { stateChangeListeners.add(fn); return () => { stateChangeListeners.delete(fn); }; }
 function S(): StateBundle { return stateBundles[activeStateId]; }
+
+function normalizeDistrictName(district: string) {
+  return DISTRICT_ALIASES[district] ?? district;
+}
 
 // ──────────────── Live proxies (active-state aware) ────────────────
 function liveArrayProxy<T>(getter: () => T[]): T[] {

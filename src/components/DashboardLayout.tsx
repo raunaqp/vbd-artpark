@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -7,7 +7,7 @@ import { getDataQualityIssues } from "@/data/mockData";
 import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecastCsv } from "@/lib/exportCsv";
 import { useEffect, useState } from "react";
 
-const tabs = [
+const baseTabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "surveillance", label: "Case Surveillance", icon: Activity },
   { id: "forecast", label: "Forecast", icon: TrendingUp },
@@ -17,7 +17,9 @@ const tabs = [
   { id: "upload", label: "Data Upload", icon: Upload },
 ] as const;
 
-export type TabId = (typeof tabs)[number]["id"];
+const settingsTab = { id: "settings", label: "View Settings", icon: Settings } as const;
+
+export type TabId = (typeof baseTabs)[number]["id"] | typeof settingsTab.id;
 
 interface Props {
   activeTab: TabId;
@@ -26,7 +28,7 @@ interface Props {
 }
 
 export default function DashboardLayout({ activeTab, onTabChange, children }: Props) {
-  const { currentRole, setRole, availableRoles } = useRole();
+  const { currentRole, setRole, availableRoles, isAnalyst } = useRole();
   const { currentDisease, setDisease } = useDisease();
   const { stateId, setStateId, options: stateOptions } = useStateSelection();
   const { appliedFilters } = useFilters();
@@ -76,27 +78,20 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
             {showStateMenu && (
               <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
                 <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">Select State</div>
-                {stateOptions.map((s) => {
-                  const isEnabled = s.id === "andhra_pradesh";
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => isEnabled && setPendingStateId(s.id)}
-                      disabled={!isEnabled}
-                      title={isEnabled ? undefined : "Other states are being updated and will be available soon."}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${
-                        !isEnabled
-                          ? "text-muted-foreground/60 cursor-not-allowed"
-                          : pendingStateId === s.id
-                          ? "bg-muted font-medium text-foreground hover:bg-muted"
-                          : "text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <span>{s.label}{!isEnabled && <span className="ml-1 text-[10px] opacity-70">(soon)</span>}</span>
-                      {pendingStateId === s.id && isEnabled && <span className="text-xs text-primary">●</span>}
-                    </button>
-                  );
-                })}
+                {stateOptions.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setPendingStateId(s.id)}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${
+                      pendingStateId === s.id
+                        ? "bg-muted font-medium text-foreground hover:bg-muted"
+                        : "text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <span>{s.label}</span>
+                    {pendingStateId === s.id && <span className="text-xs text-primary">●</span>}
+                  </button>
+                ))}
                 <div className="px-2 pt-2 pb-1 border-t border-border mt-1 flex gap-2">
                   <button
                     onClick={() => { setPendingStateId(stateId); setShowStateMenu(false); }}

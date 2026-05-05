@@ -1,0 +1,15 @@
+import { getFilteredRegions, getMonthlyTimeSeries, getWeeklyTimeSeries, getOutbreakPredictions, getFilteredHotspots, getWeatherObserved, getHotspotAlerts, getNewsAlerts, getLineListing, getFilteredKpi } from "./data/mockData";
+import { setActiveStateId } from "./data/mockData";
+setActiveStateId("karnataka");
+const f = { state: "Karnataka", district: "Bengaluru Urban", block: "All Blocks", disease: "Dengue", timeRange: "Last 6 Months" } as any;
+console.log("KPI:", getFilteredKpi(f));
+const r = getFilteredRegions(f);
+console.log("Regions count:", r.length);
+console.log(r.map(x => `${x.name}/${x.type}=conf:${x.confirmed}`).join("\n"));
+console.log("Weekly TS:", getWeeklyTimeSeries(f).length, "Monthly:", getMonthlyTimeSeries(f).length);
+console.log("monthly sample:", getMonthlyTimeSeries(f).slice(0,3));
+console.log("Predictions:", getOutbreakPredictions(f).length);
+console.log("Hotspots4w:", getFilteredHotspots(f, 4).length);
+console.log("Weather obs:", getWeatherObserved(f).length);
+console.log("HotspotAlerts:", getHotspotAlerts(f).length);
+console.log("LineListing:", getLineListing(f).length);

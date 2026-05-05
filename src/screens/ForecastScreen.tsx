@@ -62,6 +62,7 @@ export default function ForecastScreen() {
         </div>
       )}
 
+      {show("risk_cards") && (
       <div className="grid grid-cols-4 gap-3">
         {riskForecast.map((f) => {
           const riskClass = f.risk === "high" ? "border-risk-high bg-risk-high/5 text-risk-high"
@@ -77,11 +78,13 @@ export default function ForecastScreen() {
           );
         })}
       </div>
+      )}
 
-      {appliedFilters.district === "All Districts" && (
+      {show("risk_cards") && appliedFilters.district === "All Districts" && (
         <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
       )}
 
+      {show("forecast_map") && (
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="section-title">Forecasted Risk Map — {forecastRange}</h3>
@@ -89,8 +92,9 @@ export default function ForecastScreen() {
         </div>
         <DashboardMap height="380px" mode="forecast" />
       </div>
+      )}
 
-      {isAnalyst && (
+      {show("actual_vs_predicted") && isAnalyst && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="section-title">{diseaseName} Incidence — Actual vs Predicted</h3>

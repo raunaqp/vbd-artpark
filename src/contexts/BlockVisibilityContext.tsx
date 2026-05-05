@@ -58,14 +58,15 @@ export function BlockVisibilityProvider({ children }: { children: ReactNode }) {
     const handler = (e: StorageEvent) => {
       if (e.key === storageKey(stateId)) {
         const next = e.newValue ? (JSON.parse(e.newValue) as VisibilityMap) : {};
-        setVisibility(next);
-        // If user has no unsaved changes, sync the draft too
-        setDraft((prevDraft) => (deepEqual(prevDraft, visibility) ? next : prevDraft));
+        setVisibility((prevVis) => {
+          setDraft((prevDraft) => (deepEqual(prevDraft, prevVis) ? next : prevDraft));
+          return next;
+        });
       }
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
-  }, [stateId, visibility]);
+  }, [stateId]);
 
   const isDirty = useMemo(() => !deepEqual(visibility, draft), [visibility, draft]);
 

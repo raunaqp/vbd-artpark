@@ -63,7 +63,9 @@ export default function SignalsScreen() {
             </div>
           )}
         </div>
+        )}
 
+        {show("geo_signal_map") && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -102,6 +104,7 @@ export default function SignalsScreen() {
             ))}
           </div>
         </div>
+        )}
       </div>
 
       <div className="section-card p-4 border-dashed">

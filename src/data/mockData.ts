@@ -1203,14 +1203,18 @@ function resolveFilters(input?: DashboardFiltersLike | string, legacyBlock?: str
   if (typeof input === "string") {
     return {
       ...getDefaultFilters(),
-      district: input || "All Districts",
+      district: input ? normalizeDistrictName(input) : "All Districts",
       block: legacyBlock || "All Blocks",
     };
   }
 
-  return {
+  const resolved = {
     ...getDefaultFilters(),
     ...input,
+  };
+  return {
+    ...resolved,
+    district: normalizeDistrictName(resolved.district),
   };
 }
 

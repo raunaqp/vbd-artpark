@@ -9,7 +9,7 @@ export default function ViewSettingsScreen() {
   const { currentRole, isAnalyst } = useRole();
   const { stateId, options } = useStateSelection();
   const stateLabel = options.find((s) => s.id === stateId)?.label ?? stateId;
-  const { isVisible, setVisible, setAllForTab, resetTab, resetAll } = useBlockVisibility();
+  const { isDraftVisible, setVisible, setAllForTab, resetTab, resetAll, saveChanges, discardChanges, isDirty } = useBlockVisibility();
 
   if (!isAnalyst) {
     return (

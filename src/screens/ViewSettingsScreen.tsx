@@ -63,7 +63,7 @@ export default function ViewSettingsScreen() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {tabs.map((tab) => {
           const blocks = BLOCK_REGISTRY[tab];
-          const visibleCount = blocks.filter((b) => isVisible(tab, b.id)).length;
+          const visibleCount = blocks.filter((b) => isDraftVisible(tab, b.id)).length;
           return (
             <div key={tab} className="section-card p-4">
               <div className="flex items-center justify-between mb-3">
@@ -97,7 +97,7 @@ export default function ViewSettingsScreen() {
               </div>
               <ul className="divide-y divide-border">
                 {blocks.map((b, i) => {
-                  const visible = isVisible(tab, b.id);
+                  const visible = isDraftVisible(tab, b.id);
                   return (
                     <li key={b.id} className="flex items-center justify-between py-2">
                       <div className="text-sm">

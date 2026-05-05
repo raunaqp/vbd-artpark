@@ -242,6 +242,7 @@ export default function DataUploadScreen() {
         </div>
         <button className="mt-4 h-10 px-6 rounded-md bg-primary text-primary-foreground font-medium text-sm">Submit All Entries</button>
       </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useRole } from "./RoleContext";
 import { useStateSelection } from "./StateContext";
-import { getDefaultHistoricalDateRange, getDateWindow } from "@/data/mockData";
+import { getDefaultHistoricalDateRange, getDateWindow, normalizeDistrictName } from "@/data/mockData";
 
 interface FilterState {
   district: string;
@@ -64,10 +64,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   }, [currentRole.id, stateId]);
 
   const setFilters = (partial: Partial<FilterState>) => {
-    setFiltersState((prev) => ({ ...prev, ...partial }));
+    setFiltersState((prev) => ({ ...prev, ...partial, district: partial.district ? normalizeDistrictName(partial.district) : prev.district }));
   };
 
-  const applyFilters = () => setAppliedFilters({ ...filters });
+  const applyFilters = () => setAppliedFilters({ ...filters, district: normalizeDistrictName(filters.district) });
   const resetFilters = () => {
     const next: FilterState = {
       ...buildDefaultFilters(),
@@ -97,7 +97,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
   const drillDown = (area: string, level: "district" | "block") => {
     if (level === "district") {
-      const next = { ...filters, district: area, block: "All Blocks", ward: "All Wards" };
+      const next = { ...filters, district: normalizeDistrictName(area), block: "All Blocks", ward: "All Wards" };
       setFiltersState(next);
       setAppliedFilters(next);
     } else if (level === "block") {

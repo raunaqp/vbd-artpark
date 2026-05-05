@@ -118,8 +118,10 @@ export default function DataUploadScreen() {
           </div>
         )}
       </div>
+      )}
 
       {/* CSV / Excel Upload */}
+      {show("upload_file") && (
       <div className="section-card p-6">
         <h3 className="section-title mb-1">Upload Data File</h3>
         <p className="text-xs text-muted-foreground mb-4">Accepts CSV and Excel files · Columns will be auto-mapped to {currentFormat?.name || "selected"} schema</p>

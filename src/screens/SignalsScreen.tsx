@@ -4,6 +4,7 @@ import { getNewsAlerts, getGeoTaggedAlerts, getMapCenter } from "@/data/mockData
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useDisease } from "@/contexts/DiseaseContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import GlobalFilters from "@/components/GlobalFilters";
 
 const severityColor: Record<string, string> = {
@@ -16,6 +17,8 @@ export default function SignalsScreen() {
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId } = useStateSelection();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("signals", id);
   void stateId;
   const filteredNews = getNewsAlerts(appliedFilters);
   const filteredGeo = getGeoTaggedAlerts(appliedFilters);
@@ -31,6 +34,7 @@ export default function SignalsScreen() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {show("news_alerts") && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <Newspaper className="h-4 w-4 text-muted-foreground" />
@@ -59,7 +63,9 @@ export default function SignalsScreen() {
             </div>
           )}
         </div>
+        )}
 
+        {show("geo_signal_map") && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -98,6 +104,7 @@ export default function SignalsScreen() {
             ))}
           </div>
         </div>
+        )}
       </div>
 
       <div className="section-card p-4 border-dashed">

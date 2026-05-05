@@ -6,6 +6,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
@@ -17,6 +18,8 @@ export default function ForecastScreen() {
   const { appliedFilters, dateWindow } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId } = useStateSelection();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("forecast", id);
   void stateId;
 
   const riskForecast = getRiskForecast(appliedFilters);
@@ -59,6 +62,7 @@ export default function ForecastScreen() {
         </div>
       )}
 
+      {show("risk_cards") && (
       <div className="grid grid-cols-4 gap-3">
         {riskForecast.map((f) => {
           const riskClass = f.risk === "high" ? "border-risk-high bg-risk-high/5 text-risk-high"
@@ -74,11 +78,13 @@ export default function ForecastScreen() {
           );
         })}
       </div>
+      )}
 
-      {appliedFilters.district === "All Districts" && (
+      {show("risk_cards") && appliedFilters.district === "All Districts" && (
         <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
       )}
 
+      {show("forecast_map") && (
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="section-title">Forecasted Risk Map — {forecastRange}</h3>
@@ -86,8 +92,9 @@ export default function ForecastScreen() {
         </div>
         <DashboardMap height="380px" mode="forecast" />
       </div>
+      )}
 
-      {isAnalyst && (
+      {show("actual_vs_predicted") && isAnalyst && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="section-title">{diseaseName} Incidence — Actual vs Predicted</h3>
@@ -113,6 +120,7 @@ export default function ForecastScreen() {
         </div>
       )}
 
+      {show("outbreak_table") && (
       <div className="section-card p-5">
         <h3 className="section-title mb-1">{diseaseName} Outbreak Prediction Table</h3>
         <p className="text-xs text-muted-foreground mb-4">Sorted by probability of outbreak · highest first · Showing: {areaLabel} level</p>
@@ -157,6 +165,7 @@ export default function ForecastScreen() {
         </div>
         <TablePagination page={page} pageSize={PAGE_SIZE} total={predictions.length} onPageChange={setPage} />
       </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Cartesia
 import { getWeatherObserved, getWeatherForecast, type WeatherPoint } from "@/data/mockData";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useFilters } from "@/contexts/FilterContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import { format, parseISO } from "date-fns";
 import GlobalFilters from "@/components/GlobalFilters";
 
@@ -47,6 +48,8 @@ function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) 
 export default function WeatherScreen() {
   const { stateId } = useStateSelection();
   const { appliedFilters, dateWindow } = useFilters();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("weather", id);
   void stateId; // re-render on state change
   const weatherObserved = getWeatherObserved(appliedFilters);
   const weatherForecast = getWeatherForecast(appliedFilters);
@@ -58,6 +61,7 @@ export default function WeatherScreen() {
       <GlobalFilters />
 
       {/* Section A: Observed */}
+      {show("observed_climate") && (
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-1">Observed Climate (Last 8 Weeks)</h2>
         <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations</p>
@@ -105,8 +109,10 @@ export default function WeatherScreen() {
 
         <WeatherTable data={weatherObserved} label="Observed Climate Data" />
       </div>
+      )}
 
       {/* Section B: Forecast */}
+      {show("forecast_climate") && (
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-1">Forecast Climate (Next 8 Weeks)</h2>
         <p className="text-xs text-muted-foreground mb-4">Projected meteorological data — source: IMD extended range forecast</p>
@@ -155,6 +161,7 @@ export default function WeatherScreen() {
 
         <WeatherTable data={weatherForecast} label="Forecast Climate Data" />
       </div>
+      )}
     </div>
   );
 }

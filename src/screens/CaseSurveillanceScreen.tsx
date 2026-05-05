@@ -8,6 +8,7 @@ import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineL
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import { exportLineListingCsv } from "@/lib/exportCsv";
 import { Download } from "lucide-react";
 
@@ -21,6 +22,8 @@ export default function CaseSurveillanceScreen() {
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId, options: stateOptions } = useStateSelection();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("surveillance", id);
   const stateLabel = stateOptions.find((s) => s.id === stateId)?.label ?? "State";
 
   const timeData = (timeRange === "weekly" ? getWeeklyTimeSeries(appliedFilters) : timeRange === "daily" ? getDailyTimeSeries(appliedFilters) : getMonthlyTimeSeries(appliedFilters)) as any[];
@@ -38,8 +41,9 @@ export default function CaseSurveillanceScreen() {
   return (
     <div>
       <GlobalFilters />
-      <KpiCards />
+      {show("kpis") && <KpiCards />}
 
+      {show("cases_over_time") && (
       <div className="section-card p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="section-title">{diseaseName} Cases Over Time (Positive, Samples, TPR)</h3>
@@ -67,12 +71,16 @@ export default function CaseSurveillanceScreen() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      )}
 
+      {show("geospatial") && (
       <div className="mb-6">
         <h3 className="section-title mb-3">Geospatial Distribution</h3>
         <DashboardMap height="350px" />
       </div>
+      )}
 
+      {show("line_listing") && (
       <div className="section-card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="section-title">{diseaseName} Line Listing</h3>
@@ -121,6 +129,7 @@ export default function CaseSurveillanceScreen() {
         </div>
         <TablePagination page={page} pageSize={PAGE_SIZE} total={filteredListing.length} onPageChange={setPage} />
       </div>
+      )}
     </div>
   );
 }

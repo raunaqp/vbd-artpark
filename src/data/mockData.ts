@@ -1608,12 +1608,15 @@ function generateDailyTimeSeries(profile: TemporalProfile, window: DashboardDate
   const seedDaily = filters
     ? getSeedDailyDist(activeStateId, { district: filters.district, block: filters.block, ward: filters.ward })
     : undefined;
+  const selectedBaseConfirmed = filters ? getSelectedBaseConfirmed(S(), filters) : 0;
   const seedTailLen = seedDaily?.length ?? 0;
   const tailStartIdx = seedTailLen > 0 ? Math.max(0, days.length - seedTailLen) : -1;
   return days.map((day, index) => {
     const scalar = getRangeScalar(profile, day, day);
     const weekdayFactor = [0.92, 1.0, 1.08, 1.12, 1.04, 0.94, 0.82][day.getDay()];
-    let positive = Math.max(0, Math.round(profile.weeklyPositiveBase * 0.18 * scopeScale * scalar * weekdayFactor * seededBetween(`${seedKey}:daily:${formatISODate(day)}`, 0.9, 1.12)));
+    const baseDaily = profile.weeklyPositiveBase * 0.18 * scopeScale * scalar * weekdayFactor * seededBetween(`${seedKey}:daily:${formatISODate(day)}`, 0.9, 1.12);
+    const floorDaily = selectedBaseConfirmed > 0 ? selectedBaseConfirmed * scalar / 35 : 0;
+    let positive = Math.max(0, Math.round(Math.max(baseDaily, floorDaily)));
     if (seedDaily && index >= tailStartIdx) {
       // Overlay seeded last-14-days positive count for this scope.
       positive = seedDaily[index - tailStartIdx];

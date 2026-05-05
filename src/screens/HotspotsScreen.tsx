@@ -154,7 +154,7 @@ export default function HotspotsScreen() {
         <div className="section-card p-5 text-center text-muted-foreground text-sm">
           No {diseaseName.toLowerCase()} hotspot data available for the selected area and time range.
         </div>
-      )}
+      ))}
     </div>
   );
 }

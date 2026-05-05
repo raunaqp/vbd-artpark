@@ -472,12 +472,99 @@ export const seed: SeedRoot = {
             {
               name: "BBMP South Zone", lat: 12.9, lng: 77.6, cases_2w: 22, cases_4w: 40, signal: "persistent", risk: "moderate",
               daily_14d: [12, 13, 11, 12, 13, 12, 14, 13, 12, 13, 12, 14, 13, 12],
+              wards: [
+                { name: "Jayanagar", lat: 12.9237, lng: 77.5838, cases_2w: 6, cases_4w: 11, signal: "persistent", risk: "low" },
+                { name: "BTM Layout", lat: 12.9166, lng: 77.6101, cases_2w: 5, cases_4w: 10, signal: "persistent", risk: "low" },
+                { name: "JP Nagar", lat: 12.9082, lng: 77.5855, cases_2w: 6, cases_4w: 11, signal: "rising_cluster", risk: "moderate" },
+                { name: "Bommanahalli", lat: 12.9043, lng: 77.6196, cases_2w: 5, cases_4w: 8, signal: "moderate", risk: "low" },
+              ],
+            },
+            {
+              name: "BBMP West Zone", lat: 12.9784, lng: 77.5409, cases_2w: 20, cases_4w: 36, signal: "rising_cluster", risk: "moderate",
+              daily_14d: [3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 8, 9, 10, 11],
+              wards: [
+                { name: "Rajajinagar", lat: 12.9911, lng: 77.5527, cases_2w: 6, cases_4w: 11, signal: "rising_cluster", risk: "moderate" },
+                { name: "Vijayanagar", lat: 12.9719, lng: 77.5305, cases_2w: 5, cases_4w: 9, signal: "moderate", risk: "low" },
+                { name: "Malleshwaram", lat: 13.0035, lng: 77.5709, cases_2w: 4, cases_4w: 8, signal: "moderate", risk: "low" },
+                { name: "Govindarajnagar", lat: 12.9628, lng: 77.5278, cases_2w: 5, cases_4w: 8, signal: "rising_cluster", risk: "moderate" },
+              ],
+            },
+            {
+              name: "BBMP North Zone", lat: 13.0359, lng: 77.597, cases_2w: 18, cases_4w: 32, signal: "moderate", risk: "moderate",
+              daily_14d: [2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 9, 10],
+              wards: [
+                { name: "Hebbal", lat: 13.0358, lng: 77.5970, cases_2w: 5, cases_4w: 9, signal: "rising_cluster", risk: "moderate" },
+                { name: "RT Nagar", lat: 13.0220, lng: 77.5945, cases_2w: 4, cases_4w: 8, signal: "moderate", risk: "low" },
+                { name: "Sanjaynagar", lat: 13.0344, lng: 77.5697, cases_2w: 5, cases_4w: 8, signal: "moderate", risk: "low" },
+                { name: "Banaswadi", lat: 13.0149, lng: 77.6515, cases_2w: 4, cases_4w: 7, signal: "stable_low", risk: "low" },
+              ],
+            },
+            {
+              name: "BBMP Central Zone", lat: 12.9762, lng: 77.6033, cases_2w: 22, cases_4w: 38, signal: "persistent", risk: "high",
+              daily_14d: [4, 4, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12],
+              wards: [
+                { name: "Shivajinagar", lat: 12.9851, lng: 77.6051, cases_2w: 7, cases_4w: 12, signal: "persistent", risk: "high" },
+                { name: "Shanthinagar", lat: 12.9573, lng: 77.5970, cases_2w: 5, cases_4w: 9, signal: "rising_cluster", risk: "moderate" },
+                { name: "Chickpet", lat: 12.9698, lng: 77.5772, cases_2w: 5, cases_4w: 9, signal: "persistent", risk: "moderate" },
+                { name: "Gandhinagar", lat: 12.9784, lng: 77.5739, cases_2w: 5, cases_4w: 8, signal: "moderate", risk: "moderate" },
+              ],
+            },
+            {
+              name: "BBMP Mahadevapura Zone", lat: 12.9963, lng: 77.6855, cases_2w: 16, cases_4w: 28, signal: "rising_cluster", risk: "moderate",
+              daily_14d: [2, 2, 3, 3, 3, 4, 4, 5, 6, 6, 7, 8, 9, 10],
+              wards: [
+                { name: "Whitefield", lat: 12.9698, lng: 77.7500, cases_2w: 6, cases_4w: 10, signal: "rising_cluster", risk: "moderate" },
+                { name: "Marathahalli", lat: 12.9591, lng: 77.6974, cases_2w: 5, cases_4w: 9, signal: "rising_cluster", risk: "moderate" },
+                { name: "KR Puram", lat: 13.0070, lng: 77.6960, cases_2w: 5, cases_4w: 9, signal: "moderate", risk: "low" },
+              ],
+            },
+            {
+              name: "BBMP RR Nagar Zone", lat: 12.9230, lng: 77.5187, cases_2w: 14, cases_4w: 25, signal: "moderate", risk: "low",
+              daily_14d: [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 9],
+              wards: [
+                { name: "Rajarajeshwari Nagar", lat: 12.9279, lng: 77.5188, cases_2w: 5, cases_4w: 9, signal: "moderate", risk: "low" },
+                { name: "Kengeri", lat: 12.9082, lng: 77.4823, cases_2w: 4, cases_4w: 8, signal: "moderate", risk: "low" },
+                { name: "Jnanabharathi", lat: 12.9417, lng: 77.5012, cases_2w: 5, cases_4w: 8, signal: "stable_low", risk: "low" },
+              ],
+            },
+            {
+              name: "BBMP Bommanahalli Zone", lat: 12.8995, lng: 77.6228, cases_2w: 12, cases_4w: 22, signal: "moderate", risk: "moderate",
+              daily_14d: [1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8],
+              wards: [
+                { name: "HSR Layout", lat: 12.9116, lng: 77.6473, cases_2w: 4, cases_4w: 8, signal: "rising_cluster", risk: "moderate" },
+                { name: "Bommanahalli", lat: 12.9043, lng: 77.6196, cases_2w: 4, cases_4w: 7, signal: "moderate", risk: "low" },
+                { name: "Begur", lat: 12.8740, lng: 77.6280, cases_2w: 4, cases_4w: 7, signal: "moderate", risk: "low" },
+              ],
             },
           ],
           blocks: [
-            { name: "Yelahanka", lat: 13.1007, lng: 77.5963, cases_2w: 9, cases_4w: 18, signal: "new_emergence", risk: "low", daily_14d: [0, 0, 1, 0, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6] },
-            { name: "Bengaluru South", lat: 12.9081, lng: 77.593, cases_2w: 14, cases_4w: 24, signal: "moderate", risk: "low" },
-            { name: "Anekal", lat: 12.71, lng: 77.7, cases_2w: 13, cases_4w: 25, signal: "rising_cluster", risk: "moderate", daily_14d: [4, 5, 3, 6, 5, 4, 6, 5, 4, 5, 6, 4, 5, 4] },
+            {
+              name: "Yelahanka", lat: 13.1007, lng: 77.5963, cases_2w: 9, cases_4w: 18, signal: "new_emergence", risk: "low",
+              daily_14d: [0, 0, 1, 0, 0, 2, 1, 3, 2, 4, 3, 5, 4, 6],
+              villages: [
+                { name: "Jakkur", lat: 13.0772, lng: 77.6083, cases_2w: 3, cases_4w: 6, signal: "new_emergence", risk: "low" },
+                { name: "Attur", lat: 13.1059, lng: 77.5719, cases_2w: 3, cases_4w: 6, signal: "new_emergence", risk: "low" },
+                { name: "Chikkajala", lat: 13.1448, lng: 77.6347, cases_2w: 3, cases_4w: 6, signal: "rising_cluster", risk: "low" },
+              ],
+            },
+            {
+              name: "Bengaluru South", lat: 12.9081, lng: 77.593, cases_2w: 14, cases_4w: 24, signal: "moderate", risk: "low",
+              daily_14d: [1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 5, 5],
+              villages: [
+                { name: "Uttarahalli", lat: 12.9081, lng: 77.5460, cases_2w: 5, cases_4w: 9, signal: "moderate", risk: "low" },
+                { name: "Kanakapura Road", lat: 12.8770, lng: 77.5466, cases_2w: 5, cases_4w: 8, signal: "moderate", risk: "low" },
+                { name: "Konanakunte", lat: 12.8854, lng: 77.5489, cases_2w: 4, cases_4w: 7, signal: "stable_low", risk: "low" },
+              ],
+            },
+            {
+              name: "Anekal", lat: 12.71, lng: 77.7, cases_2w: 13, cases_4w: 25, signal: "rising_cluster", risk: "moderate",
+              daily_14d: [4, 5, 3, 6, 5, 4, 6, 5, 4, 5, 6, 4, 5, 4],
+              villages: [
+                { name: "Attibele", lat: 12.7884, lng: 77.7733, cases_2w: 4, cases_4w: 8, signal: "rising_cluster", risk: "moderate" },
+                { name: "Jigani", lat: 12.7875, lng: 77.6383, cases_2w: 5, cases_4w: 9, signal: "rising_cluster", risk: "moderate" },
+                { name: "Sarjapur", lat: 12.8500, lng: 77.7869, cases_2w: 4, cases_4w: 8, signal: "moderate", risk: "low" },
+              ],
+            },
           ],
         },
         {

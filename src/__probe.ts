@@ -1,6 +1,6 @@
 import { getFilteredRegions, getMonthlyTimeSeries, getWeeklyTimeSeries, getOutbreakPredictions, getFilteredHotspots, getWeatherObserved, getHotspotAlerts, getNewsAlerts, getLineListing, getFilteredKpi } from "./data/mockData";
-import { setActiveStateId } from "./data/mockData";
-setActiveStateId("karnataka");
+import { setActiveState } from "./data/mockData";
+setActiveState("karnataka");
 const f = { state: "Karnataka", district: "Bengaluru Urban", block: "All Blocks", disease: "Dengue", timeRange: "Last 6 Months" } as any;
 console.log("KPI:", getFilteredKpi(f));
 const r = getFilteredRegions(f);

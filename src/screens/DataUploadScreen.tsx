@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Upload, FileText, Info, Download, CheckCircle, Plus, Trash2 } from "lucide-react";
 import { uploadFormats } from "@/data/mockData";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 
 interface ManualRow {
   id: number;
@@ -23,6 +24,8 @@ const emptyRow = (id: number): ManualRow => ({
 });
 
 export default function DataUploadScreen() {
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("upload", id);
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [selectedFormat, setSelectedFormat] = useState("nvbdcp_linelist");
@@ -83,6 +86,7 @@ export default function DataUploadScreen() {
       </div>
 
       {/* Format Selection + Template Downloads */}
+      {show("upload_format") && (
       <div className="section-card p-5">
         <h3 className="section-title mb-1">Select Upload Format</h3>
         <p className="text-xs text-muted-foreground mb-4">Choose the reporting format that matches your data</p>

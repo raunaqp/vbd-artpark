@@ -156,8 +156,9 @@ export default function WeatherScreen() {
                 <Area type="monotone" dataKey="humidity" stroke="hsl(142, 50%, 45%)" fill="hsl(142, 50%, 45%)" fillOpacity={0.15} strokeWidth={2} strokeDasharray="6 3" />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
-        </div>
+      </div>
+      )}
+    </div>
 
         <WeatherTable data={weatherForecast} label="Forecast Climate Data" />
       </div>

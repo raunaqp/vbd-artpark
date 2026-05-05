@@ -7,6 +7,7 @@ import AreasOfConcern from "@/components/AreasOfConcern";
 import ActionFocusAreas from "@/components/ActionFocusAreas";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import {
   getFilteredRegions,
   getSituationSummary,
@@ -23,6 +24,8 @@ interface Props {
 export default function OverviewScreen({ onNavigate }: Props) {
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("overview", id);
   const rawRegions = getFilteredRegions(appliedFilters);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
   const summary = getSituationSummary(regions, diseaseName, appliedFilters);
@@ -50,6 +53,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
       <GlobalFilters />
 
       {/* 1. Situation Summary */}
+      {show("situation_summary") && (
       <div className="section-card p-4 mb-6">
         <h3 className="section-title mb-2">Situation Summary — {diseaseName}</h3>
         <ul className="space-y-1.5 text-sm text-foreground">
@@ -61,11 +65,13 @@ export default function OverviewScreen({ onNavigate }: Props) {
           ))}
         </ul>
       </div>
+      )}
 
       {/* 2. Key Metrics */}
-      <KpiCards />
+      {show("kpis") && <KpiCards />}
 
       {/* 3. High Risk Areas — aggregated map + table (district/block level) */}
+      {(show("high_risk_map") || show("high_risk_table")) && (
       <div className="mb-6">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
           <h3 className="section-title">High Risk Areas (Last 4 Weeks)</h3>
@@ -74,19 +80,21 @@ export default function OverviewScreen({ onNavigate }: Props) {
         <div className="rounded-md border border-border bg-muted/30 px-3 py-2 mb-3 text-sm text-foreground">
           {actionLine}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <DashboardMap height="400px" />
-          <RegionTable maxRows={8} />
+        <div className={`grid grid-cols-1 ${show("high_risk_map") && show("high_risk_table") ? "lg:grid-cols-2" : ""} gap-6`}>
+          {show("high_risk_map") && <DashboardMap height="400px" />}
+          {show("high_risk_table") && <RegionTable maxRows={8} />}
         </div>
       </div>
+      )}
 
-      {/* 4. Areas of Concern — new emergence + rising clusters */}
-      <AreasOfConcern />
+      {/* 4. Areas of Concern */}
+      {show("areas_of_concern") && <AreasOfConcern />}
 
-      {/* 5. Action Focus Areas — location-specific, hybrid curated/auto */}
-      <ActionFocusAreas />
+      {/* 5. Action Focus Areas */}
+      {show("action_focus") && <ActionFocusAreas />}
 
-      {/* 5. Forecast — lightweight cards only with CTA */}
+      {/* 6. Forecast cards */}
+      {show("forecast_cards") && (
       <div className="section-card p-5">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
@@ -119,6 +127,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
           <p className="text-xs text-muted-foreground mt-3">{forecastInterpretation}</p>
         )}
       </div>
+      )}
     </div>
   );
 }

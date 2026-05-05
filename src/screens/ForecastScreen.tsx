@@ -120,6 +120,7 @@ export default function ForecastScreen() {
         </div>
       )}
 
+      {show("outbreak_table") && (
       <div className="section-card p-5">
         <h3 className="section-title mb-1">{diseaseName} Outbreak Prediction Table</h3>
         <p className="text-xs text-muted-foreground mb-4">Sorted by probability of outbreak · highest first · Showing: {areaLabel} level</p>
@@ -164,6 +165,7 @@ export default function ForecastScreen() {
         </div>
         <TablePagination page={page} pageSize={PAGE_SIZE} total={predictions.length} onPageChange={setPage} />
       </div>
+      )}
     </div>
   );
 }

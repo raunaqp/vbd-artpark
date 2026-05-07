@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout, { type TabId } from "@/components/DashboardLayout";
+import { useRole } from "@/contexts/RoleContext";
 import OverviewScreen from "@/screens/OverviewScreen";
 import CaseSurveillanceScreen from "@/screens/CaseSurveillanceScreen";
 import ForecastScreen from "@/screens/ForecastScreen";

@@ -50,7 +50,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
 
   return (
     <div>
-      <GlobalFilters />
+      <GlobalFilters freshnessLabel="Data updated: this week" />
 
       {/* 1. Situation Summary */}
       {show("situation_summary") && (

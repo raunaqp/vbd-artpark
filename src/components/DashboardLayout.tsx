@@ -29,7 +29,7 @@ interface Props {
 }
 
 export default function DashboardLayout({ activeTab, onTabChange, children }: Props) {
-  const { currentRole, setRole, availableRoles, isAnalyst } = useRole();
+  const { currentRole, setRole, availableRoles, isAdmin, isDataOperator } = useRole();
   const { currentDisease, setDisease } = useDisease();
   const { stateId, setStateId, options: stateOptions } = useStateSelection();
   const { appliedFilters } = useFilters();

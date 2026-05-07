@@ -197,6 +197,8 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
               </div>
             )}
           </div>
+
+          <span className="inline-flex items-center rounded-full bg-amber-400/20 text-amber-100 border border-amber-300/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Demo</span>
         </div>
       </header>
 

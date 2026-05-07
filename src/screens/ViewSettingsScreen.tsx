@@ -6,18 +6,18 @@ import { Switch } from "@/components/ui/switch";
 import { Eye, EyeOff, RotateCcw, Lock } from "lucide-react";
 
 export default function ViewSettingsScreen() {
-  const { currentRole, isAnalyst } = useRole();
+  const { currentRole, isAdmin } = useRole();
   const { stateId, options } = useStateSelection();
   const stateLabel = options.find((s) => s.id === stateId)?.label ?? stateId;
   const { isDraftVisible, setVisible, setAllForTab, resetTab, resetAll, saveChanges, discardChanges, isDirty } = useBlockVisibility();
 
-  if (!isAnalyst) {
+  if (!isAdmin) {
     return (
       <div className="max-w-2xl mx-auto mt-12 section-card p-8 text-center">
         <Lock className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
         <h2 className="text-lg font-semibold text-foreground mb-1">Restricted</h2>
         <p className="text-sm text-muted-foreground">
-          View Settings are available only to Analyst users. Switch to an Analyst role to manage block visibility.
+          View Settings are available only to Admin users. Switch to an Admin role to manage block visibility.
         </p>
       </div>
     );

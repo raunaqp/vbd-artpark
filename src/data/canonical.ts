@@ -137,6 +137,54 @@ export function stateLabelFromId(id: StateId): string {
   return STATE_LABEL_BY_ID[id];
 }
 
+// ──────────────── Hierarchy lookups ────────────────
+
+type HForecastLevel = "low" | "moderate" | "high" | "very_high";
+
+function levelToLegacy(level?: HForecastLevel): "low" | "moderate" | "high" {
+  if (level === "very_high" || level === "high") return "high";
+  if (level === "moderate") return "moderate";
+  return "low";
+}
+
+function whoLabelFromLevel(level?: HForecastLevel): WHOClass {
+  if (level === "very_high") return "Very High";
+  if (level === "high") return "High";
+  if (level === "moderate") return "Moderate";
+  return "Low";
+}
+
+function icmrLabelFromLevel(level?: HForecastLevel): ICMRClass {
+  if (level === "very_high") return "Critical";
+  if (level === "high") return "High Risk";
+  if (level === "moderate") return "Caution";
+  return "Low";
+}
+
+function labelForLevel(stateLabel: string, level?: HForecastLevel): string {
+  const method = (STATE_RISK_METHOD as Record<string, string>)[stateLabel] ?? "WHO";
+  return method === "ICMR" ? icmrLabelFromLevel(level) : whoLabelFromLevel(level);
+}
+
+/** Look up forecast for any geography in HIERARCHY_FORECAST. */
+export function getForecastForGeography(
+  district: string,
+  childName?: string,
+  leafName?: string,
+): ForecastEntry | undefined {
+  const h = HIERARCHY_FORECAST[district];
+  if (!h) return undefined;
+  if (!childName) return h.district_forecast;
+  if (leafName) {
+    const mun = h.municipalities[childName];
+    if (mun?.wards[leafName]) return mun.wards[leafName];
+    const blk = h.blocks[childName];
+    if (blk?.villages[leafName]) return blk.villages[leafName];
+    return undefined;
+  }
+  return h.municipalities[childName]?.forecast ?? h.blocks[childName]?.forecast;
+}
+
 // ──────────────── Per-screen converters ────────────────
 
 function metricToRegion(m: DistrictMetrics): RegionData {
@@ -154,13 +202,14 @@ function metricToRegion(m: DistrictMetrics): RegionData {
 function municipalityToRegion(parent: DistrictMetrics, mName: string, weekly: number[]): RegionData {
   const cases = weekly.slice(-4).reduce((a, b) => a + b, 0);
   const trend = computeTrend(weekly.slice(-8));
-  // Inherit district risk for municipalities (no separate baseline).
+  const f = getForecastForGeography(parent.name, mName);
+  const risk = f?.level ? levelToLegacy(f.level as HForecastLevel) : parent.legacyRisk;
   return {
     name: mName,
     suspected: Math.round(cases * 6.5),
     tested: Math.round(cases * 5.5),
     confirmed: cases,
-    risk: parent.legacyRisk,
+    risk,
     trend: trendToLegacy(trend),
     type: "municipality",
     parentDistrict: parent.name,
@@ -170,12 +219,14 @@ function municipalityToRegion(parent: DistrictMetrics, mName: string, weekly: nu
 function blockToRegion(parent: DistrictMetrics, bName: string, weekly: number[]): RegionData {
   const cases = weekly.slice(-4).reduce((a, b) => a + b, 0);
   const trend = computeTrend(weekly.slice(-8));
+  const f = getForecastForGeography(parent.name, bName);
+  const risk = f?.level ? levelToLegacy(f.level as HForecastLevel) : parent.legacyRisk;
   return {
     name: bName,
     suspected: Math.round(cases * 6.5),
     tested: Math.round(cases * 5.5),
     confirmed: cases,
-    risk: parent.legacyRisk,
+    risk,
     trend: trendToLegacy(trend),
     type: "block",
     parentDistrict: parent.name,
@@ -191,12 +242,14 @@ function leafToRegion(
 ): RegionData {
   const cases = weekly.slice(-4).reduce((a, b) => a + b, 0);
   const trend = computeTrend(weekly.slice(-8));
+  const f = getForecastForGeography(parent.name, parentBlockName, leafName);
+  const risk = f?.level ? levelToLegacy(f.level as HForecastLevel) : parent.legacyRisk;
   return {
     name: leafName,
     suspected: Math.round(cases * 6.5),
     tested: Math.round(cases * 5.5),
     confirmed: cases,
-    risk: parent.legacyRisk,
+    risk,
     trend: trendToLegacy(trend),
     type: leafType,
     parentDistrict: parent.name,

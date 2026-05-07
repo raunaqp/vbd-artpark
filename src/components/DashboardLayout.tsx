@@ -6,6 +6,7 @@ import { useFilters } from "@/contexts/FilterContext";
 import { getDataQualityIssues } from "@/data/mockData";
 import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecastCsv } from "@/lib/exportCsv";
 import { useEffect, useState } from "react";
+import { useSectionToggles } from "@/lib/sectionVisibility";
 
 const baseTabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },

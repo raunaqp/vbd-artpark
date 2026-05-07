@@ -29,19 +29,34 @@ const screens: Record<TabId, React.ComponentType<{ onNavigate?: (tab: TabId) => 
   admin: AdminScreen,
 };
 
-export default function Index() {
+function Router() {
+  const { isDataOperator, isAdmin } = useRole();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const Screen = screens[activeTab];
 
+  useEffect(() => {
+    if (isDataOperator && activeTab !== "surveillance" && activeTab !== "upload") {
+      setActiveTab("surveillance");
+    } else if (!isAdmin && activeTab === "admin") {
+      setActiveTab("overview");
+    }
+  }, [isDataOperator, isAdmin, activeTab]);
+
+  const Screen = screens[activeTab];
+  return (
+    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <Screen onNavigate={setActiveTab} />
+    </DashboardLayout>
+  );
+}
+
+export default function Index() {
   return (
     <StateProvider>
       <RoleProvider>
         <DiseaseProvider>
           <FilterProvider>
             <BlockVisibilityProvider>
-              <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-                <Screen onNavigate={setActiveTab} />
-              </DashboardLayout>
+              <Router />
               <QADebugPanel />
             </BlockVisibilityProvider>
           </FilterProvider>

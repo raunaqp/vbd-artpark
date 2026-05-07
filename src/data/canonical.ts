@@ -9,7 +9,9 @@ import {
   DISTRICT_POPULATION,
   WHO_BASELINES,
   FORECAST,
+  HIERARCHY_FORECAST,
   type DistrictData,
+  type ForecastEntry,
 } from "./mock_dataset";
 import { STATE_RISK_METHOD } from "@/lib/definitions";
 import {

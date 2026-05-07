@@ -35,7 +35,7 @@ const apRoles: RoleInfo[] = [
 
 const odishaRoles: RoleInfo[] = [
   { id: "od_state", stateId: "odisha", label: "State Surveillance Officer", scope: "state", location: "Odisha", roleName: "State Officer", userName: "Dr Shubhashis Mohanty" },
-  { id: "od_d_khurda", stateId: "odisha", label: "District — Khurda", scope: "district", location: "Khurda", roleName: "DHO", userName: "P. Mohanty", district: "Khurda" },
+  { id: "od_d_khurda", stateId: "odisha", label: "District — Khordha", scope: "district", location: "Khordha", roleName: "DHO", userName: "P. Mohanty", district: "Khordha" },
   { id: "od_d_puri", stateId: "odisha", label: "District — Puri", scope: "district", location: "Puri", roleName: "DHO", userName: "R. Das", district: "Puri" },
   { id: "od_d_bal", stateId: "odisha", label: "District — Balasore", scope: "district", location: "Balasore", roleName: "DHO", userName: "A. Sahu", district: "Balasore" },
   { id: "od_d_angul", stateId: "odisha", label: "District — Angul", scope: "district", location: "Angul", roleName: "DHO", userName: "N. Pradhan", district: "Angul" },
@@ -46,7 +46,7 @@ const odishaRoles: RoleInfo[] = [
   { id: "od_b_brah", stateId: "odisha", label: "Block — Brahmagiri", scope: "block", location: "Brahmagiri", roleName: "Block Worker", userName: "B. Rout", district: "Puri", block: "Brahmagiri" },
   { id: "od_b_tal", stateId: "odisha", label: "Block — Talcher", scope: "block", location: "Talcher", roleName: "Block Worker", userName: "G. Swain", district: "Angul", block: "Talcher" },
   { id: "od_b_nil", stateId: "odisha", label: "Block — Nilgiri", scope: "block", location: "Nilgiri", roleName: "Block Worker", userName: "J. Nayak", district: "Balasore", block: "Nilgiri" },
-  { id: "od_m_bbsr", stateId: "odisha", label: "Municipality — Bhubaneswar MC", scope: "municipality", location: "Bhubaneswar MC", roleName: "Municipal Officer", userName: "P. Sethi", district: "Khurda", block: "Bhubaneswar MC", areaType: "urban" },
+  { id: "od_m_bbsr", stateId: "odisha", label: "Municipality — Bhubaneswar MC", scope: "municipality", location: "Bhubaneswar MC", roleName: "Municipal Officer", userName: "P. Sethi", district: "Khordha", block: "Bhubaneswar MC", areaType: "urban" },
   { id: "od_m_cut", stateId: "odisha", label: "Municipality — Cuttack MC", scope: "municipality", location: "Cuttack MC", roleName: "Municipal Officer", userName: "K. Kar", district: "Cuttack", block: "Cuttack MC", areaType: "urban" },
   { id: "od_m_rkl", stateId: "odisha", label: "Municipality — Rourkela MC", scope: "municipality", location: "Rourkela MC", roleName: "Municipal Officer", userName: "R. Minz", district: "Sundargarh", block: "Rourkela MC", areaType: "urban" },
   { id: "od_m_sam", stateId: "odisha", label: "Municipality — Sambalpur MC", scope: "municipality", location: "Sambalpur MC", roleName: "Municipal Officer", userName: "S. Pradhan", district: "Sambalpur", block: "Sambalpur MC", areaType: "urban" },

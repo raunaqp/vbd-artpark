@@ -323,6 +323,7 @@ const AP: StateBundle = {
     "East Godavari": [17.0, 81.8], "Krishna": [16.6, 80.6], "S.P.S. Nellore": [14.4, 79.9], "Prakasam": [15.3, 79.4],
     "Srikakulam": [18.3, 84.0], "Visakhapatnam": [17.7, 83.3], "Vizianagaram": [18.1, 83.4], "West Godavari": [16.9, 81.2],
     "Guntur": [16.3, 80.4], "Kurnool": [15.8, 78.0], "Anakapalli": [17.7, 83.0], "Eluru": [16.7, 81.1],
+    "Vijayawada": [16.51, 80.65], "NTR": [16.55, 80.62],
     "Tenali": [16.24, 80.64], "Mangalagiri": [16.43, 80.57], "Amaravathi": [16.57, 80.36], "Pedakakani": [16.25, 80.48],
     "Guntur West": [16.31, 80.38], "Bheemunipatnam": [17.89, 83.45], "Vizag MC": [17.72, 83.30], "Gajuwaka": [17.70, 83.22],
     "Pendurthi": [17.76, 83.21], "Anakapalle": [17.69, 83.00], "Nandyal": [15.48, 78.48], "Adoni": [15.63, 77.28],
@@ -623,7 +624,7 @@ const ODISHA: StateBundle = {
   districtCoordinates: {
     "Khordha": [20.18, 85.62], "Cuttack": [20.46, 85.88], "Puri": [19.81, 85.83],
     "Angul": [20.84, 85.10], "Balasore": [21.49, 86.93], "Ganjam": [19.39, 84.88],
-    "Sambalpur": [21.47, 83.97], "Sundargarh": [22.12, 84.03],
+    "Sambalpur": [21.47, 83.97], "Sundargarh": [22.12, 84.03], "Mayurbhanj": [21.93, 86.74],
     "Nilgiri": [21.46, 86.78], "Soro": [21.28, 86.69], "Balasore Sadar": [21.49, 86.93], "Basta": [21.66, 86.97],
     "Bhubaneswar MC": [20.27, 85.84], "Jatni": [20.17, 85.70], "Banapur": [19.78, 85.16], "Begunia": [20.21, 85.36],
     "Cuttack MC": [20.46, 85.88], "Salepur": [20.55, 86.07], "Niali": [20.30, 85.93],
@@ -876,7 +877,7 @@ const KARNATAKA: StateBundle = {
   mapCenter: [13.50, 76.50],
   mapZoom: 7,
   districtCoordinates: {
-    "Bengaluru Urban": [12.97, 77.59], "Mysuru": [12.30, 76.65], "Belagavi": [15.85, 74.50], "Udupi": [13.34, 74.74], "Tumakuru": [13.34, 77.10],
+    "Bengaluru Urban": [12.97, 77.59], "Mysuru": [12.30, 76.65], "Belagavi": [15.85, 74.50], "Udupi": [13.34, 74.74], "Tumakuru": [13.34, 77.10], "Dakshina Kannada": [12.87, 74.88],
     "BBMP East Zone": [12.98, 77.70], "BBMP South Zone": [12.91, 77.58], "Yelahanka": [13.10, 77.59], "Anekal": [12.71, 77.69],
     "Mysuru City": [12.30, 76.65], "Nanjangud": [12.12, 76.68], "Hunsur": [12.30, 76.29],
     "Udupi City": [13.34, 74.74], "Kundapura": [13.62, 74.69], "Karkala": [13.21, 74.99],

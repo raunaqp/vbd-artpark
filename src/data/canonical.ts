@@ -561,10 +561,17 @@ function candidateLeaves(stateLabel: string, filters: DashboardFiltersLike): Lea
         m.district.blocks.some((x) => x.name === filters.block),
     );
     if (parent) {
+      const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
       const muni = parent.district.municipalities.find((m) => m.name === filters.block);
-      if (muni) muni.wards.forEach((w) => out.push({ name: w.name, weeklyLast8: w.weekly.slice(-8), parentDistrict: parent.name, parentBlock: muni.name, population: parent.population / 50, level: "ward" }));
+      if (muni) {
+        const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+        wards.forEach((w) => out.push({ name: w.name, weeklyLast8: w.weekly.slice(-8), parentDistrict: parent.name, parentBlock: muni.name, population: parent.population / 50, level: "ward" }));
+      }
       const block = parent.district.blocks.find((b) => b.name === filters.block);
-      if (block) block.villages.forEach((v) => out.push({ name: v.name, weeklyLast8: v.weekly.slice(-8), parentDistrict: parent.name, parentBlock: block.name, population: parent.population / 50, level: "ward" }));
+      if (block) {
+        const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+        villages.forEach((v) => out.push({ name: v.name, weeklyLast8: v.weekly.slice(-8), parentDistrict: parent.name, parentBlock: block.name, population: parent.population / 50, level: "ward" }));
+      }
     }
   } else if (filters.district && filters.district !== "All Districts") {
     const parent = metrics.find((m) => m.name === filters.district);

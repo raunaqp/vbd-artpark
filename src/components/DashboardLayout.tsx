@@ -63,12 +63,9 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   return (
     <div className="min-h-screen flex flex-col">
       <header className="dashboard-header px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight">Early Warning System for Vector-Borne Diseases</h1>
-            <p className="text-xs opacity-80">Department of Health</p>
-          </div>
-          <span className="ml-2 inline-flex items-center rounded-full bg-amber-500/20 text-amber-100 border border-amber-300/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Demo</span>
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Early Warning System for Vector-Borne Diseases</h1>
+          <p className="text-xs opacity-80">Department of Health</p>
         </div>
         <div className="flex items-center gap-3">
           {/* State Selector */}

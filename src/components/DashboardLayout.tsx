@@ -230,8 +230,8 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
             const allowedIds: TabId[] = isDataOperator
               ? ["surveillance", "upload"]
               : isAdmin
-              ? [...baseTabs.map((t) => t.id), adminTab.id]
-              : baseTabs.map((t) => t.id);
+              ? [...baseTabs.map((t) => t.id) as TabId[], adminTab.id]
+              : baseTabs.map((t) => t.id) as TabId[];
             const fullTabs = [...baseTabs, adminTab];
             const visible = fullTabs.filter((t) => allowedIds.includes(t.id));
             return visible.map((tab) => (

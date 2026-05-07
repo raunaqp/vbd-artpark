@@ -7,6 +7,7 @@ import { getDataQualityIssues } from "@/data/mockData";
 import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecastCsv } from "@/lib/exportCsv";
 import { useEffect, useState } from "react";
 import { useSectionToggles } from "@/lib/sectionVisibility";
+import Footer from "@/components/Footer";
 
 const baseTabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },

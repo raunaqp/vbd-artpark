@@ -118,7 +118,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
                 <div className="text-xs font-semibold">{f.label}</div>
                 <div className="text-2xl font-bold mt-1">{f.cases}</div>
                 <div className="text-[11px] opacity-80">projected cases</div>
-                <div className="mt-1.5"><span className={`risk-badge-${f.risk}`}>{f.risk}</span></div>
+                <div className="mt-1.5"><span className={`risk-badge-${f.risk}`}>{f.riskLabel ?? f.risk}</span></div>
               </div>
             );
           })}

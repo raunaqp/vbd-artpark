@@ -1,8 +1,14 @@
-// Auto-generated mock dataset — PRISM-H Dashboard v3.1
+// Auto-generated mock dataset — PRISM-H Dashboard v3.2
 // 21 districts × 36 weeks × 4 levels (district/mun/block → ward/village)
-// Period: Sep 7, 2025 → May 10, 2026 (week endings)
-// Seasonality: peak Oct 2025, trough Feb-Mar 2026, early signal rising May 2026
-// Forecast spread: realistic distribution across Low/Moderate/High/Very High at every level
+// Period: Sep 7, 2025 → May 10, 2026
+//
+// v3.2 fixes:
+//   - Forecasts grounded in each geography's OWN trajectory
+//   - Wards with low/zero recent cases cannot get high forecasts
+//   - Wards with high recent cases cannot get low forecasts
+//   - Trend (rising/falling) drives forecast direction
+//   - Distribution: ~49% Low, ~18% Moderate, ~14% High, ~19% Very High
+//     (May = low season, pockets of early signal → realistic)
 
 export interface WardData { name: string; weekly: number[]; }
 export interface MunicipalityData { name: string; weekly: number[]; wards: WardData[]; }
@@ -20,7 +26,7 @@ export interface DistrictData {
 export interface ForecastEntry {
   weeks: number[];
   outbreak_prob: number;
-  level?: 'low'|'moderate'|'high'|'very_high';
+  level: 'low'|'moderate'|'high'|'very_high';
   mu?: number;
   sigma?: number;
 }
@@ -18126,8 +18132,6 @@ export const MOCK_DATASET: Record<string, DistrictData> =
   }
 }
 
-// Population estimates — Census 2011 + projection.
-// TODO: replace with ECI 2024 voter-roll-derived numbers when PRISM-H pipeline confirms.
 export const DISTRICT_POPULATION: Record<string, number> = {
   "Bengaluru Urban": 13608000,
   "Mysuru": 3270000,
@@ -18152,854 +18156,871 @@ export const DISTRICT_POPULATION: Record<string, number> = {
   "NTR": 2220000
 };
 
-// WHO baselines (μ, σ) per district. Computed from peak-period scaled to early-season.
-// In production, computed from ≥1 year history of same calendar week.
 export const WHO_BASELINES: Record<string, {mu:number; sigma:number}> = {
   "Bengaluru Urban": {
     "mu": 119,
-    "sigma": 23
+    "sigma": 58
   },
   "Mysuru": {
     "mu": 34,
-    "sigma": 5
+    "sigma": 16
   },
   "Udupi": {
     "mu": 61,
-    "sigma": 8
+    "sigma": 26
   },
   "Dakshina Kannada": {
     "mu": 78,
-    "sigma": 8
+    "sigma": 32
   },
   "Belagavi": {
     "mu": 39,
-    "sigma": 5
+    "sigma": 17
   },
   "Tumakuru": {
     "mu": 26,
-    "sigma": 5
+    "sigma": 10
   },
   "Khordha": {
     "mu": 92,
-    "sigma": 15
+    "sigma": 42
   },
   "Cuttack": {
     "mu": 75,
-    "sigma": 10
+    "sigma": 33
   },
   "Puri": {
     "mu": 56,
-    "sigma": 6
+    "sigma": 23
   },
   "Balasore": {
     "mu": 64,
-    "sigma": 10
+    "sigma": 30
   },
   "Sundargarh": {
     "mu": 52,
-    "sigma": 8
+    "sigma": 24
   },
   "Angul": {
     "mu": 43,
-    "sigma": 5
+    "sigma": 18
   },
   "Mayurbhanj": {
     "mu": 35,
-    "sigma": 5
+    "sigma": 15
   },
   "Sambalpur": {
     "mu": 46,
-    "sigma": 5
+    "sigma": 18
   },
   "Visakhapatnam": {
     "mu": 88,
-    "sigma": 8
+    "sigma": 34
   },
   "Vijayawada": {
     "mu": 86,
-    "sigma": 12
+    "sigma": 38
   },
   "Guntur": {
     "mu": 66,
-    "sigma": 8
+    "sigma": 28
   },
   "Krishna": {
     "mu": 50,
-    "sigma": 6
+    "sigma": 21
   },
   "Kurnool": {
     "mu": 46,
-    "sigma": 7
+    "sigma": 21
   },
   "East Godavari": {
     "mu": 60,
-    "sigma": 9
+    "sigma": 27
   },
   "NTR": {
     "mu": 62,
-    "sigma": 11
+    "sigma": 29
   }
 };
 
-// District-level forecast — top-level summary.
-// Spread: 5 Low, 7 Moderate, 5 High, 4 Very High across 21 districts.
 export const FORECAST: Record<string, ForecastEntry> = {
   "Bengaluru Urban": {
     "weeks": [
-      141,
-      168,
-      194,
-      214
+      207,
+      242,
+      273,
+      269
     ],
-    "outbreak_prob": 89
-  },
-  "Udupi": {
-    "weeks": [
-      55,
-      70,
-      78,
-      90
-    ],
-    "outbreak_prob": 73
-  },
-  "Dakshina Kannada": {
-    "weeks": [
-      73,
-      89,
-      101,
-      124
-    ],
-    "outbreak_prob": 84
+    "outbreak_prob": 71,
+    "level": "very_high"
   },
   "Mysuru": {
     "weeks": [
-      37,
-      37,
-      36,
-      36
+      15,
+      18,
+      18,
+      22
     ],
-    "outbreak_prob": 50
+    "outbreak_prob": 10,
+    "level": "low"
+  },
+  "Udupi": {
+    "weeks": [
+      110,
+      114,
+      127,
+      135
+    ],
+    "outbreak_prob": 72,
+    "level": "very_high"
+  },
+  "Dakshina Kannada": {
+    "weeks": [
+      150,
+      174,
+      189,
+      198
+    ],
+    "outbreak_prob": 76,
+    "level": "very_high"
   },
   "Belagavi": {
-    "weeks": [
-      42,
-      40,
-      39,
-      42
-    ],
-    "outbreak_prob": 51
-  },
-  "Tumakuru": {
-    "weeks": [
-      17,
-      17,
-      15,
-      14
-    ],
-    "outbreak_prob": 6
-  },
-  "Khordha": {
-    "weeks": [
-      100,
-      124,
-      139,
-      161
-    ],
-    "outbreak_prob": 87
-  },
-  "Balasore": {
-    "weeks": [
-      58,
-      70,
-      86,
-      96
-    ],
-    "outbreak_prob": 70
-  },
-  "Sundargarh": {
-    "weeks": [
-      59,
-      58,
-      57,
-      55
-    ],
-    "outbreak_prob": 45
-  },
-  "Cuttack": {
-    "weeks": [
-      80,
-      76,
-      81,
-      77
-    ],
-    "outbreak_prob": 35
-  },
-  "Puri": {
-    "weeks": [
-      61,
-      58,
-      62,
-      61
-    ],
-    "outbreak_prob": 31
-  },
-  "Mayurbhanj": {
-    "weeks": [
-      32,
-      41,
-      44,
-      51
-    ],
-    "outbreak_prob": 55
-  },
-  "Angul": {
-    "weeks": [
-      29,
-      27,
-      24,
-      23
-    ],
-    "outbreak_prob": 17
-  },
-  "Sambalpur": {
-    "weeks": [
-      30,
-      28,
-      28,
-      25
-    ],
-    "outbreak_prob": 15
-  },
-  "Visakhapatnam": {
-    "weeks": [
-      81,
-      102,
-      110,
-      132
-    ],
-    "outbreak_prob": 83
-  },
-  "Vijayawada": {
-    "weeks": [
-      78,
-      97,
-      111,
-      123
-    ],
-    "outbreak_prob": 70
-  },
-  "Krishna": {
-    "weeks": [
-      47,
-      54,
-      63,
-      72
-    ],
-    "outbreak_prob": 78
-  },
-  "Guntur": {
-    "weeks": [
-      67,
-      73,
-      73,
-      71
-    ],
-    "outbreak_prob": 34
-  },
-  "NTR": {
-    "weeks": [
-      66,
-      67,
-      70,
-      68
-    ],
-    "outbreak_prob": 28
-  },
-  "Kurnool": {
     "weeks": [
       29,
       28,
       26,
-      23
+      27
     ],
-    "outbreak_prob": 8
+    "outbreak_prob": 12,
+    "level": "low"
+  },
+  "Tumakuru": {
+    "weeks": [
+      6,
+      7,
+      7,
+      7
+    ],
+    "outbreak_prob": 8,
+    "level": "low"
+  },
+  "Khordha": {
+    "weeks": [
+      216,
+      214,
+      239,
+      256
+    ],
+    "outbreak_prob": 77,
+    "level": "very_high"
+  },
+  "Cuttack": {
+    "weeks": [
+      42,
+      47,
+      47,
+      52
+    ],
+    "outbreak_prob": 11,
+    "level": "low"
+  },
+  "Puri": {
+    "weeks": [
+      35,
+      39,
+      43,
+      47
+    ],
+    "outbreak_prob": 12,
+    "level": "low"
+  },
+  "Balasore": {
+    "weeks": [
+      113,
+      130,
+      146,
+      148
+    ],
+    "outbreak_prob": 72,
+    "level": "very_high"
+  },
+  "Sundargarh": {
+    "weeks": [
+      85,
+      86,
+      97,
+      115
+    ],
+    "outbreak_prob": 55,
+    "level": "high"
+  },
+  "Angul": {
+    "weeks": [
+      24,
+      25,
+      24,
+      25
+    ],
+    "outbreak_prob": 11,
+    "level": "low"
+  },
+  "Mayurbhanj": {
+    "weeks": [
+      13,
+      15,
+      16,
+      17
+    ],
+    "outbreak_prob": 9,
+    "level": "low"
+  },
+  "Sambalpur": {
+    "weeks": [
+      21,
+      26,
+      26,
+      30
+    ],
+    "outbreak_prob": 11,
+    "level": "low"
+  },
+  "Visakhapatnam": {
+    "weeks": [
+      170,
+      193,
+      211,
+      214
+    ],
+    "outbreak_prob": 76,
+    "level": "very_high"
+  },
+  "Vijayawada": {
+    "weeks": [
+      147,
+      167,
+      161,
+      183
+    ],
+    "outbreak_prob": 70,
+    "level": "very_high"
+  },
+  "Guntur": {
+    "weeks": [
+      40,
+      41,
+      50,
+      54
+    ],
+    "outbreak_prob": 12,
+    "level": "low"
+  },
+  "Krishna": {
+    "weeks": [
+      88,
+      102,
+      101,
+      124
+    ],
+    "outbreak_prob": 73,
+    "level": "very_high"
+  },
+  "Kurnool": {
+    "weeks": [
+      12,
+      12,
+      13,
+      11
+    ],
+    "outbreak_prob": 8,
+    "level": "low"
   },
   "East Godavari": {
     "weeks": [
-      42,
-      37,
+      36,
+      34,
       33,
-      31
+      35
     ],
-    "outbreak_prob": 15
+    "outbreak_prob": 11,
+    "level": "low"
+  },
+  "NTR": {
+    "weeks": [
+      44,
+      41,
+      43,
+      40
+    ],
+    "outbreak_prob": 12,
+    "level": "low"
   }
 };
 
-// Hierarchical forecast — every geography (district, municipality, block, ward, village)
-// has its own 4-week forecast and risk class.
-// Use this for child-level rendering on the Forecast tab and choropleth maps.
 export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Bengaluru Urban": {
     "district_forecast": {
       "weeks": [
-        141,
-        168,
-        194,
-        214
+        207,
+        242,
+        273,
+        269
       ],
-      "outbreak_prob": 89
+      "outbreak_prob": 71,
+      "level": "very_high",
+      "mu": 119,
+      "sigma": 58
     },
     "district_baseline": {
       "mu": 119,
-      "sigma": 23
+      "sigma": 58
     },
     "district_level": "very_high",
     "municipalities": {
       "BBMP East Zone": {
         "forecast": {
           "weeks": [
-            21,
-            20,
-            21,
-            20
+            24,
+            27,
+            29,
+            29
           ],
-          "outbreak_prob": 49,
-          "level": "moderate",
+          "outbreak_prob": 45,
+          "level": "high",
           "mu": 18,
-          "sigma": 3
+          "sigma": 9
         },
         "wards": {
           "Whitefield": {
             "weeks": [
               4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Mahadevapura": {
+            "weeks": [
+              6,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 49,
+            "level": "high",
+            "mu": 4,
+            "sigma": 2
+          },
+          "Marathahalli": {
+            "weeks": [
+              3,
               3,
               3,
               4
             ],
-            "outbreak_prob": 35,
+            "outbreak_prob": 30,
             "level": "moderate",
-            "mu": 3,
-            "sigma": 1
+            "mu": 2,
+            "sigma": 2
           },
-          "Mahadevapura": {
+          "Hoodi": {
             "weeks": [
               5,
               5,
               6,
               6
             ],
-            "outbreak_prob": 55,
+            "outbreak_prob": 48,
             "level": "high",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Marathahalli": {
-            "weeks": [
-              1,
-              1,
-              1,
-              1
-            ],
-            "outbreak_prob": 9,
-            "level": "low",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Hoodi": {
-            "weeks": [
-              4,
-              4,
-              3,
-              4
-            ],
-            "outbreak_prob": 41,
-            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "K.R. Pura": {
             "weeks": [
-              2,
-              2,
-              2,
+              1,
+              1,
+              1,
               2
             ],
-            "outbreak_prob": 52,
+            "outbreak_prob": 24,
             "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Bellandur": {
             "weeks": [
-              4,
               5,
-              5,
-              5
+              6,
+              6,
+              8
             ],
-            "outbreak_prob": 48,
-            "level": "moderate",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "BBMP South Zone": {
         "forecast": {
           "weeks": [
-            13,
-            17,
-            18,
-            21
+            25,
+            31,
+            30,
+            36
           ],
-          "outbreak_prob": 90,
+          "outbreak_prob": 75,
           "level": "very_high",
           "mu": 12,
-          "sigma": 2
+          "sigma": 6
         },
         "wards": {
           "Jayanagar": {
             "weeks": [
-              4,
-              4,
-              5,
-              5
+              11,
+              12,
+              11,
+              13
             ],
-            "outbreak_prob": 64,
-            "level": "high",
+            "outbreak_prob": 82,
+            "level": "very_high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "JP Nagar": {
             "weeks": [
-              3,
-              3,
-              4,
-              4
+              5,
+              6,
+              6,
+              7
             ],
-            "outbreak_prob": 67,
+            "outbreak_prob": 57,
             "level": "high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "BTM Layout": {
             "weeks": [
-              3,
-              3,
-              4,
-              5
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 93,
-            "level": "very_high",
+            "outbreak_prob": 28,
+            "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Bommanahalli": {
             "weeks": [
               4,
-              4,
+              5,
               5,
               5
             ],
-            "outbreak_prob": 78,
-            "level": "high",
+            "outbreak_prob": 32,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "HSR Layout": {
             "weeks": [
               4,
               5,
-              6,
-              7
+              5,
+              6
             ],
-            "outbreak_prob": 89,
-            "level": "very_high",
+            "outbreak_prob": 34,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Begur": {
             "weeks": [
-              3,
-              3,
-              4,
-              4
+              1,
+              1,
+              1,
+              2
             ],
-            "outbreak_prob": 94,
-            "level": "very_high",
+            "outbreak_prob": 24,
+            "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "BBMP West Zone": {
         "forecast": {
           "weeks": [
-            18,
-            22,
-            24,
-            29
+            21,
+            21,
+            23,
+            28
           ],
-          "outbreak_prob": 93,
-          "level": "very_high",
+          "outbreak_prob": 33,
+          "level": "moderate",
           "mu": 16,
-          "sigma": 3
+          "sigma": 8
         },
         "wards": {
           "Rajajinagar": {
             "weeks": [
-              4,
               5,
               6,
-              6
-            ],
-            "outbreak_prob": 73,
-            "level": "high",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Vijaynagar": {
-            "weeks": [
-              5,
-              5,
-              4,
-              4
-            ],
-            "outbreak_prob": 49,
-            "level": "moderate",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Basaveshwaranagar": {
-            "weeks": [
-              3,
-              4,
-              4,
-              4
-            ],
-            "outbreak_prob": 72,
-            "level": "high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Mahalakshmi Layout": {
-            "weeks": [
-              2,
-              2,
-              3,
-              3
-            ],
-            "outbreak_prob": 59,
-            "level": "high",
-            "mu": 1,
-            "sigma": 1
-          },
-          "Kamakshipalya": {
-            "weeks": [
-              5,
-              5,
-              6,
-              6
-            ],
-            "outbreak_prob": 57,
-            "level": "high",
-            "mu": 4,
-            "sigma": 1
-          }
-        }
-      },
-      "BBMP Mahadevapura": {
-        "forecast": {
-          "weeks": [
-            11,
-            13,
-            14,
-            15
-          ],
-          "outbreak_prob": 59,
-          "level": "high",
-          "mu": 10,
-          "sigma": 2
-        },
-        "wards": {
-          "Varthur": {
-            "weeks": [
-              3,
-              3,
-              4,
-              4
-            ],
-            "outbreak_prob": 64,
-            "level": "high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Hagadur": {
-            "weeks": [
-              3,
-              3,
-              2,
-              2
-            ],
-            "outbreak_prob": 18,
-            "level": "low",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Doddanekkundi": {
-            "weeks": [
-              4,
-              3,
-              4,
-              3
-            ],
-            "outbreak_prob": 35,
-            "level": "moderate",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Garudacharpalya": {
-            "weeks": [
-              2,
-              3,
-              3,
-              2
-            ],
-            "outbreak_prob": 42,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          }
-        }
-      },
-      "BBMP Bommanahalli": {
-        "forecast": {
-          "weeks": [
-            16,
-            20,
-            22,
-            24
-          ],
-          "outbreak_prob": 85,
-          "level": "very_high",
-          "mu": 13,
-          "sigma": 3
-        },
-        "wards": {
-          "Hongasandra": {
-            "weeks": [
-              4,
-              5,
-              6,
-              6
-            ],
-            "outbreak_prob": 59,
-            "level": "high",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Mangammanapalya": {
-            "weeks": [
-              5,
-              5,
-              5,
-              6
-            ],
-            "outbreak_prob": 74,
-            "level": "high",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Singasandra": {
-            "weeks": [
-              3,
-              3,
-              4,
-              4
-            ],
-            "outbreak_prob": 73,
-            "level": "high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Bilekahalli": {
-            "weeks": [
-              4,
-              5,
               6,
               7
             ],
-            "outbreak_prob": 87,
-            "level": "very_high",
-            "mu": 3,
-            "sigma": 1
-          }
-        }
-      },
-      "BBMP Yelahanka": {
-        "forecast": {
-          "weeks": [
-            16,
-            18,
-            23,
-            24
-          ],
-          "outbreak_prob": 95,
-          "level": "very_high",
-          "mu": 13,
-          "sigma": 3
-        },
-        "wards": {
-          "Yelahanka": {
-            "weeks": [
-              2,
-              2,
-              3,
-              2
-            ],
             "outbreak_prob": 34,
             "level": "moderate",
-            "mu": 2,
-            "sigma": 1
+            "mu": 4,
+            "sigma": 2
           },
-          "Jakkur": {
+          "Vijaynagar": {
             "weeks": [
               5,
               6,
               7,
               8
             ],
-            "outbreak_prob": 94,
-            "level": "very_high",
+            "outbreak_prob": 48,
+            "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
-          "Thanisandra": {
+          "Basaveshwaranagar": {
             "weeks": [
-              4,
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 30,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Mahalakshmi Layout": {
+            "weeks": [
+              1,
+              1,
+              1,
+              2
+            ],
+            "outbreak_prob": 24,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 2
+          },
+          "Kamakshipalya": {
+            "weeks": [
               5,
+              6,
               6,
               7
             ],
-            "outbreak_prob": 83,
-            "level": "very_high",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Byatarayanapura": {
-            "weeks": [
-              5,
-              5,
-              5,
-              6
-            ],
-            "outbreak_prob": 59,
-            "level": "high",
+            "outbreak_prob": 34,
+            "level": "moderate",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
-      "BBMP RR Nagar": {
+      "BBMP Mahadevapura": {
         "forecast": {
           "weeks": [
-            6,
-            6,
-            6,
-            6
+            17,
+            18,
+            20,
+            22
           ],
-          "outbreak_prob": 5,
-          "level": "low",
+          "outbreak_prob": 55,
+          "level": "high",
           "mu": 10,
-          "sigma": 2
+          "sigma": 5
         },
         "wards": {
-          "Rajarajeshwarinagar": {
+          "Varthur": {
+            "weeks": [
+              3,
+              4,
+              4,
+              5
+            ],
+            "outbreak_prob": 34,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Hagadur": {
             "weeks": [
               4,
+              5,
+              5,
+              5
+            ],
+            "outbreak_prob": 26,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 2
+          },
+          "Doddanekkundi": {
+            "weeks": [
+              4,
+              4,
+              5,
+              6
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Garudacharpalya": {
+            "weeks": [
+              6,
               6,
               6,
               7
             ],
-            "outbreak_prob": 68,
+            "outbreak_prob": 71,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 2
+          }
+        }
+      },
+      "BBMP Bommanahalli": {
+        "forecast": {
+          "weeks": [
+            33,
+            34,
+            40,
+            42
+          ],
+          "outbreak_prob": 77,
+          "level": "very_high",
+          "mu": 13,
+          "sigma": 7
+        },
+        "wards": {
+          "Hongasandra": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 48,
             "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
-          "Hemmigepura": {
+          "Mangammanapalya": {
+            "weeks": [
+              15,
+              17,
+              19,
+              20
+            ],
+            "outbreak_prob": 94,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 2
+          },
+          "Singasandra": {
+            "weeks": [
+              2,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 26,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Bilekahalli": {
+            "weeks": [
+              9,
+              10,
+              11,
+              12
+            ],
+            "outbreak_prob": 79,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 2
+          }
+        }
+      },
+      "BBMP Yelahanka": {
+        "forecast": {
+          "weeks": [
+            23,
+            25,
+            27,
+            32
+          ],
+          "outbreak_prob": 71,
+          "level": "very_high",
+          "mu": 13,
+          "sigma": 6
+        },
+        "wards": {
+          "Yelahanka": {
             "weeks": [
               3,
               3,
               4,
               4
             ],
-            "outbreak_prob": 56,
-            "level": "high",
+            "outbreak_prob": 31,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
+          },
+          "Jakkur": {
+            "weeks": [
+              6,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 49,
+            "level": "high",
+            "mu": 4,
+            "sigma": 2
+          },
+          "Thanisandra": {
+            "weeks": [
+              8,
+              9,
+              10,
+              11
+            ],
+            "outbreak_prob": 76,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Byatarayanapura": {
+            "weeks": [
+              6,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 49,
+            "level": "high",
+            "mu": 4,
+            "sigma": 2
+          }
+        }
+      },
+      "BBMP RR Nagar": {
+        "forecast": {
+          "weeks": [
+            21,
+            23,
+            25,
+            28
+          ],
+          "outbreak_prob": 74,
+          "level": "very_high",
+          "mu": 10,
+          "sigma": 5
+        },
+        "wards": {
+          "Rajarajeshwarinagar": {
+            "weeks": [
+              13,
+              15,
+              15,
+              17
+            ],
+            "outbreak_prob": 88,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 2
+          },
+          "Hemmigepura": {
+            "weeks": [
+              2,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 26,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 2
           },
           "Kengeri": {
             "weeks": [
-              3,
-              2,
-              2,
-              2
+              5,
+              5,
+              6,
+              7
             ],
-            "outbreak_prob": 9,
-            "level": "low",
+            "outbreak_prob": 32,
+            "level": "moderate",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "BBMP Dasarahalli": {
         "forecast": {
           "weeks": [
-            11,
-            12,
-            12,
-            13
+            15,
+            18,
+            21,
+            22
           ],
-          "outbreak_prob": 62,
-          "level": "high",
+          "outbreak_prob": 72,
+          "level": "very_high",
           "mu": 9,
-          "sigma": 2
+          "sigma": 4
         },
         "wards": {
           "Peenya": {
             "weeks": [
               3,
-              4,
-              5,
-              6
+              3,
+              3,
+              4
             ],
-            "outbreak_prob": 94,
-            "level": "very_high",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Bagalakunte": {
             "weeks": [
               5,
-              5,
               6,
-              6
+              7,
+              7
             ],
-            "outbreak_prob": 61,
+            "outbreak_prob": 47,
             "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Lakshmidevinagar": {
             "weeks": [
-              4,
-              4,
-              5,
-              6
+              8,
+              10,
+              11,
+              11
             ],
-            "outbreak_prob": 89,
+            "outbreak_prob": 80,
             "level": "very_high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -19008,116 +19029,116 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Anekal": {
         "forecast": {
           "weeks": [
-            8,
-            9,
-            9,
-            11
+            14,
+            17,
+            18,
+            21
           ],
-          "outbreak_prob": 70,
-          "level": "high",
+          "outbreak_prob": 72,
+          "level": "very_high",
           "mu": 8,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Attibele": {
             "weeks": [
-              4,
+              5,
               5,
               6,
               7
             ],
-            "outbreak_prob": 93,
-            "level": "very_high",
+            "outbreak_prob": 49,
+            "level": "high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Jigani": {
             "weeks": [
-              1,
-              1,
-              1,
-              1
+              2,
+              2,
+              2,
+              3
             ],
-            "outbreak_prob": 9,
-            "level": "low",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Sarjapur": {
             "weeks": [
               2,
-              1,
               2,
-              1
+              2,
+              2
             ],
             "outbreak_prob": 28,
             "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Chandapura": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              8,
+              8,
+              9,
+              10
             ],
-            "outbreak_prob": 52,
-            "level": "moderate",
+            "outbreak_prob": 77,
+            "level": "very_high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Bengaluru South": {
         "forecast": {
           "weeks": [
-            7,
-            8,
-            9,
-            11
+            10,
+            11,
+            13,
+            13
           ],
-          "outbreak_prob": 85,
-          "level": "very_high",
+          "outbreak_prob": 56,
+          "level": "high",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Uttarahalli": {
             "weeks": [
               5,
+              5,
               6,
-              7,
-              8
+              6
             ],
-            "outbreak_prob": 95,
-            "level": "very_high",
+            "outbreak_prob": 31,
+            "level": "moderate",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Kanakapura Road": {
             "weeks": [
-              2,
-              2,
               3,
-              3
+              3,
+              3,
+              4
             ],
             "outbreak_prob": 30,
             "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Konanakunte": {
             "weeks": [
-              1,
-              1,
-              1,
-              1
+              3,
+              3,
+              3,
+              4
             ],
-            "outbreak_prob": 9,
-            "level": "low",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
@@ -19129,35 +19150,35 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
             6,
             7
           ],
-          "outbreak_prob": 73,
-          "level": "high",
+          "outbreak_prob": 32,
+          "level": "moderate",
           "mu": 4,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Hoskote outskirts": {
             "weeks": [
-              2,
               3,
               3,
-              3
-            ],
-            "outbreak_prob": 36,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Devanahalli outskirts": {
-            "weeks": [
               3,
-              3,
-              2,
-              3
+              4
             ],
             "outbreak_prob": 30,
             "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
+          },
+          "Devanahalli outskirts": {
+            "weeks": [
+              2,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 26,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 2
           }
         }
       }
@@ -19166,56 +19187,59 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Mysuru": {
     "district_forecast": {
       "weeks": [
-        37,
-        37,
-        36,
-        36
+        15,
+        18,
+        18,
+        22
       ],
-      "outbreak_prob": 50
+      "outbreak_prob": 10,
+      "level": "low",
+      "mu": 34,
+      "sigma": 16
     },
     "district_baseline": {
       "mu": 34,
-      "sigma": 5
+      "sigma": 16
     },
-    "district_level": "moderate",
+    "district_level": "low",
     "municipalities": {
       "Mysuru City Corporation": {
         "forecast": {
           "weeks": [
-            15,
-            14,
-            13,
-            11
+            10,
+            11,
+            12,
+            14
           ],
-          "outbreak_prob": 19,
+          "outbreak_prob": 10,
           "level": "low",
           "mu": 22,
-          "sigma": 3
+          "sigma": 10
         },
         "wards": {
           "Jayalakshmipuram": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              1,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 5,
+            "outbreak_prob": 9,
             "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Saraswathipuram": {
             "weeks": [
-              2,
-              2,
-              2,
+              1,
+              1,
+              1,
               1
             ],
-            "outbreak_prob": 22,
+            "outbreak_prob": 8,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Vijayanagar": {
             "weeks": [
@@ -19224,46 +19248,46 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 9,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Kuvempunagar": {
-            "weeks": [
-              4,
-              5,
-              6,
-              7
-            ],
-            "outbreak_prob": 84,
-            "level": "very_high",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Hebbal": {
-            "weeks": [
-              6,
-              6,
-              6,
-              7
-            ],
-            "outbreak_prob": 76,
-            "level": "high",
-            "mu": 5,
-            "sigma": 1
-          },
-          "Vidyaranyapuram": {
             "weeks": [
               3,
               4,
               4,
               4
             ],
-            "outbreak_prob": 31,
+            "outbreak_prob": 26,
             "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
+          },
+          "Hebbal": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 5,
+            "sigma": 2
+          },
+          "Vidyaranyapuram": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 3,
+            "sigma": 2
           }
         }
       }
@@ -19272,596 +19296,134 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Nanjangud": {
         "forecast": {
           "weeks": [
-            6,
-            7,
-            8,
-            8
+            2,
+            2,
+            3,
+            3
           ],
-          "outbreak_prob": 60,
-          "level": "high",
+          "outbreak_prob": 9,
+          "level": "low",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Nanjangud Town": {
-            "weeks": [
-              3,
-              2,
-              2,
-              3
-            ],
-            "outbreak_prob": 46,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Hadinaru": {
-            "weeks": [
-              2,
-              2,
-              2,
-              3
-            ],
-            "outbreak_prob": 48,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Chamalapur": {
             "weeks": [
               1,
               1,
               1,
               1
             ],
-            "outbreak_prob": 12,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
+          },
+          "Hadinaru": {
+            "weeks": [
+              1,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 14,
+            "level": "low",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Chamalapur": {
+            "weeks": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 2,
+            "sigma": 2
           }
         }
       },
       "T. Narsipur": {
         "forecast": {
           "weeks": [
-            2,
-            2,
-            2,
-            2
+            1,
+            1,
+            1,
+            1
           ],
-          "outbreak_prob": 22,
+          "outbreak_prob": 8,
           "level": "low",
           "mu": 3,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "T. Narsipur": {
             "weeks": [
-              1,
-              1,
-              1,
-              1
+              0,
+              0,
+              0,
+              0
             ],
             "outbreak_prob": 5,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Talakad": {
-            "weeks": [
-              3,
-              3,
-              3,
-              4
-            ],
-            "outbreak_prob": 63,
-            "level": "high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Sosale": {
             "weeks": [
               1,
               1,
               1,
               1
             ],
-            "outbreak_prob": 35,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Sosale": {
+            "weeks": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Hunsur": {
         "forecast": {
           "weeks": [
-            4,
+            2,
+            2,
             3,
-            4,
-            4
+            3
           ],
-          "outbreak_prob": 39,
-          "level": "moderate",
+          "outbreak_prob": 13,
+          "level": "low",
           "mu": 3,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Hunsur Town": {
             "weeks": [
-              3,
-              3,
-              3,
-              2
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 29,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Ratnapuri": {
-            "weeks": [
-              2,
-              1,
-              1,
-              2
-            ],
-            "outbreak_prob": 32,
-            "level": "moderate",
-            "mu": 1,
-            "sigma": 1
-          },
-          "Bilikere": {
-            "weeks": [
-              1,
-              1,
-              1,
-              1
-            ],
-            "outbreak_prob": 41,
-            "level": "moderate",
-            "mu": 1,
-            "sigma": 1
-          }
-        }
-      }
-    }
-  },
-  "Udupi": {
-    "district_forecast": {
-      "weeks": [
-        55,
-        70,
-        78,
-        90
-      ],
-      "outbreak_prob": 73
-    },
-    "district_baseline": {
-      "mu": 61,
-      "sigma": 8
-    },
-    "district_level": "high",
-    "municipalities": {
-      "Udupi City Municipal Council": {
-        "forecast": {
-          "weeks": [
-            16,
-            19,
-            21,
-            25
-          ],
-          "outbreak_prob": 94,
-          "level": "very_high",
-          "mu": 15,
-          "sigma": 2
-        },
-        "wards": {
-          "Udupi Town": {
-            "weeks": [
-              3,
-              3,
-              4,
-              4
-            ],
-            "outbreak_prob": 93,
-            "level": "very_high",
-            "mu": 1,
-            "sigma": 1
-          },
-          "Manipal": {
-            "weeks": [
-              3,
-              4,
-              5,
-              6
-            ],
-            "outbreak_prob": 82,
-            "level": "very_high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Malpe": {
-            "weeks": [
-              4,
-              4,
-              3,
-              3
-            ],
-            "outbreak_prob": 16,
-            "level": "low",
-            "mu": 6,
-            "sigma": 1
-          },
-          "Ajjarkadu": {
-            "weeks": [
-              6,
-              7,
-              7,
-              9
-            ],
-            "outbreak_prob": 61,
-            "level": "high",
-            "mu": 6,
-            "sigma": 1
-          },
-          "Bannanje": {
-            "weeks": [
-              3,
-              3,
-              4,
-              4
-            ],
-            "outbreak_prob": 93,
-            "level": "very_high",
-            "mu": 1,
-            "sigma": 1
-          }
-        }
-      },
-      "Karkala Municipal Council": {
-        "forecast": {
-          "weeks": [
-            8,
-            8,
-            7,
-            7
-          ],
-          "outbreak_prob": 21,
-          "level": "low",
-          "mu": 12,
-          "sigma": 1
-        },
-        "wards": {
-          "Karkala Town": {
-            "weeks": [
-              3,
-              3,
-              3,
-              3
-            ],
-            "outbreak_prob": 19,
-            "level": "low",
-            "mu": 5,
-            "sigma": 1
-          },
-          "Hebri Junction": {
-            "weeks": [
-              3,
-              3,
-              4,
-              4
-            ],
-            "outbreak_prob": 71,
-            "level": "high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Ajekar": {
-            "weeks": [
-              3,
-              3,
-              2,
-              2
-            ],
-            "outbreak_prob": 8,
-            "level": "low",
-            "mu": 4,
-            "sigma": 1
-          }
-        }
-      },
-      "Kundapura Municipal Council": {
-        "forecast": {
-          "weeks": [
-            8,
-            8,
-            9,
-            10
-          ],
-          "outbreak_prob": 68,
-          "level": "high",
-          "mu": 7,
-          "sigma": 1
-        },
-        "wards": {
-          "Kundapura Town": {
-            "weeks": [
-              4,
-              5,
-              6,
-              6
-            ],
-            "outbreak_prob": 84,
-            "level": "very_high",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Gangolli": {
-            "weeks": [
-              1,
-              1,
-              1,
-              1
-            ],
-            "outbreak_prob": 10,
-            "level": "low",
-            "mu": 1,
-            "sigma": 1
-          },
-          "Basrur": {
-            "weeks": [
-              4,
-              4,
-              4,
-              5
-            ],
-            "outbreak_prob": 62,
-            "level": "high",
-            "mu": 3,
-            "sigma": 1
-          }
-        }
-      }
-    },
-    "blocks": {
-      "Brahmavar": {
-        "forecast": {
-          "weeks": [
-            12,
-            13,
-            12,
-            12
-          ],
-          "outbreak_prob": 50,
-          "level": "moderate",
-          "mu": 12,
-          "sigma": 2
-        },
-        "villages": {
-          "Brahmavar": {
-            "weeks": [
-              4,
-              3,
-              4,
-              3
-            ],
-            "outbreak_prob": 51,
-            "level": "moderate",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Saligrama": {
-            "weeks": [
-              3,
-              2,
-              2,
-              2
-            ],
-            "outbreak_prob": 47,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Hangarakatte": {
-            "weeks": [
-              5,
-              5,
-              4,
-              5
-            ],
-            "outbreak_prob": 50,
-            "level": "moderate",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Kota": {
-            "weeks": [
-              3,
-              3,
-              4,
-              3
-            ],
-            "outbreak_prob": 33,
-            "level": "moderate",
-            "mu": 3,
-            "sigma": 1
-          }
-        }
-      },
-      "Hebri": {
-        "forecast": {
-          "weeks": [
-            8,
-            9,
-            10,
-            11
-          ],
-          "outbreak_prob": 55,
-          "level": "high",
-          "mu": 8,
-          "sigma": 1
-        },
-        "villages": {
-          "Hebri": {
-            "weeks": [
-              5,
-              6,
-              7,
-              8
-            ],
-            "outbreak_prob": 86,
-            "level": "very_high",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Shivapura": {
-            "weeks": [
-              3,
-              3,
-              4,
-              4
-            ],
-            "outbreak_prob": 77,
-            "level": "high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Charmadi": {
-            "weeks": [
-              3,
-              2,
-              2,
-              2
-            ],
-            "outbreak_prob": 35,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          }
-        }
-      },
-      "Byndoor": {
-        "forecast": {
-          "weeks": [
-            5,
-            5,
-            5,
-            4
-          ],
-          "outbreak_prob": 15,
-          "level": "low",
-          "mu": 8,
-          "sigma": 1
-        },
-        "villages": {
-          "Byndoor": {
-            "weeks": [
-              1,
-              1,
-              1,
-              1
-            ],
-            "outbreak_prob": 10,
-            "level": "low",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Maravanthe": {
-            "weeks": [
-              1,
-              1,
-              1,
-              1
-            ],
-            "outbreak_prob": 21,
-            "level": "low",
-            "mu": 1,
-            "sigma": 1
-          },
-          "Trasi": {
-            "weeks": [
-              2,
-              2,
-              2,
-              2
-            ],
-            "outbreak_prob": 18,
-            "level": "low",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Yedthare": {
-            "weeks": [
-              3,
-              3,
-              4,
-              4
-            ],
-            "outbreak_prob": 84,
-            "level": "very_high",
-            "mu": 1,
-            "sigma": 1
-          }
-        }
-      }
-    }
-  },
-  "Dakshina Kannada": {
-    "district_forecast": {
-      "weeks": [
-        73,
-        89,
-        101,
-        124
-      ],
-      "outbreak_prob": 84
-    },
-    "district_baseline": {
-      "mu": 78,
-      "sigma": 8
-    },
-    "district_level": "very_high",
-    "municipalities": {
-      "Mangaluru City Corporation": {
-        "forecast": {
-          "weeks": [
-            35,
-            37,
-            39,
-            43
-          ],
-          "outbreak_prob": 78,
-          "level": "high",
-          "mu": 33,
-          "sigma": 4
-        },
-        "wards": {
-          "Mangalore Central": {
-            "weeks": [
-              8,
-              8,
-              10,
-              10
-            ],
-            "outbreak_prob": 67,
-            "level": "high",
-            "mu": 8,
-            "sigma": 1
-          },
-          "Bunder": {
-            "weeks": [
-              5,
-              5,
-              5,
-              4
-            ],
-            "outbreak_prob": 6,
-            "level": "low",
-            "mu": 8,
-            "sigma": 1
-          },
-          "Bejai": {
             "weeks": [
               1,
               1,
@@ -19870,32 +19432,500 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
             ],
             "outbreak_prob": 15,
             "level": "low",
-            "mu": 2,
-            "sigma": 1
+            "mu": 1,
+            "sigma": 2
           },
-          "Kadri": {
+          "Bilikere": {
             "weeks": [
-              4,
-              4,
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 1,
+            "sigma": 2
+          }
+        }
+      }
+    }
+  },
+  "Udupi": {
+    "district_forecast": {
+      "weeks": [
+        110,
+        114,
+        127,
+        135
+      ],
+      "outbreak_prob": 72,
+      "level": "very_high",
+      "mu": 61,
+      "sigma": 26
+    },
+    "district_baseline": {
+      "mu": 61,
+      "sigma": 26
+    },
+    "district_level": "very_high",
+    "municipalities": {
+      "Udupi City Municipal Council": {
+        "forecast": {
+          "weeks": [
+            32,
+            35,
+            39,
+            49
+          ],
+          "outbreak_prob": 77,
+          "level": "very_high",
+          "mu": 15,
+          "sigma": 7
+        },
+        "wards": {
+          "Udupi Town": {
+            "weeks": [
+              1,
+              1,
+              1,
+              2
+            ],
+            "outbreak_prob": 24,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 2
+          },
+          "Manipal": {
+            "weeks": [
+              5,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 54,
+            "level": "high",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Malpe": {
+            "weeks": [
+              8,
+              8,
+              8,
+              11
+            ],
+            "outbreak_prob": 33,
+            "level": "moderate",
+            "mu": 6,
+            "sigma": 3
+          },
+          "Ajjarkadu": {
+            "weeks": [
+              21,
+              23,
+              25,
+              28
+            ],
+            "outbreak_prob": 90,
+            "level": "very_high",
+            "mu": 6,
+            "sigma": 3
+          },
+          "Bannanje": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 1,
+            "sigma": 2
+          }
+        }
+      },
+      "Karkala Municipal Council": {
+        "forecast": {
+          "weeks": [
+            15,
+            16,
+            19,
+            19
+          ],
+          "outbreak_prob": 46,
+          "level": "high",
+          "mu": 12,
+          "sigma": 5
+        },
+        "wards": {
+          "Karkala Town": {
+            "weeks": [
+              6,
+              7,
+              8,
+              9
+            ],
+            "outbreak_prob": 48,
+            "level": "high",
+            "mu": 5,
+            "sigma": 2
+          },
+          "Hebri Junction": {
+            "weeks": [
+              3,
+              3,
               3,
               4
             ],
-            "outbreak_prob": 37,
+            "outbreak_prob": 30,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Ajekar": {
+            "weeks": [
+              6,
+              7,
+              7,
+              7
+            ],
+            "outbreak_prob": 49,
+            "level": "high",
+            "mu": 4,
+            "sigma": 2
+          }
+        }
+      },
+      "Kundapura Municipal Council": {
+        "forecast": {
+          "weeks": [
+            8,
+            10,
+            12,
+            12
+          ],
+          "outbreak_prob": 47,
+          "level": "high",
+          "mu": 7,
+          "sigma": 3
+        },
+        "wards": {
+          "Kundapura Town": {
+            "weeks": [
+              4,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 34,
             "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
-          "Surathkal": {
+          "Gangolli": {
             "weeks": [
-              3,
+              1,
               2,
               2,
               2
             ],
-            "outbreak_prob": 18,
-            "level": "low",
+            "outbreak_prob": 26,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 2
+          },
+          "Basrur": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 26,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 2
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Brahmavar": {
+        "forecast": {
+          "weeks": [
+            20,
+            23,
+            22,
+            27
+          ],
+          "outbreak_prob": 71,
+          "level": "very_high",
+          "mu": 12,
+          "sigma": 5
+        },
+        "villages": {
+          "Brahmavar": {
+            "weeks": [
+              4,
+              4,
+              5,
+              6
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Saligrama": {
+            "weeks": [
+              7,
+              9,
+              9,
+              10
+            ],
+            "outbreak_prob": 77,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Hangarakatte": {
+            "weeks": [
+              5,
+              6,
+              6,
+              6
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
+          },
+          "Kota": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 26,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 2
+          }
+        }
+      },
+      "Hebri": {
+        "forecast": {
+          "weeks": [
+            16,
+            18,
+            19,
+            22
+          ],
+          "outbreak_prob": 78,
+          "level": "very_high",
+          "mu": 8,
+          "sigma": 3
+        },
+        "villages": {
+          "Hebri": {
+            "weeks": [
+              5,
+              6,
+              6,
+              6
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 2
+          },
+          "Shivapura": {
+            "weeks": [
+              4,
+              4,
+              4,
+              5
+            ],
+            "outbreak_prob": 47,
+            "level": "high",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Charmadi": {
+            "weeks": [
+              8,
+              9,
+              10,
+              11
+            ],
+            "outbreak_prob": 79,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 2
+          }
+        }
+      },
+      "Byndoor": {
+        "forecast": {
+          "weeks": [
+            12,
+            13,
+            13,
+            16
+          ],
+          "outbreak_prob": 55,
+          "level": "high",
+          "mu": 8,
+          "sigma": 3
+        },
+        "villages": {
+          "Byndoor": {
+            "weeks": [
+              3,
+              4,
+              4,
+              5
+            ],
+            "outbreak_prob": 34,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Maravanthe": {
+            "weeks": [
+              2,
+              2,
+              2,
+              3
+            ],
+            "outbreak_prob": 30,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 2
+          },
+          "Trasi": {
+            "weeks": [
+              4,
+              5,
+              5,
+              5
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Yedthare": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 2
+          }
+        }
+      }
+    }
+  },
+  "Dakshina Kannada": {
+    "district_forecast": {
+      "weeks": [
+        150,
+        174,
+        189,
+        198
+      ],
+      "outbreak_prob": 76,
+      "level": "very_high",
+      "mu": 78,
+      "sigma": 32
+    },
+    "district_baseline": {
+      "mu": 78,
+      "sigma": 32
+    },
+    "district_level": "very_high",
+    "municipalities": {
+      "Mangaluru City Corporation": {
+        "forecast": {
+          "weeks": [
+            64,
+            71,
+            79,
+            81
+          ],
+          "outbreak_prob": 75,
+          "level": "very_high",
+          "mu": 33,
+          "sigma": 14
+        },
+        "wards": {
+          "Mangalore Central": {
+            "weeks": [
+              15,
+              15,
+              17,
+              20
+            ],
+            "outbreak_prob": 75,
+            "level": "very_high",
+            "mu": 8,
+            "sigma": 3
+          },
+          "Bunder": {
+            "weeks": [
+              13,
+              14,
+              15,
+              18
+            ],
+            "outbreak_prob": 72,
+            "level": "very_high",
+            "mu": 8,
+            "sigma": 3
+          },
+          "Bejai": {
+            "weeks": [
+              9,
+              10,
+              12,
+              12
+            ],
+            "outbreak_prob": 82,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Kadri": {
+            "weeks": [
+              5,
+              6,
+              6,
+              6
+            ],
+            "outbreak_prob": 49,
+            "level": "high",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Surathkal": {
+            "weeks": [
+              7,
+              8,
+              9,
+              9
+            ],
+            "outbreak_prob": 71,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 2
           },
           "Ullal": {
             "weeks": [
@@ -19904,74 +19934,74 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               4,
               4
             ],
-            "outbreak_prob": 62,
-            "level": "high",
+            "outbreak_prob": 31,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Kankanady": {
             "weeks": [
-              4,
-              4,
-              4,
-              5
+              7,
+              8,
+              8,
+              10
             ],
-            "outbreak_prob": 33,
-            "level": "moderate",
+            "outbreak_prob": 71,
+            "level": "very_high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Bondel": {
             "weeks": [
-              3,
-              4,
-              5,
-              6
+              7,
+              7,
+              9,
+              10
             ],
-            "outbreak_prob": 95,
+            "outbreak_prob": 76,
             "level": "very_high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Puttur Municipal Council": {
         "forecast": {
           "weeks": [
-            10,
-            11,
-            14,
-            15
+            17,
+            17,
+            19,
+            22
           ],
-          "outbreak_prob": 86,
+          "outbreak_prob": 71,
           "level": "very_high",
           "mu": 10,
-          "sigma": 1
+          "sigma": 4
         },
         "wards": {
           "Puttur Town": {
             "weeks": [
-              5,
-              5,
-              6,
-              5
+              7,
+              8,
+              9,
+              9
             ],
-            "outbreak_prob": 40,
-            "level": "moderate",
+            "outbreak_prob": 53,
+            "level": "high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Bantwala Road": {
             "weeks": [
-              5,
-              6,
-              7,
-              7
+              9,
+              9,
+              10,
+              11
             ],
-            "outbreak_prob": 75,
-            "level": "high",
+            "outbreak_prob": 72,
+            "level": "very_high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -19980,80 +20010,80 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Bantwal": {
         "forecast": {
           "weeks": [
-            9,
-            8,
-            8,
-            8
+            18,
+            20,
+            23,
+            26
           ],
-          "outbreak_prob": 8,
-          "level": "low",
+          "outbreak_prob": 49,
+          "level": "high",
           "mu": 14,
-          "sigma": 2
+          "sigma": 6
         },
         "villages": {
           "Bantwal Town": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              4,
+              4,
+              5,
+              5
             ],
-            "outbreak_prob": 11,
-            "level": "low",
+            "outbreak_prob": 31,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Vittal": {
             "weeks": [
-              3,
-              2,
-              2,
-              2
+              5,
+              6,
+              7,
+              7
             ],
-            "outbreak_prob": 18,
-            "level": "low",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Kavalakatte": {
             "weeks": [
-              4,
-              4,
-              3,
-              3
+              8,
+              9,
+              10,
+              12
             ],
-            "outbreak_prob": 17,
-            "level": "low",
+            "outbreak_prob": 55,
+            "level": "high",
             "mu": 6,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Belthangady": {
         "forecast": {
           "weeks": [
-            11,
-            12,
-            13,
-            15
+            21,
+            25,
+            24,
+            26
           ],
-          "outbreak_prob": 77,
-          "level": "high",
+          "outbreak_prob": 76,
+          "level": "very_high",
           "mu": 11,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Belthangady": {
             "weeks": [
-              2,
-              2,
-              3,
-              3
+              9,
+              10,
+              10,
+              13
             ],
-            "outbreak_prob": 44,
-            "level": "moderate",
+            "outbreak_prob": 81,
+            "level": "very_high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Dharmasthala": {
             "weeks": [
@@ -20062,62 +20092,62 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               3,
               4
             ],
-            "outbreak_prob": 67,
-            "level": "high",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Ujire": {
             "weeks": [
-              4,
-              4,
-              4,
-              3
+              9,
+              10,
+              11,
+              12
             ],
-            "outbreak_prob": 17,
-            "level": "low",
+            "outbreak_prob": 71,
+            "level": "very_high",
             "mu": 6,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Sullia": {
         "forecast": {
           "weeks": [
-            7,
-            7,
-            6,
-            6
+            29,
+            33,
+            35,
+            38
           ],
-          "outbreak_prob": 13,
-          "level": "low",
+          "outbreak_prob": 88,
+          "level": "very_high",
           "mu": 11,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Sullia Town": {
             "weeks": [
-              3,
-              2,
-              2,
-              2
-            ],
-            "outbreak_prob": 13,
-            "level": "low",
-            "mu": 4,
-            "sigma": 1
-          },
-          "Kollamogru": {
-            "weeks": [
-              7,
+              6,
               7,
               8,
               9
             ],
-            "outbreak_prob": 63,
+            "outbreak_prob": 54,
             "level": "high",
+            "mu": 4,
+            "sigma": 2
+          },
+          "Kollamogru": {
+            "weeks": [
+              21,
+              23,
+              26,
+              32
+            ],
+            "outbreak_prob": 92,
+            "level": "very_high",
             "mu": 6,
-            "sigma": 1
+            "sigma": 3
           }
         }
       }
@@ -20126,80 +20156,83 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Belagavi": {
     "district_forecast": {
       "weeks": [
-        42,
-        40,
-        39,
-        42
+        29,
+        28,
+        26,
+        27
       ],
-      "outbreak_prob": 51
+      "outbreak_prob": 12,
+      "level": "low",
+      "mu": 39,
+      "sigma": 17
     },
     "district_baseline": {
       "mu": 39,
-      "sigma": 5
+      "sigma": 17
     },
-    "district_level": "moderate",
+    "district_level": "low",
     "municipalities": {
       "Belagavi City Corporation": {
         "forecast": {
           "weeks": [
-            13,
-            17,
-            18,
-            20
+            9,
+            9,
+            8,
+            9
           ],
-          "outbreak_prob": 94,
-          "level": "very_high",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 12,
-          "sigma": 2
+          "sigma": 5
         },
         "wards": {
           "Camp": {
             "weeks": [
-              3,
-              3,
-              4,
-              4
+              2,
+              2,
+              2,
+              3
             ],
-            "outbreak_prob": 55,
-            "level": "high",
+            "outbreak_prob": 24,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Tilakwadi": {
-            "weeks": [
-              3,
-              4,
-              5,
-              5
-            ],
-            "outbreak_prob": 83,
-            "level": "very_high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Shahapur": {
             "weeks": [
               1,
               1,
               1,
               1
             ],
-            "outbreak_prob": 5,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
+          },
+          "Shahapur": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 2,
+            "sigma": 2
           },
           "Vadgaon": {
             "weeks": [
-              5,
-              5,
-              6,
-              7
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 84,
-            "level": "very_high",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Ramatirth Nagar": {
             "weeks": [
@@ -20208,10 +20241,10 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 18,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -20220,156 +20253,156 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Khanapur": {
         "forecast": {
           "weeks": [
-            7,
-            8,
-            9,
-            11
+            3,
+            3,
+            4,
+            4
           ],
-          "outbreak_prob": 83,
-          "level": "very_high",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Khanapur": {
             "weeks": [
-              3,
-              3,
-              4,
-              4
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 74,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Londa": {
             "weeks": [
-              4,
-              4,
-              4,
-              4
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 43,
-            "level": "moderate",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Kakti": {
             "weeks": [
-              2,
-              2,
-              3,
-              3
+              0,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 68,
-            "level": "high",
+            "outbreak_prob": 13,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Hukkeri": {
         "forecast": {
           "weeks": [
-            11,
-            12,
-            12,
-            13
+            7,
+            7,
+            8,
+            10
           ],
-          "outbreak_prob": 29,
-          "level": "moderate",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 11,
-          "sigma": 2
+          "sigma": 5
         },
         "villages": {
           "Hukkeri": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
-            ],
-            "outbreak_prob": 64,
-            "level": "high",
-            "mu": 5,
-            "sigma": 1
-          },
-          "Sankeshwar": {
-            "weeks": [
-              5,
-              7,
-              7,
-              7
-            ],
-            "outbreak_prob": 70,
-            "level": "high",
-            "mu": 5,
-            "sigma": 1
-          },
-          "Yamakanmaradi": {
-            "weeks": [
               3,
-              4,
+              3,
               3,
               4
             ],
-            "outbreak_prob": 63,
-            "level": "high",
+            "outbreak_prob": 11,
+            "level": "low",
+            "mu": 5,
+            "sigma": 2
+          },
+          "Sankeshwar": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 5,
+            "sigma": 2
+          },
+          "Yamakanmaradi": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Chikkodi": {
         "forecast": {
           "weeks": [
-            12,
-            12,
-            12,
-            11
+            7,
+            8,
+            8,
+            8
           ],
-          "outbreak_prob": 37,
-          "level": "moderate",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 11,
-          "sigma": 1
+          "sigma": 5
         },
         "villages": {
           "Chikkodi": {
             "weeks": [
-              5,
-              6,
-              5,
-              5
+              3,
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 32,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Nipani": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
+              3,
+              3,
+              2,
+              3
             ],
-            "outbreak_prob": 82,
-            "level": "very_high",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Sadalga": {
             "weeks": [
-              3,
               2,
               2,
-              2
+              2,
+              3
             ],
-            "outbreak_prob": 42,
+            "outbreak_prob": 24,
             "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -20378,80 +20411,83 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Tumakuru": {
     "district_forecast": {
       "weeks": [
-        17,
-        17,
-        15,
-        14
+        6,
+        7,
+        7,
+        7
       ],
-      "outbreak_prob": 6
+      "outbreak_prob": 8,
+      "level": "low",
+      "mu": 26,
+      "sigma": 10
     },
     "district_baseline": {
       "mu": 26,
-      "sigma": 5
+      "sigma": 10
     },
     "district_level": "low",
     "municipalities": {
       "Tumakuru City Corporation": {
         "forecast": {
           "weeks": [
-            5,
-            5,
-            5,
-            4
+            2,
+            2,
+            2,
+            1
           ],
-          "outbreak_prob": 5,
+          "outbreak_prob": 7,
           "level": "low",
           "mu": 8,
-          "sigma": 1
+          "sigma": 3
         },
         "wards": {
           "Town Hall": {
             "weeks": [
-              1,
-              1,
-              1,
+              0,
+              0,
+              0,
               0
             ],
-            "outbreak_prob": 8,
+            "outbreak_prob": 5,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Shettyhalli": {
-            "weeks": [
-              2,
-              2,
-              2,
-              2
-            ],
-            "outbreak_prob": 10,
-            "level": "low",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Sira Gate": {
-            "weeks": [
-              2,
-              2,
-              2,
-              2
-            ],
-            "outbreak_prob": 22,
-            "level": "low",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Bangalore Road": {
             "weeks": [
               1,
               1,
               1,
               1
             ],
-            "outbreak_prob": 22,
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Sira Gate": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Bangalore Road": {
+            "weeks": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "outbreak_prob": 5,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -20460,28 +20496,28 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Sira": {
         "forecast": {
           "weeks": [
-            3,
-            3,
-            3,
+            2,
+            2,
+            2,
             2
           ],
-          "outbreak_prob": 13,
+          "outbreak_prob": 9,
           "level": "low",
           "mu": 5,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Sira Town": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 20,
+            "outbreak_prob": 8,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Hagalavadi": {
             "weeks": [
@@ -20490,25 +20526,25 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 5,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Tiptur": {
         "forecast": {
           "weeks": [
-            5,
-            4,
-            4,
-            4
+            2,
+            2,
+            2,
+            2
           ],
-          "outbreak_prob": 13,
+          "outbreak_prob": 8,
           "level": "low",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Tiptur Town": {
@@ -20518,62 +20554,62 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 19,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Honnavalli": {
-            "weeks": [
-              4,
-              5,
-              4,
-              4
-            ],
-            "outbreak_prob": 29,
-            "level": "moderate",
-            "mu": 4,
-            "sigma": 1
-          }
-        }
-      },
-      "Madhugiri": {
-        "forecast": {
-          "weeks": [
-            7,
-            6,
-            6,
-            7
-          ],
-          "outbreak_prob": 46,
-          "level": "moderate",
-          "mu": 6,
-          "sigma": 1
-        },
-        "villages": {
-          "Madhugiri": {
             "weeks": [
               1,
               1,
               1,
               1
             ],
+            "outbreak_prob": 7,
+            "level": "low",
+            "mu": 4,
+            "sigma": 2
+          }
+        }
+      },
+      "Madhugiri": {
+        "forecast": {
+          "weeks": [
+            2,
+            1,
+            1,
+            1
+          ],
+          "outbreak_prob": 7,
+          "level": "low",
+          "mu": 6,
+          "sigma": 2
+        },
+        "villages": {
+          "Madhugiri": {
+            "weeks": [
+              0,
+              0,
+              0,
+              0
+            ],
             "outbreak_prob": 5,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Koratagere": {
             "weeks": [
-              4,
-              3,
-              3,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 6,
+            "outbreak_prob": 7,
             "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -20582,168 +20618,171 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Khordha": {
     "district_forecast": {
       "weeks": [
-        100,
-        124,
-        139,
-        161
+        216,
+        214,
+        239,
+        256
       ],
-      "outbreak_prob": 87
+      "outbreak_prob": 77,
+      "level": "very_high",
+      "mu": 92,
+      "sigma": 42
     },
     "district_baseline": {
       "mu": 92,
-      "sigma": 15
+      "sigma": 42
     },
     "district_level": "very_high",
     "municipalities": {
       "Bhubaneswar Municipal Corporation": {
         "forecast": {
           "weeks": [
-            62,
-            68,
-            66,
-            63
+            133,
+            150,
+            173,
+            183
           ],
-          "outbreak_prob": 29,
-          "level": "moderate",
+          "outbreak_prob": 78,
+          "level": "very_high",
           "mu": 61,
-          "sigma": 10
+          "sigma": 28
         },
         "wards": {
           "Saheed Nagar": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              9,
+              8,
+              10,
+              11
             ],
-            "outbreak_prob": 18,
-            "level": "low",
+            "outbreak_prob": 71,
+            "level": "very_high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Nayapalli": {
             "weeks": [
-              2,
-              3,
-              2,
-              3
+              6,
+              7,
+              7,
+              8
             ],
-            "outbreak_prob": 71,
-            "level": "high",
+            "outbreak_prob": 75,
+            "level": "very_high",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Patia": {
             "weeks": [
-              10,
-              10,
-              9,
-              10
+              41,
+              46,
+              52,
+              57
             ],
-            "outbreak_prob": 50,
-            "level": "moderate",
+            "outbreak_prob": 95,
+            "level": "very_high",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           },
           "Old Town": {
             "weeks": [
-              5,
-              5,
-              5,
-              4
+              15,
+              17,
+              20,
+              19
             ],
-            "outbreak_prob": 20,
-            "level": "low",
+            "outbreak_prob": 72,
+            "level": "very_high",
             "mu": 8,
-            "sigma": 1
+            "sigma": 4
           },
           "Chandrasekharpur": {
             "weeks": [
-              11,
-              11,
-              11,
-              11
+              18,
+              21,
+              24,
+              24
             ],
-            "outbreak_prob": 49,
-            "level": "moderate",
+            "outbreak_prob": 72,
+            "level": "very_high",
             "mu": 10,
-            "sigma": 2
+            "sigma": 5
           },
           "Khandagiri": {
             "weeks": [
-              10,
-              11,
-              12,
-              14
+              19,
+              21,
+              22,
+              26
             ],
-            "outbreak_prob": 65,
-            "level": "high",
+            "outbreak_prob": 75,
+            "level": "very_high",
             "mu": 10,
-            "sigma": 1
+            "sigma": 4
           },
           "Jaydev Vihar": {
             "weeks": [
-              8,
-              8,
-              9,
-              8
+              16,
+              17,
+              19,
+              21
             ],
-            "outbreak_prob": 33,
-            "level": "moderate",
+            "outbreak_prob": 73,
+            "level": "very_high",
             "mu": 8,
-            "sigma": 1
+            "sigma": 4
           },
           "Vani Vihar": {
             "weeks": [
-              10,
-              10,
-              9,
-              9
+              16,
+              20,
+              20,
+              24
             ],
-            "outbreak_prob": 39,
-            "level": "moderate",
+            "outbreak_prob": 74,
+            "level": "very_high",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           }
         }
       },
       "Khordha Municipal Council": {
         "forecast": {
           "weeks": [
-            19,
-            25,
-            26,
-            31
+            34,
+            39,
+            40,
+            42
           ],
-          "outbreak_prob": 89,
+          "outbreak_prob": 73,
           "level": "very_high",
           "mu": 18,
-          "sigma": 3
+          "sigma": 8
         },
         "wards": {
           "Khordha Town": {
             "weeks": [
-              9,
-              10,
-              13,
-              13
+              18,
+              21,
+              22,
+              23
             ],
-            "outbreak_prob": 58,
-            "level": "high",
+            "outbreak_prob": 74,
+            "level": "very_high",
             "mu": 10,
-            "sigma": 1
+            "sigma": 4
           },
           "Jatani": {
             "weeks": [
-              8,
-              9,
-              10,
-              12
+              15,
+              19,
+              20,
+              22
             ],
-            "outbreak_prob": 68,
-            "level": "high",
+            "outbreak_prob": 74,
+            "level": "very_high",
             "mu": 8,
-            "sigma": 1
+            "sigma": 4
           }
         }
       }
@@ -20752,40 +20791,40 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Balipatna": {
         "forecast": {
           "weeks": [
-            7,
             8,
-            8,
-            8
+            9,
+            10,
+            12
           ],
-          "outbreak_prob": 75,
+          "outbreak_prob": 48,
           "level": "high",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Balipatna": {
             "weeks": [
-              1,
-              1,
-              1,
-              1
+              2,
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 13,
-            "level": "low",
+            "outbreak_prob": 26,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Begunia": {
             "weeks": [
-              5,
+              6,
               6,
               7,
-              8
+              7
             ],
-            "outbreak_prob": 85,
-            "level": "very_high",
+            "outbreak_prob": 48,
+            "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
@@ -20793,79 +20832,79 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
         "forecast": {
           "weeks": [
             4,
-            3,
-            3,
-            3
+            5,
+            5,
+            6
           ],
-          "outbreak_prob": 46,
+          "outbreak_prob": 34,
           "level": "moderate",
           "mu": 3,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Banpur": {
             "weeks": [
-              1,
-              1,
-              1,
-              0
+              2,
+              2,
+              3,
+              3
             ],
-            "outbreak_prob": 8,
-            "level": "low",
+            "outbreak_prob": 31,
+            "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Tangi": {
             "weeks": [
               2,
-              1,
               2,
-              2
+              2,
+              3
             ],
-            "outbreak_prob": 38,
+            "outbreak_prob": 30,
             "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Bolgarh": {
         "forecast": {
           "weeks": [
-            6,
-            7,
-            9,
-            10
+            19,
+            20,
+            23,
+            27
           ],
-          "outbreak_prob": 94,
+          "outbreak_prob": 87,
           "level": "very_high",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Bolgarh": {
             "weeks": [
               3,
-              4,
-              5,
-              5
+              3,
+              3,
+              4
             ],
-            "outbreak_prob": 84,
-            "level": "very_high",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Barakhandia": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
+              15,
+              17,
+              21,
+              22
             ],
-            "outbreak_prob": 94,
+            "outbreak_prob": 95,
             "level": "very_high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -20874,116 +20913,119 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Cuttack": {
     "district_forecast": {
       "weeks": [
-        80,
-        76,
-        81,
-        77
+        42,
+        47,
+        47,
+        52
       ],
-      "outbreak_prob": 35
+      "outbreak_prob": 11,
+      "level": "low",
+      "mu": 75,
+      "sigma": 33
     },
     "district_baseline": {
       "mu": 75,
-      "sigma": 10
+      "sigma": 33
     },
-    "district_level": "moderate",
+    "district_level": "low",
     "municipalities": {
       "Cuttack Municipal Corporation": {
         "forecast": {
           "weeks": [
-            48,
-            50,
-            55,
-            54
+            26,
+            29,
+            30,
+            34
           ],
-          "outbreak_prob": 45,
-          "level": "moderate",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 48,
-          "sigma": 7
+          "sigma": 21
         },
         "wards": {
           "Choudhury Bazar": {
             "weeks": [
               6,
-              5,
-              5,
-              4
+              6,
+              7,
+              7
             ],
-            "outbreak_prob": 5,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           },
           "Buxi Bazar": {
             "weeks": [
               3,
               3,
-              3,
-              3
+              4,
+              4
             ],
-            "outbreak_prob": 13,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Mangalabag": {
             "weeks": [
-              8,
-              8,
-              8,
-              8
+              4,
+              4,
+              4,
+              4
             ],
-            "outbreak_prob": 44,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           },
           "Badambadi": {
             "weeks": [
-              9,
-              10,
-              10,
-              10
+              4,
+              5,
+              5,
+              6
             ],
-            "outbreak_prob": 31,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           },
           "CDA Sector 6": {
             "weeks": [
-              12,
-              12,
-              11,
-              11
+              6,
+              6,
+              6,
+              6
             ],
-            "outbreak_prob": 29,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 10,
-            "sigma": 2
+            "sigma": 5
           },
           "Link Road": {
             "weeks": [
-              3,
-              3,
-              3,
-              4
+              1,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 35,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "College Square": {
             "weeks": [
+              4,
               3,
-              3,
-              3,
-              3
+              4,
+              5
             ],
             "outbreak_prob": 13,
             "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -20992,120 +21034,120 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Salepur": {
         "forecast": {
           "weeks": [
-            9,
-            9,
-            11,
-            12
+            4,
+            5,
+            6,
+            6
           ],
-          "outbreak_prob": 73,
-          "level": "high",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 8,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Salepur": {
             "weeks": [
-              6,
-              8,
-              9,
-              10
-            ],
-            "outbreak_prob": 82,
-            "level": "very_high",
-            "mu": 6,
-            "sigma": 1
-          },
-          "Mahanga": {
-            "weeks": [
               3,
-              4,
+              3,
               4,
               4
             ],
-            "outbreak_prob": 58,
-            "level": "high",
+            "outbreak_prob": 11,
+            "level": "low",
+            "mu": 6,
+            "sigma": 3
+          },
+          "Mahanga": {
+            "weeks": [
+              1,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 14,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Athagarh": {
         "forecast": {
           "weeks": [
-            7,
-            8,
-            10,
-            10
+            3,
+            4,
+            4,
+            4
           ],
-          "outbreak_prob": 90,
-          "level": "very_high",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Athagarh": {
             "weeks": [
-              3,
-              3,
-              3,
-              4
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 77,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Tigiria": {
             "weeks": [
-              6,
-              5,
-              6,
-              5
+              3,
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 33,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Banki": {
         "forecast": {
           "weeks": [
-            13,
-            14,
-            16,
-            16
+            6,
+            8,
+            9,
+            9
           ],
-          "outbreak_prob": 61,
-          "level": "high",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 12,
-          "sigma": 2
+          "sigma": 5
         },
         "villages": {
           "Banki": {
             "weeks": [
-              7,
-              9,
-              11,
-              11
+              4,
+              5,
+              6,
+              7
             ],
-            "outbreak_prob": 89,
-            "level": "very_high",
+            "outbreak_prob": 13,
+            "level": "low",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           },
           "Damapada": {
             "weeks": [
-              5,
-              5,
-              5,
-              6
+              3,
+              2,
+              3,
+              3
             ],
-            "outbreak_prob": 56,
-            "level": "high",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -21114,104 +21156,107 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Puri": {
     "district_forecast": {
       "weeks": [
-        61,
-        58,
-        62,
-        61
+        35,
+        39,
+        43,
+        47
       ],
-      "outbreak_prob": 31
+      "outbreak_prob": 12,
+      "level": "low",
+      "mu": 56,
+      "sigma": 23
     },
     "district_baseline": {
       "mu": 56,
-      "sigma": 6
+      "sigma": 23
     },
-    "district_level": "moderate",
+    "district_level": "low",
     "municipalities": {
       "Puri Municipality": {
         "forecast": {
           "weeks": [
-            37,
-            38,
-            40,
-            38
+            22,
+            25,
+            26,
+            30
           ],
-          "outbreak_prob": 49,
-          "level": "moderate",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 36,
-          "sigma": 4
+          "sigma": 15
         },
         "wards": {
           "Bada Danda": {
             "weeks": [
-              8,
-              10,
-              11,
-              14
+              4,
+              5,
+              6,
+              6
             ],
-            "outbreak_prob": 93,
-            "level": "very_high",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 8,
-            "sigma": 1
+            "sigma": 3
           },
           "Swargadwar": {
             "weeks": [
+              4,
               5,
-              4,
-              4,
-              3
+              6,
+              6
             ],
-            "outbreak_prob": 14,
+            "outbreak_prob": 13,
             "level": "low",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           },
           "VIP Road": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 12,
+            "level": "low",
+            "mu": 3,
+            "sigma": 2
+          },
+          "Chakratirtha": {
+            "weeks": [
+              5,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 7,
+            "sigma": 3
+          },
+          "Grand Road": {
             "weeks": [
               3,
               4,
               4,
-              4
+              5
             ],
-            "outbreak_prob": 47,
-            "level": "moderate",
-            "mu": 3,
-            "sigma": 1
-          },
-          "Chakratirtha": {
-            "weeks": [
-              7,
-              8,
-              9,
-              10
-            ],
-            "outbreak_prob": 78,
-            "level": "high",
-            "mu": 7,
-            "sigma": 1
-          },
-          "Grand Road": {
-            "weeks": [
-              5,
-              6,
-              6,
-              8
-            ],
-            "outbreak_prob": 57,
-            "level": "high",
+            "outbreak_prob": 13,
+            "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Mochisahi": {
             "weeks": [
-              8,
-              7,
-              8,
-              7
+              4,
+              5,
+              5,
+              5
             ],
-            "outbreak_prob": 38,
-            "level": "moderate",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           }
         }
       }
@@ -21222,13 +21267,13 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
           "weeks": [
             4,
             4,
-            3,
-            3
+            4,
+            4
           ],
-          "outbreak_prob": 19,
+          "outbreak_prob": 12,
           "level": "low",
           "mu": 6,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Pipili": {
@@ -21238,102 +21283,102 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               2,
               2
             ],
-            "outbreak_prob": 5,
+            "outbreak_prob": 11,
             "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Sakhigopal": {
             "weeks": [
               1,
-              1,
-              1,
-              1
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 10,
+            "outbreak_prob": 14,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Brahmagiri": {
         "forecast": {
           "weeks": [
-            6,
-            6,
-            7,
-            7
+            4,
+            5,
+            5,
+            5
           ],
-          "outbreak_prob": 49,
-          "level": "moderate",
+          "outbreak_prob": 13,
+          "level": "low",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Brahmagiri": {
             "weeks": [
               1,
-              2,
               1,
-              2
+              1,
+              1
             ],
-            "outbreak_prob": 47,
-            "level": "moderate",
+            "outbreak_prob": 15,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Nimapara": {
             "weeks": [
               3,
-              3,
-              3,
-              3
+              4,
+              4,
+              5
             ],
-            "outbreak_prob": 10,
+            "outbreak_prob": 13,
             "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Krushnaprasad": {
         "forecast": {
           "weeks": [
-            7,
-            7,
-            7,
-            8
+            4,
+            4,
+            5,
+            6
           ],
-          "outbreak_prob": 35,
-          "level": "moderate",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Satapada": {
             "weeks": [
-              2,
-              2,
-              3,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 78,
-            "level": "high",
+            "outbreak_prob": 15,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Naugaon": {
             "weeks": [
-              6,
-              6,
-              6,
-              5
+              3,
+              3,
+              4,
+              4
             ],
-            "outbreak_prob": 28,
-            "level": "moderate",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -21342,92 +21387,95 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Balasore": {
     "district_forecast": {
       "weeks": [
-        58,
-        70,
-        86,
-        96
+        113,
+        130,
+        146,
+        148
       ],
-      "outbreak_prob": 70
+      "outbreak_prob": 72,
+      "level": "very_high",
+      "mu": 64,
+      "sigma": 30
     },
     "district_baseline": {
       "mu": 64,
-      "sigma": 10
+      "sigma": 30
     },
-    "district_level": "high",
+    "district_level": "very_high",
     "municipalities": {
       "Balasore Municipality": {
         "forecast": {
           "weeks": [
-            43,
-            49,
-            53,
-            63
+            72,
+            83,
+            87,
+            94
           ],
-          "outbreak_prob": 78,
-          "level": "high",
+          "outbreak_prob": 71,
+          "level": "very_high",
           "mu": 41,
-          "sigma": 7
+          "sigma": 19
         },
         "wards": {
           "Sahadevkhunta": {
             "weeks": [
-              12,
-              13,
-              17,
-              19
+              14,
+              15,
+              16,
+              18
             ],
-            "outbreak_prob": 93,
-            "level": "very_high",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 10,
-            "sigma": 2
+            "sigma": 5
           },
           "OT Road": {
             "weeks": [
-              5,
-              5,
-              4,
-              4
+              7,
+              8,
+              10,
+              11
             ],
-            "outbreak_prob": 6,
-            "level": "low",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           },
           "FM College": {
             "weeks": [
-              12,
-              15,
-              16,
-              17
+              35,
+              40,
+              44,
+              52
             ],
-            "outbreak_prob": 58,
-            "level": "high",
+            "outbreak_prob": 86,
+            "level": "very_high",
             "mu": 12,
-            "sigma": 2
+            "sigma": 6
           },
           "Industrial Estate": {
             "weeks": [
-              6,
-              6,
-              5,
-              5
+              11,
+              12,
+              13,
+              16
             ],
-            "outbreak_prob": 14,
-            "level": "low",
+            "outbreak_prob": 34,
+            "level": "moderate",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           },
           "Vivekananda Marg": {
             "weeks": [
+              3,
               4,
               4,
-              5,
               5
             ],
-            "outbreak_prob": 71,
-            "level": "high",
+            "outbreak_prob": 28,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -21436,40 +21484,40 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Soro": {
         "forecast": {
           "weeks": [
-            6,
-            7,
-            8,
-            10
+            11,
+            13,
+            15,
+            16
           ],
-          "outbreak_prob": 95,
+          "outbreak_prob": 82,
           "level": "very_high",
           "mu": 5,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Soro": {
             "weeks": [
               4,
               5,
-              4,
+              5,
               5
             ],
-            "outbreak_prob": 74,
-            "level": "high",
+            "outbreak_prob": 32,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Khaira": {
             "weeks": [
-              1,
-              1,
-              1,
-              1
+              8,
+              8,
+              9,
+              9
             ],
-            "outbreak_prob": 9,
-            "level": "low",
+            "outbreak_prob": 76,
+            "level": "very_high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
@@ -21477,94 +21525,94 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
         "forecast": {
           "weeks": [
             5,
-            5,
             6,
-            6
+            7,
+            8
           ],
-          "outbreak_prob": 61,
+          "outbreak_prob": 48,
           "level": "high",
           "mu": 4,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Nilgiri": {
             "weeks": [
               2,
               2,
-              3,
-              3
+              2,
+              2
             ],
-            "outbreak_prob": 71,
-            "level": "high",
+            "outbreak_prob": 28,
+            "level": "moderate",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Oupada": {
             "weeks": [
-              3,
               4,
-              3,
-              3
+              4,
+              5,
+              6
             ],
-            "outbreak_prob": 52,
+            "outbreak_prob": 32,
             "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Jaleswar": {
         "forecast": {
           "weeks": [
-            7,
-            9,
-            10,
-            12
+            13,
+            15,
+            15,
+            18
           ],
-          "outbreak_prob": 86,
+          "outbreak_prob": 74,
           "level": "very_high",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Jaleswar": {
             "weeks": [
               6,
               7,
-              9,
-              9
+              8,
+              8
             ],
-            "outbreak_prob": 90,
-            "level": "very_high",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Bhograi": {
             "weeks": [
-              2,
-              3,
-              3,
-              3
+              7,
+              8,
+              8,
+              9
             ],
-            "outbreak_prob": 31,
-            "level": "moderate",
+            "outbreak_prob": 75,
+            "level": "very_high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Basta": {
         "forecast": {
           "weeks": [
-            7,
-            8,
-            9,
-            10
+            10,
+            11,
+            12,
+            13
           ],
-          "outbreak_prob": 71,
+          "outbreak_prob": 51,
           "level": "high",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Basta": {
@@ -21572,24 +21620,24 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               4,
               4,
               5,
-              5
+              6
             ],
-            "outbreak_prob": 66,
-            "level": "high",
+            "outbreak_prob": 32,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Kamarda": {
             "weeks": [
-              4,
               5,
               6,
-              6
+              7,
+              7
             ],
-            "outbreak_prob": 58,
+            "outbreak_prob": 47,
             "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -21598,104 +21646,107 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Sundargarh": {
     "district_forecast": {
       "weeks": [
-        59,
-        58,
-        57,
-        55
+        85,
+        86,
+        97,
+        115
       ],
-      "outbreak_prob": 45
+      "outbreak_prob": 55,
+      "level": "high",
+      "mu": 52,
+      "sigma": 24
     },
     "district_baseline": {
       "mu": 52,
-      "sigma": 8
+      "sigma": 24
     },
-    "district_level": "moderate",
+    "district_level": "high",
     "municipalities": {
       "Rourkela Municipal Corporation": {
         "forecast": {
           "weeks": [
-            11,
-            10,
-            10,
-            9
+            31,
+            31,
+            34,
+            40
           ],
-          "outbreak_prob": 11,
-          "level": "low",
+          "outbreak_prob": 71,
+          "level": "very_high",
           "mu": 17,
-          "sigma": 3
+          "sigma": 8
         },
         "wards": {
           "Sector 1": {
-            "weeks": [
-              2,
-              3,
-              3,
-              3
-            ],
-            "outbreak_prob": 32,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Sector 4": {
-            "weeks": [
-              2,
-              2,
-              1,
-              1
-            ],
-            "outbreak_prob": 32,
-            "level": "moderate",
-            "mu": 1,
-            "sigma": 1
-          },
-          "Sector 7": {
-            "weeks": [
-              3,
-              3,
-              3,
-              3
-            ],
-            "outbreak_prob": 16,
-            "level": "low",
-            "mu": 5,
-            "sigma": 1
-          },
-          "Civil Township": {
             "weeks": [
               2,
               2,
               2,
               2
             ],
-            "outbreak_prob": 7,
+            "outbreak_prob": 15,
             "level": "low",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Sector 4": {
+            "weeks": [
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 47,
+            "level": "high",
+            "mu": 1,
+            "sigma": 2
+          },
+          "Sector 7": {
+            "weeks": [
+              6,
+              6,
+              8,
+              8
+            ],
+            "outbreak_prob": 34,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 2
+          },
+          "Civil Township": {
+            "weeks": [
+              10,
+              11,
+              13,
+              14
+            ],
+            "outbreak_prob": 82,
+            "level": "very_high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Basanti Colony": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              6,
+              7,
+              7,
+              8
             ],
-            "outbreak_prob": 9,
-            "level": "low",
+            "outbreak_prob": 34,
+            "level": "moderate",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Koel Nagar": {
             "weeks": [
-              3,
               2,
-              3,
-              3
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 35,
-            "level": "moderate",
+            "outbreak_prob": 15,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Chhend Colony": {
             "weeks": [
@@ -21704,50 +21755,50 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 21,
+            "outbreak_prob": 15,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Sundargarh Municipality": {
         "forecast": {
           "weeks": [
-            6,
-            5,
-            5,
-            5
+            11,
+            13,
+            13,
+            14
           ],
-          "outbreak_prob": 9,
-          "level": "low",
+          "outbreak_prob": 33,
+          "level": "moderate",
           "mu": 9,
-          "sigma": 1
+          "sigma": 4
         },
         "wards": {
           "Sundargarh Town": {
             "weeks": [
-              3,
-              2,
-              2,
-              2
+              5,
+              7,
+              6,
+              7
             ],
-            "outbreak_prob": 13,
-            "level": "low",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Bhasma Road": {
             "weeks": [
-              4,
-              3,
-              3,
-              3
+              6,
+              6,
+              8,
+              8
             ],
-            "outbreak_prob": 16,
-            "level": "low",
+            "outbreak_prob": 34,
+            "level": "moderate",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -21756,15 +21807,15 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Hemgir": {
         "forecast": {
           "weeks": [
-            7,
-            8,
-            10,
-            12
+            9,
+            11,
+            13,
+            13
           ],
-          "outbreak_prob": 88,
-          "level": "very_high",
+          "outbreak_prob": 51,
+          "level": "high",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Hemgir": {
@@ -21772,104 +21823,104 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               4,
               4,
               5,
-              5
+              6
             ],
-            "outbreak_prob": 64,
-            "level": "high",
+            "outbreak_prob": 32,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Garjan Jharan": {
             "weeks": [
-              3,
-              2,
-              2,
-              2
+              5,
+              6,
+              6,
+              7
             ],
-            "outbreak_prob": 10,
-            "level": "low",
+            "outbreak_prob": 34,
+            "level": "moderate",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Lephripara": {
         "forecast": {
           "weeks": [
-            11,
-            11,
-            11,
-            10
+            14,
+            16,
+            17,
+            20
           ],
-          "outbreak_prob": 51,
-          "level": "moderate",
+          "outbreak_prob": 49,
+          "level": "high",
           "mu": 10,
-          "sigma": 2
+          "sigma": 5
         },
         "villages": {
           "Lephripara": {
             "weeks": [
+              2,
               3,
-              4,
-              5,
-              5
+              3,
+              3
             ],
-            "outbreak_prob": 91,
-            "level": "very_high",
+            "outbreak_prob": 26,
+            "level": "moderate",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Bisra": {
             "weeks": [
-              8,
-              9,
               12,
-              12
+              13,
+              14,
+              16
             ],
-            "outbreak_prob": 85,
-            "level": "very_high",
+            "outbreak_prob": 50,
+            "level": "high",
             "mu": 8,
-            "sigma": 1
+            "sigma": 4
           }
         }
       },
       "Kuanrmunda": {
         "forecast": {
           "weeks": [
-            6,
-            5,
-            5,
-            4
+            17,
+            20,
+            21,
+            24
           ],
-          "outbreak_prob": 10,
-          "level": "low",
+          "outbreak_prob": 76,
+          "level": "very_high",
           "mu": 8,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Kuanrmunda": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              12,
+              13,
+              15,
+              15
             ],
-            "outbreak_prob": 8,
-            "level": "low",
+            "outbreak_prob": 87,
+            "level": "very_high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Kalunga": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              5,
+              6,
+              7,
+              7
             ],
-            "outbreak_prob": 6,
-            "level": "low",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -21878,31 +21929,34 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Angul": {
     "district_forecast": {
       "weeks": [
-        29,
-        27,
         24,
-        23
+        25,
+        24,
+        25
       ],
-      "outbreak_prob": 17
+      "outbreak_prob": 11,
+      "level": "low",
+      "mu": 43,
+      "sigma": 18
     },
     "district_baseline": {
       "mu": 43,
-      "sigma": 5
+      "sigma": 18
     },
     "district_level": "low",
     "municipalities": {
       "Angul Municipality": {
         "forecast": {
           "weeks": [
-            9,
-            10,
-            13,
-            14
+            4,
+            5,
+            4,
+            5
           ],
-          "outbreak_prob": 89,
-          "level": "very_high",
+          "outbreak_prob": 10,
+          "level": "low",
           "mu": 9,
-          "sigma": 1
+          "sigma": 4
         },
         "wards": {
           "Angul Town": {
@@ -21912,86 +21966,86 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 12,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Talcher Road": {
             "weeks": [
-              4,
-              4,
-              5,
-              5
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 67,
-            "level": "high",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "NTPC Colony": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 83,
-            "level": "very_high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Talcher Municipality": {
         "forecast": {
           "weeks": [
-            12,
-            14,
-            15,
-            16
+            7,
+            8,
+            8,
+            7
           ],
-          "outbreak_prob": 71,
-          "level": "high",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 13,
-          "sigma": 1
+          "sigma": 5
         },
         "wards": {
           "Talcher Town": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
+              2,
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 92,
-            "level": "very_high",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "MCL Colony": {
             "weeks": [
-              6,
-              7,
-              8,
-              8
+              3,
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 59,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 6,
-            "sigma": 1
+            "sigma": 2
           },
           "Nandira": {
             "weeks": [
-              3,
-              4,
-              4,
-              4
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 51,
-            "level": "moderate",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -22000,28 +22054,28 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Chhendipada": {
         "forecast": {
           "weeks": [
-            8,
-            9,
-            8,
-            9
+            5,
+            5,
+            5,
+            4
           ],
-          "outbreak_prob": 52,
-          "level": "moderate",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 8,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Chhendipada": {
             "weeks": [
-              6,
-              7,
-              7,
-              7
+              4,
+              4,
+              4,
+              3
             ],
-            "outbreak_prob": 40,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 6,
-            "sigma": 1
+            "sigma": 2
           },
           "Banarpal": {
             "weeks": [
@@ -22030,90 +22084,90 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 14,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Athamallik": {
         "forecast": {
           "weeks": [
-            4,
+            3,
             3,
             3,
             3
           ],
-          "outbreak_prob": 18,
+          "outbreak_prob": 11,
           "level": "low",
           "mu": 5,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Athamallik": {
             "weeks": [
-              5,
-              4,
-              5,
-              4
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 31,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Boinda": {
             "weeks": [
-              2,
-              3,
-              3,
-              2
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 35,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Pallahara": {
         "forecast": {
           "weeks": [
-            9,
-            9,
-            9,
-            8
+            5,
+            4,
+            4,
+            5
           ],
-          "outbreak_prob": 35,
-          "level": "moderate",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 8,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Pallahara": {
             "weeks": [
-              5,
-              5,
-              6,
-              7
+              3,
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 69,
-            "level": "high",
+            "outbreak_prob": 13,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Kaniha": {
             "weeks": [
-              4,
-              5,
-              6,
-              6
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 76,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -22122,80 +22176,83 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Mayurbhanj": {
     "district_forecast": {
       "weeks": [
-        32,
-        41,
-        44,
-        51
+        13,
+        15,
+        16,
+        17
       ],
-      "outbreak_prob": 55
+      "outbreak_prob": 9,
+      "level": "low",
+      "mu": 35,
+      "sigma": 15
     },
     "district_baseline": {
       "mu": 35,
-      "sigma": 5
+      "sigma": 15
     },
-    "district_level": "high",
+    "district_level": "low",
     "municipalities": {
       "Baripada Municipality": {
         "forecast": {
           "weeks": [
-            12,
-            11,
-            11,
-            11
+            3,
+            4,
+            4,
+            4
           ],
-          "outbreak_prob": 33,
-          "level": "moderate",
+          "outbreak_prob": 9,
+          "level": "low",
           "mu": 10,
-          "sigma": 2
+          "sigma": 5
         },
         "wards": {
           "Baripada Town": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
+              1,
+              1,
+              2,
+              2
             ],
-            "outbreak_prob": 58,
-            "level": "high",
+            "outbreak_prob": 8,
+            "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Bhanjpur": {
             "weeks": [
-              1,
-              1,
-              1,
+              0,
+              0,
+              0,
               0
             ],
-            "outbreak_prob": 10,
+            "outbreak_prob": 5,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "ITDA Colony": {
             "weeks": [
-              2,
-              2,
-              3,
-              2
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 37,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "FM University": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 7,
+            "outbreak_prob": 8,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -22204,160 +22261,160 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Karanjia": {
         "forecast": {
           "weeks": [
-            8,
-            8,
-            8,
-            8
+            3,
+            4,
+            4,
+            5
           ],
-          "outbreak_prob": 31,
-          "level": "moderate",
+          "outbreak_prob": 10,
+          "level": "low",
           "mu": 8,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Karanjia": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 94,
-            "level": "very_high",
+            "outbreak_prob": 7,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Jashipur": {
             "weeks": [
-              3,
-              3,
               2,
-              2
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 10,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Rairangpur": {
         "forecast": {
           "weeks": [
-            5,
-            5,
-            6,
-            7
+            1,
+            1,
+            1,
+            1
           ],
-          "outbreak_prob": 68,
-          "level": "high",
+          "outbreak_prob": 7,
+          "level": "low",
           "mu": 4,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Rairangpur": {
             "weeks": [
-              1,
-              2,
-              2,
-              2
+              0,
+              0,
+              0,
+              0
             ],
-            "outbreak_prob": 40,
-            "level": "moderate",
+            "outbreak_prob": 5,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Bisoi": {
             "weeks": [
-              4,
-              5,
-              6,
-              7
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 91,
-            "level": "very_high",
+            "outbreak_prob": 8,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Udala": {
         "forecast": {
           "weeks": [
-            7,
-            8,
-            9,
-            10
+            2,
+            3,
+            3,
+            4
           ],
-          "outbreak_prob": 72,
-          "level": "high",
+          "outbreak_prob": 9,
+          "level": "low",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Udala": {
             "weeks": [
-              4,
-              4,
-              5,
-              5
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 65,
-            "level": "high",
+            "outbreak_prob": 8,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Khunta": {
             "weeks": [
-              5,
-              6,
-              7,
-              8
+              1,
+              1,
+              2,
+              2
             ],
-            "outbreak_prob": 90,
-            "level": "very_high",
+            "outbreak_prob": 9,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Kaptipada": {
         "forecast": {
           "weeks": [
-            4,
-            5,
-            4,
-            5
+            3,
+            3,
+            3,
+            3
           ],
-          "outbreak_prob": 44,
-          "level": "moderate",
+          "outbreak_prob": 13,
+          "level": "low",
           "mu": 4,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Kaptipada": {
             "weeks": [
-              3,
-              3,
-              3,
-              4
+              1,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 59,
-            "level": "high",
+            "outbreak_prob": 14,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Saraskana": {
             "weeks": [
-              3,
-              2,
-              3,
-              2
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 41,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -22366,56 +22423,59 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Sambalpur": {
     "district_forecast": {
       "weeks": [
-        30,
-        28,
-        28,
-        25
+        21,
+        26,
+        26,
+        30
       ],
-      "outbreak_prob": 15
+      "outbreak_prob": 11,
+      "level": "low",
+      "mu": 46,
+      "sigma": 18
     },
     "district_baseline": {
       "mu": 46,
-      "sigma": 5
+      "sigma": 18
     },
     "district_level": "low",
     "municipalities": {
       "Sambalpur Municipal Corporation": {
         "forecast": {
           "weeks": [
-            21,
+            14,
+            16,
             18,
-            17,
-            17
+            21
           ],
-          "outbreak_prob": 10,
+          "outbreak_prob": 11,
           "level": "low",
           "mu": 30,
-          "sigma": 3
+          "sigma": 12
         },
         "wards": {
           "Sambalpur Town": {
             "weeks": [
-              9,
-              9,
-              11,
-              13
+              4,
+              4,
+              4,
+              6
             ],
-            "outbreak_prob": 93,
-            "level": "very_high",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 8,
-            "sigma": 1
+            "sigma": 3
           },
           "Budharaja": {
             "weeks": [
-              3,
-              2,
-              3,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 40,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Modipara": {
             "weeks": [
@@ -22424,34 +22484,34 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               2,
               2
             ],
-            "outbreak_prob": 8,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Burla": {
             "weeks": [
+              4,
+              4,
               5,
-              4,
-              4,
-              4
+              5
             ],
-            "outbreak_prob": 20,
+            "outbreak_prob": 11,
             "level": "low",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           },
           "Hirakud": {
             "weeks": [
-              11,
-              10,
-              11,
-              10
+              4,
+              5,
+              6,
+              6
             ],
-            "outbreak_prob": 52,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 10,
-            "sigma": 1
+            "sigma": 4
           }
         }
       }
@@ -22460,80 +22520,80 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Bamra": {
         "forecast": {
           "weeks": [
-            2,
-            2,
+            1,
+            1,
             2,
             2
           ],
-          "outbreak_prob": 22,
+          "outbreak_prob": 10,
           "level": "low",
           "mu": 3,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Bamra": {
             "weeks": [
-              2,
-              2,
-              3,
-              3
+              0,
+              0,
+              0,
+              0
             ],
-            "outbreak_prob": 75,
-            "level": "high",
+            "outbreak_prob": 5,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Kuchinda": {
             "weeks": [
-              3,
-              3,
-              2,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 45,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Rairakhol": {
         "forecast": {
           "weeks": [
-            6,
+            4,
             5,
             5,
-            4
+            6
           ],
-          "outbreak_prob": 14,
+          "outbreak_prob": 11,
           "level": "low",
           "mu": 8,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Rairakhol": {
             "weeks": [
-              5,
-              5,
-              5,
-              4
+              2,
+              3,
+              3,
+              3
             ],
-            "outbreak_prob": 45,
-            "level": "moderate",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Naktideul": {
             "weeks": [
-              4,
-              5,
-              5,
-              6
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 73,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
@@ -22543,37 +22603,37 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
             3,
             3,
             3,
-            2
+            3
           ],
-          "outbreak_prob": 10,
+          "outbreak_prob": 11,
           "level": "low",
           "mu": 5,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Maneswar": {
             "weeks": [
-              2,
-              2,
-              2,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 61,
-            "level": "high",
+            "outbreak_prob": 15,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Jujomura": {
             "weeks": [
-              5,
-              4,
-              5,
-              4
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 47,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -22582,128 +22642,131 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Visakhapatnam": {
     "district_forecast": {
       "weeks": [
-        81,
-        102,
-        110,
-        132
+        170,
+        193,
+        211,
+        214
       ],
-      "outbreak_prob": 83
+      "outbreak_prob": 76,
+      "level": "very_high",
+      "mu": 88,
+      "sigma": 34
     },
     "district_baseline": {
       "mu": 88,
-      "sigma": 8
+      "sigma": 34
     },
     "district_level": "very_high",
     "municipalities": {
       "Greater Visakhapatnam Municipal Corp": {
         "forecast": {
           "weeks": [
-            69,
-            83,
-            93,
-            94
+            152,
+            166,
+            174,
+            182
           ],
-          "outbreak_prob": 65,
-          "level": "high",
+          "outbreak_prob": 76,
+          "level": "very_high",
           "mu": 75,
-          "sigma": 7
+          "sigma": 29
         },
         "wards": {
           "MVP Colony": {
             "weeks": [
-              6,
-              6,
-              5,
-              4
+              30,
+              33,
+              37,
+              38
             ],
-            "outbreak_prob": 22,
-            "level": "low",
+            "outbreak_prob": 92,
+            "level": "very_high",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           },
           "Dwaraka Nagar": {
             "weeks": [
-              10,
-              11,
+              12,
               13,
-              13
+              16,
+              17
             ],
-            "outbreak_prob": 75,
+            "outbreak_prob": 47,
             "level": "high",
             "mu": 10,
-            "sigma": 1
+            "sigma": 4
           },
           "Madhurawada": {
             "weeks": [
-              13,
-              13,
-              16,
-              16
+              39,
+              48,
+              53,
+              59
             ],
-            "outbreak_prob": 70,
-            "level": "high",
+            "outbreak_prob": 95,
+            "level": "very_high",
             "mu": 13,
-            "sigma": 1
+            "sigma": 5
           },
           "Gajuwaka": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
-            ],
-            "outbreak_prob": 14,
-            "level": "low",
-            "mu": 5,
-            "sigma": 1
-          },
-          "Pendurthi": {
-            "weeks": [
-              13,
-              12,
-              13,
-              13
-            ],
-            "outbreak_prob": 47,
-            "level": "moderate",
-            "mu": 12,
-            "sigma": 1
-          },
-          "Asilmetta": {
-            "weeks": [
-              12,
-              13,
-              12,
-              13
-            ],
-            "outbreak_prob": 47,
-            "level": "moderate",
-            "mu": 12,
-            "sigma": 1
-          },
-          "Maddilapalem": {
-            "weeks": [
+              6,
               7,
-              6,
-              6,
-              5
-            ],
-            "outbreak_prob": 15,
-            "level": "low",
-            "mu": 10,
-            "sigma": 1
-          },
-          "Seethammadhara": {
-            "weeks": [
-              5,
-              6,
               7,
               8
             ],
-            "outbreak_prob": 62,
+            "outbreak_prob": 34,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 2
+          },
+          "Pendurthi": {
+            "weeks": [
+              17,
+              19,
+              21,
+              21
+            ],
+            "outbreak_prob": 51,
+            "level": "high",
+            "mu": 12,
+            "sigma": 5
+          },
+          "Asilmetta": {
+            "weeks": [
+              15,
+              16,
+              20,
+              21
+            ],
+            "outbreak_prob": 47,
+            "level": "high",
+            "mu": 12,
+            "sigma": 5
+          },
+          "Maddilapalem": {
+            "weeks": [
+              13,
+              14,
+              15,
+              18
+            ],
+            "outbreak_prob": 48,
+            "level": "high",
+            "mu": 10,
+            "sigma": 4
+          },
+          "Seethammadhara": {
+            "weeks": [
+              7,
+              8,
+              9,
+              9
+            ],
+            "outbreak_prob": 53,
             "level": "high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -22712,95 +22775,95 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Bheemunipatnam": {
         "forecast": {
           "weeks": [
-            6,
-            7,
-            8,
-            9
+            9,
+            9,
+            11,
+            13
           ],
-          "outbreak_prob": 62,
-          "level": "high",
+          "outbreak_prob": 71,
+          "level": "very_high",
           "mu": 6,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Bheemunipatnam": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              4,
+              5,
+              6,
+              6
             ],
-            "outbreak_prob": 8,
-            "level": "low",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Anandapuram": {
             "weeks": [
               4,
-              4,
               5,
-              5
+              5,
+              6
             ],
-            "outbreak_prob": 70,
-            "level": "high",
+            "outbreak_prob": 34,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Anakapalle": {
         "forecast": {
           "weeks": [
-            5,
-            4,
-            4,
-            5
+            12,
+            12,
+            14,
+            16
           ],
-          "outbreak_prob": 38,
-          "level": "moderate",
+          "outbreak_prob": 84,
+          "level": "very_high",
           "mu": 4,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Anakapalle": {
             "weeks": [
-              1,
-              1,
-              1,
-              1
+              7,
+              9,
+              9,
+              11
             ],
-            "outbreak_prob": 10,
-            "level": "low",
+            "outbreak_prob": 78,
+            "level": "very_high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Yelamanchili": {
             "weeks": [
-              1,
-              1,
-              1,
-              1
+              4,
+              5,
+              5,
+              5
             ],
-            "outbreak_prob": 17,
-            "level": "low",
+            "outbreak_prob": 49,
+            "level": "high",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Paderu": {
         "forecast": {
           "weeks": [
-            4,
-            3,
-            4,
-            4
+            5,
+            6,
+            6,
+            7
           ],
-          "outbreak_prob": 45,
-          "level": "moderate",
+          "outbreak_prob": 51,
+          "level": "high",
           "mu": 3,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Paderu": {
@@ -22810,22 +22873,22 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 16,
+            "outbreak_prob": 15,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Araku": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              4,
+              5,
+              5,
+              5
             ],
-            "outbreak_prob": 9,
-            "level": "low",
+            "outbreak_prob": 32,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -22834,128 +22897,131 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Vijayawada": {
     "district_forecast": {
       "weeks": [
-        78,
-        97,
-        111,
-        123
+        147,
+        167,
+        161,
+        183
       ],
-      "outbreak_prob": 70
+      "outbreak_prob": 70,
+      "level": "very_high",
+      "mu": 86,
+      "sigma": 38
     },
     "district_baseline": {
       "mu": 86,
-      "sigma": 12
+      "sigma": 38
     },
-    "district_level": "high",
+    "district_level": "very_high",
     "municipalities": {
       "Vijayawada Municipal Corporation": {
         "forecast": {
           "weeks": [
-            80,
-            86,
-            98,
-            126
+            115,
+            135,
+            137,
+            159
           ],
-          "outbreak_prob": 82,
-          "level": "very_high",
+          "outbreak_prob": 57,
+          "level": "high",
           "mu": 73,
-          "sigma": 10
+          "sigma": 32
         },
         "wards": {
           "Governorpet": {
             "weeks": [
-              14,
-              16,
-              18,
-              20
+              20,
+              24,
+              25,
+              26
             ],
-            "outbreak_prob": 64,
+            "outbreak_prob": 53,
             "level": "high",
             "mu": 14,
-            "sigma": 2
+            "sigma": 6
           },
           "Patamata": {
             "weeks": [
-              7,
               8,
               9,
+              10,
               11
             ],
-            "outbreak_prob": 95,
-            "level": "very_high",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 6,
-            "sigma": 1
+            "sigma": 3
           },
           "Benz Circle": {
             "weeks": [
-              8,
-              9,
-              10,
-              11
+              11,
+              12,
+              14,
+              15
             ],
-            "outbreak_prob": 85,
-            "level": "very_high",
+            "outbreak_prob": 57,
+            "level": "high",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           },
           "Auto Nagar": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              17,
+              20,
+              22,
+              24
             ],
-            "outbreak_prob": 6,
-            "level": "low",
+            "outbreak_prob": 95,
+            "level": "very_high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "MG Road": {
             "weeks": [
-              4,
-              4,
-              5,
-              5
+              11,
+              12,
+              14,
+              14
             ],
-            "outbreak_prob": 78,
-            "level": "high",
+            "outbreak_prob": 84,
+            "level": "very_high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Krishna Lanka": {
             "weeks": [
-              9,
-              9,
-              8,
-              7
+              21,
+              21,
+              23,
+              28
             ],
-            "outbreak_prob": 21,
-            "level": "low",
+            "outbreak_prob": 51,
+            "level": "high",
             "mu": 14,
-            "sigma": 2
+            "sigma": 6
           },
           "Ajit Singh Nagar": {
             "weeks": [
-              11,
-              10,
-              11,
-              11
+              16,
+              17,
+              17,
+              21
             ],
-            "outbreak_prob": 41,
-            "level": "moderate",
+            "outbreak_prob": 56,
+            "level": "high",
             "mu": 10,
-            "sigma": 1
+            "sigma": 4
           },
           "Bhavanipuram": {
             "weeks": [
-              16,
-              15,
-              15,
-              15
+              20,
+              22,
+              24,
+              26
             ],
-            "outbreak_prob": 33,
-            "level": "moderate",
+            "outbreak_prob": 51,
+            "level": "high",
             "mu": 14,
-            "sigma": 2
+            "sigma": 6
           }
         }
       }
@@ -22964,80 +23030,80 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "G. Konduru": {
         "forecast": {
           "weeks": [
-            9,
-            8,
-            8,
-            9
+            15,
+            18,
+            17,
+            21
           ],
-          "outbreak_prob": 40,
-          "level": "moderate",
+          "outbreak_prob": 76,
+          "level": "very_high",
           "mu": 8,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "G. Konduru": {
             "weeks": [
-              4,
-              4,
-              5,
-              5
+              10,
+              10,
+              12,
+              13
             ],
-            "outbreak_prob": 57,
-            "level": "high",
+            "outbreak_prob": 81,
+            "level": "very_high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Mylavaram": {
             "weeks": [
-              5,
-              5,
-              5,
-              6
+              6,
+              7,
+              8,
+              8
             ],
-            "outbreak_prob": 31,
-            "level": "moderate",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Vijayawada Rural": {
         "forecast": {
           "weeks": [
-            6,
+            5,
             6,
             7,
             7
           ],
-          "outbreak_prob": 66,
-          "level": "high",
+          "outbreak_prob": 30,
+          "level": "moderate",
           "mu": 5,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Gannavaram": {
             "weeks": [
-              4,
-              4,
               5,
-              5
+              6,
+              6,
+              7
             ],
-            "outbreak_prob": 72,
+            "outbreak_prob": 51,
             "level": "high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Kankipadu": {
             "weeks": [
-              2,
-              2,
-              3,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 68,
-            "level": "high",
+            "outbreak_prob": 15,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -23046,80 +23112,83 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Guntur": {
     "district_forecast": {
       "weeks": [
-        67,
-        73,
-        73,
-        71
+        40,
+        41,
+        50,
+        54
       ],
-      "outbreak_prob": 34
+      "outbreak_prob": 12,
+      "level": "low",
+      "mu": 66,
+      "sigma": 28
     },
     "district_baseline": {
       "mu": 66,
-      "sigma": 8
+      "sigma": 28
     },
-    "district_level": "moderate",
+    "district_level": "low",
     "municipalities": {
       "Guntur Municipal Corporation": {
         "forecast": {
           "weeks": [
-            31,
-            29,
-            28,
-            30
+            18,
+            19,
+            20,
+            25
           ],
-          "outbreak_prob": 47,
-          "level": "moderate",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 28,
-          "sigma": 3
+          "sigma": 12
         },
         "wards": {
           "Brodipet": {
             "weeks": [
-              7,
-              8,
-              9,
-              11
-            ],
-            "outbreak_prob": 84,
-            "level": "very_high",
-            "mu": 6,
-            "sigma": 1
-          },
-          "Lakshmipuram": {
-            "weeks": [
-              7,
-              9,
-              10,
-              11
-            ],
-            "outbreak_prob": 86,
-            "level": "very_high",
-            "mu": 7,
-            "sigma": 1
-          },
-          "Pattabhipuram": {
-            "weeks": [
-              6,
-              6,
-              6,
-              6
-            ],
-            "outbreak_prob": 38,
-            "level": "moderate",
-            "mu": 5,
-            "sigma": 1
-          },
-          "Arundelpet": {
-            "weeks": [
-              3,
+              4,
               4,
               4,
               4
             ],
-            "outbreak_prob": 28,
-            "level": "moderate",
+            "outbreak_prob": 12,
+            "level": "low",
+            "mu": 6,
+            "sigma": 3
+          },
+          "Lakshmipuram": {
+            "weeks": [
+              4,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 7,
+            "sigma": 3
+          },
+          "Pattabhipuram": {
+            "weeks": [
+              4,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 5,
+            "sigma": 2
+          },
+          "Arundelpet": {
+            "weeks": [
+              2,
+              2,
+              2,
+              3
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Brundavan Gardens": {
             "weeks": [
@@ -23128,62 +23197,62 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               3,
               3
             ],
-            "outbreak_prob": 19,
+            "outbreak_prob": 11,
             "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "AT Agraharam": {
             "weeks": [
-              2,
-              2,
-              3,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 76,
-            "level": "high",
+            "outbreak_prob": 15,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Tenali Municipality": {
         "forecast": {
           "weeks": [
-            16,
-            17,
-            19,
-            19
+            10,
+            10,
+            10,
+            10
           ],
-          "outbreak_prob": 71,
-          "level": "high",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 15,
-          "sigma": 2
+          "sigma": 6
         },
         "wards": {
           "Tenali Town": {
             "weeks": [
-              9,
-              9,
-              8,
-              9
+              5,
+              5,
+              5,
+              5
             ],
-            "outbreak_prob": 42,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 8,
-            "sigma": 1
+            "sigma": 3
           },
           "Kothapeta": {
             "weeks": [
-              7,
-              9,
-              10,
-              11
+              4,
+              4,
+              4,
+              4
             ],
-            "outbreak_prob": 93,
-            "level": "very_high",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 7,
-            "sigma": 1
+            "sigma": 3
           }
         }
       }
@@ -23192,15 +23261,15 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Mangalagiri": {
         "forecast": {
           "weeks": [
-            6,
-            5,
-            6,
-            5
+            3,
+            3,
+            3,
+            3
           ],
-          "outbreak_prob": 28,
-          "level": "moderate",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 5,
-          "sigma": 1
+          "sigma": 2
         },
         "villages": {
           "Mangalagiri": {
@@ -23210,10 +23279,10 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               2,
               2
             ],
-            "outbreak_prob": 10,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Tadepalli": {
             "weeks": [
@@ -23222,65 +23291,65 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 19,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Pedakurapadu": {
         "forecast": {
           "weeks": [
-            9,
-            10,
-            10,
-            9
+            6,
+            6,
+            6,
+            7
           ],
-          "outbreak_prob": 34,
-          "level": "moderate",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 9,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Pedakurapadu": {
             "weeks": [
+              4,
+              4,
               5,
-              6,
-              6,
-              8
+              5
             ],
-            "outbreak_prob": 72,
-            "level": "high",
+            "outbreak_prob": 14,
+            "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Nadendla": {
             "weeks": [
-              4,
-              5,
-              6,
-              6
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 72,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Sattenapalli": {
         "forecast": {
           "weeks": [
-            6,
-            6,
             5,
-            5
+            6,
+            6,
+            7
           ],
-          "outbreak_prob": 5,
+          "outbreak_prob": 12,
           "level": "low",
           "mu": 9,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Sattenapalli": {
@@ -23288,24 +23357,24 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               4,
               4,
               4,
-              3
+              4
             ],
-            "outbreak_prob": 20,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 6,
-            "sigma": 1
+            "sigma": 3
           },
           "Rajupalem": {
             "weeks": [
               2,
               2,
-              2,
-              2
+              3,
+              3
             ],
-            "outbreak_prob": 15,
+            "outbreak_prob": 13,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -23314,68 +23383,71 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Krishna": {
     "district_forecast": {
       "weeks": [
-        47,
-        54,
-        63,
-        72
+        88,
+        102,
+        101,
+        124
       ],
-      "outbreak_prob": 78
+      "outbreak_prob": 73,
+      "level": "very_high",
+      "mu": 50,
+      "sigma": 21
     },
     "district_baseline": {
       "mu": 50,
-      "sigma": 6
+      "sigma": 21
     },
-    "district_level": "high",
+    "district_level": "very_high",
     "municipalities": {
       "Machilipatnam Municipality": {
         "forecast": {
           "weeks": [
-            16,
-            17,
-            18,
-            22
+            28,
+            31,
+            30,
+            38
           ],
-          "outbreak_prob": 65,
-          "level": "high",
+          "outbreak_prob": 74,
+          "level": "very_high",
           "mu": 15,
-          "sigma": 2
+          "sigma": 6
         },
         "wards": {
           "Machilipatnam Town": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              12,
+              13,
+              13,
+              15
             ],
-            "outbreak_prob": 17,
-            "level": "low",
+            "outbreak_prob": 86,
+            "level": "very_high",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Robertsonpet": {
             "weeks": [
-              2,
-              2,
-              2,
-              1
+              4,
+              4,
+              5,
+              5
             ],
-            "outbreak_prob": 18,
-            "level": "low",
+            "outbreak_prob": 31,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Chilakalapudi": {
             "weeks": [
-              10,
-              10,
-              10,
-              10
+              11,
+              13,
+              14,
+              16
             ],
-            "outbreak_prob": 30,
-            "level": "moderate",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           }
         }
       }
@@ -23384,160 +23456,160 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Gudivada": {
         "forecast": {
           "weeks": [
-            9,
-            11,
-            11,
-            13
+            12,
+            13,
+            17,
+            16
           ],
-          "outbreak_prob": 68,
+          "outbreak_prob": 47,
           "level": "high",
           "mu": 10,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Gudivada Town": {
             "weeks": [
               5,
               6,
-              7,
+              6,
               8
             ],
-            "outbreak_prob": 65,
-            "level": "high",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           },
           "Pamarru": {
             "weeks": [
               7,
               7,
-              7,
-              7
+              9,
+              10
             ],
-            "outbreak_prob": 34,
-            "level": "moderate",
+            "outbreak_prob": 47,
+            "level": "high",
             "mu": 6,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Avanigadda": {
         "forecast": {
           "weeks": [
-            8,
-            10,
-            10,
-            10
+            19,
+            21,
+            23,
+            25
           ],
-          "outbreak_prob": 67,
-          "level": "high",
+          "outbreak_prob": 83,
+          "level": "very_high",
           "mu": 8,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Avanigadda": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              4,
+              4,
+              4,
+              5
             ],
-            "outbreak_prob": 13,
-            "level": "low",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Koduru": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              15,
+              16,
+              18,
+              21
             ],
-            "outbreak_prob": 14,
-            "level": "low",
+            "outbreak_prob": 91,
+            "level": "very_high",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Nuzvid": {
         "forecast": {
           "weeks": [
-            7,
             8,
             9,
-            10
+            9,
+            12
           ],
-          "outbreak_prob": 64,
-          "level": "high",
+          "outbreak_prob": 32,
+          "level": "moderate",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Nuzvid Town": {
             "weeks": [
+              3,
               4,
               4,
-              4,
-              3
+              5
             ],
-            "outbreak_prob": 44,
+            "outbreak_prob": 28,
             "level": "moderate",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Agiripalli": {
             "weeks": [
-              4,
+              5,
               5,
               6,
-              7
+              6
             ],
-            "outbreak_prob": 73,
-            "level": "high",
+            "outbreak_prob": 31,
+            "level": "moderate",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Pedana": {
         "forecast": {
           "weeks": [
-            10,
-            10,
-            12,
-            12
+            24,
+            24,
+            30,
+            30
           ],
-          "outbreak_prob": 67,
-          "level": "high",
+          "outbreak_prob": 81,
+          "level": "very_high",
           "mu": 10,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Pedana": {
             "weeks": [
-              3,
-              2,
-              2,
-              2
+              4,
+              5,
+              6,
+              6
             ],
-            "outbreak_prob": 16,
-            "level": "low",
+            "outbreak_prob": 30,
+            "level": "moderate",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Bantumilli": {
             "weeks": [
-              6,
-              8,
-              9,
-              11
+              19,
+              22,
+              24,
+              23
             ],
             "outbreak_prob": 95,
             "level": "very_high",
             "mu": 6,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -23546,92 +23618,95 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "Kurnool": {
     "district_forecast": {
       "weeks": [
-        29,
-        28,
-        26,
-        23
+        12,
+        12,
+        13,
+        11
       ],
-      "outbreak_prob": 8
+      "outbreak_prob": 8,
+      "level": "low",
+      "mu": 46,
+      "sigma": 21
     },
     "district_baseline": {
       "mu": 46,
-      "sigma": 7
+      "sigma": 21
     },
     "district_level": "low",
     "municipalities": {
       "Kurnool Municipal Corporation": {
         "forecast": {
           "weeks": [
-            14,
-            16,
-            16,
-            16
+            4,
+            4,
+            4,
+            4
           ],
-          "outbreak_prob": 47,
-          "level": "moderate",
+          "outbreak_prob": 8,
+          "level": "low",
           "mu": 14,
-          "sigma": 2
+          "sigma": 6
         },
         "wards": {
           "Kurnool Town": {
             "weeks": [
-              4,
-              3,
-              4,
-              4
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 42,
-            "level": "moderate",
+            "outbreak_prob": 8,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Bhagya Nagar": {
             "weeks": [
-              3,
-              3,
-              3,
-              4
-            ],
-            "outbreak_prob": 55,
-            "level": "high",
-            "mu": 2,
-            "sigma": 1
-          },
-          "B Camp": {
-            "weeks": [
-              4,
-              4,
-              5,
-              5
-            ],
-            "outbreak_prob": 64,
-            "level": "high",
-            "mu": 3,
-            "sigma": 1
-          },
-          "C Camp": {
-            "weeks": [
-              2,
-              2,
-              2,
-              2
+              0,
+              0,
+              0,
+              0
             ],
             "outbreak_prob": 5,
             "level": "low",
+            "mu": 2,
+            "sigma": 2
+          },
+          "B Camp": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
+          },
+          "C Camp": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 3,
+            "sigma": 2
           },
           "Konda Reddy Buruzu": {
             "weeks": [
-              2,
-              2,
-              2,
-              2
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 9,
+            "outbreak_prob": 8,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -23640,120 +23715,120 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Adoni": {
         "forecast": {
           "weeks": [
-            4,
-            4,
-            4,
-            4
+            2,
+            2,
+            2,
+            2
           ],
-          "outbreak_prob": 20,
+          "outbreak_prob": 8,
           "level": "low",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Adoni Town": {
             "weeks": [
-              3,
-              3,
-              4,
-              4
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 57,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Yemmiganur": {
             "weeks": [
-              3,
-              3,
-              3,
-              3
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 22,
+            "outbreak_prob": 7,
             "level": "low",
             "mu": 5,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Nandyal": {
         "forecast": {
           "weeks": [
-            13,
-            17,
-            19,
-            22
+            3,
+            3,
+            3,
+            3
           ],
-          "outbreak_prob": 82,
-          "level": "very_high",
+          "outbreak_prob": 7,
+          "level": "low",
           "mu": 12,
-          "sigma": 2
+          "sigma": 6
         },
         "villages": {
           "Nandyal Town": {
-            "weeks": [
-              8,
-              9,
-              11,
-              12
-            ],
-            "outbreak_prob": 94,
-            "level": "very_high",
-            "mu": 7,
-            "sigma": 1
-          },
-          "Banaganapalle": {
-            "weeks": [
-              6,
-              5,
-              6,
-              5
-            ],
-            "outbreak_prob": 37,
-            "level": "moderate",
-            "mu": 5,
-            "sigma": 1
-          }
-        }
-      },
-      "Dhone": {
-        "forecast": {
-          "weeks": [
-            9,
-            8,
-            7,
-            7
-          ],
-          "outbreak_prob": 14,
-          "level": "low",
-          "mu": 13,
-          "sigma": 2
-        },
-        "villages": {
-          "Dhone": {
             "weeks": [
               2,
               2,
               2,
               2
             ],
-            "outbreak_prob": 9,
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 7,
+            "sigma": 3
+          },
+          "Banaganapalle": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 7,
+            "level": "low",
+            "mu": 5,
+            "sigma": 2
+          }
+        }
+      },
+      "Dhone": {
+        "forecast": {
+          "weeks": [
+            3,
+            3,
+            3,
+            3
+          ],
+          "outbreak_prob": 7,
+          "level": "low",
+          "mu": 13,
+          "sigma": 6
+        },
+        "villages": {
+          "Dhone": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 8,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           },
           "Pattikonda": {
             "weeks": [
-              11,
-              11,
-              10,
-              10
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 38,
-            "level": "moderate",
+            "outbreak_prob": 7,
+            "level": "low",
             "mu": 10,
-            "sigma": 1
+            "sigma": 4
           }
         }
       }
@@ -23762,56 +23837,59 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "East Godavari": {
     "district_forecast": {
       "weeks": [
-        42,
-        37,
+        36,
+        34,
         33,
-        31
+        35
       ],
-      "outbreak_prob": 15
+      "outbreak_prob": 11,
+      "level": "low",
+      "mu": 60,
+      "sigma": 27
     },
     "district_baseline": {
       "mu": 60,
-      "sigma": 9
+      "sigma": 27
     },
     "district_level": "low",
     "municipalities": {
       "Kakinada Municipal Corporation": {
         "forecast": {
           "weeks": [
+            4,
             5,
-            4,
-            4,
-            4
+            5,
+            5
           ],
-          "outbreak_prob": 13,
+          "outbreak_prob": 12,
           "level": "low",
           "mu": 7,
-          "sigma": 1
+          "sigma": 3
         },
         "wards": {
           "Kakinada Town": {
             "weeks": [
-              1,
-              2,
-              1,
-              2
+              0,
+              0,
+              0,
+              0
             ],
-            "outbreak_prob": 42,
-            "level": "moderate",
+            "outbreak_prob": 5,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Sarpavaram": {
             "weeks": [
+              2,
               3,
-              2,
-              2,
-              2
+              3,
+              3
             ],
-            "outbreak_prob": 7,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Ramanayyapeta": {
             "weeks": [
@@ -23820,74 +23898,74 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               1,
               1
             ],
-            "outbreak_prob": 9,
+            "outbreak_prob": 15,
             "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           },
           "Bhanugudi": {
             "weeks": [
-              2,
               1,
-              2,
-              2
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 45,
-            "level": "moderate",
+            "outbreak_prob": 15,
+            "level": "low",
             "mu": 1,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Rajahmundry Municipal Corp": {
         "forecast": {
           "weeks": [
-            7,
-            7,
+            5,
             6,
-            6
+            5,
+            5
           ],
-          "outbreak_prob": 6,
+          "outbreak_prob": 10,
           "level": "low",
           "mu": 11,
-          "sigma": 2
+          "sigma": 5
         },
         "wards": {
           "Rajahmundry Town": {
             "weeks": [
-              5,
-              6,
-              6,
-              6
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 67,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Danavaipeta": {
             "weeks": [
-              4,
-              5,
-              5,
-              4
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 31,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           },
           "Kambala Cheruvu": {
             "weeks": [
-              3,
-              3,
-              4,
-              3
+              2,
+              2,
+              2,
+              2
             ],
-            "outbreak_prob": 32,
-            "level": "moderate",
+            "outbreak_prob": 12,
+            "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }
@@ -23896,68 +23974,68 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Peddapuram": {
         "forecast": {
           "weeks": [
-            20,
-            23,
-            23,
-            25
+            9,
+            9,
+            9,
+            9
           ],
-          "outbreak_prob": 73,
-          "level": "high",
+          "outbreak_prob": 10,
+          "level": "low",
           "mu": 18,
-          "sigma": 3
+          "sigma": 8
         },
         "villages": {
           "Peddapuram": {
             "weeks": [
-              6,
+              5,
               5,
               5,
               5
             ],
-            "outbreak_prob": 5,
+            "outbreak_prob": 11,
             "level": "low",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           },
           "Samalkota": {
             "weeks": [
-              10,
-              10,
-              9,
-              10
+              4,
+              4,
+              4,
+              5
             ],
-            "outbreak_prob": 34,
-            "level": "moderate",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 9,
-            "sigma": 1
+            "sigma": 4
           }
         }
       },
       "Tuni": {
         "forecast": {
           "weeks": [
-            9,
-            10,
-            10,
-            10
+            5,
+            6,
+            6,
+            5
           ],
-          "outbreak_prob": 48,
-          "level": "moderate",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 9,
-          "sigma": 1
+          "sigma": 4
         },
         "villages": {
           "Tuni": {
             "weeks": [
-              6,
-              7,
-              7,
-              6
+              4,
+              4,
+              4,
+              3
             ],
-            "outbreak_prob": 38,
-            "level": "moderate",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 6,
-            "sigma": 1
+            "sigma": 3
           },
           "Annavaram": {
             "weeks": [
@@ -23966,50 +24044,50 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
               2,
               2
             ],
-            "outbreak_prob": 11,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 3,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Amalapuram": {
         "forecast": {
           "weeks": [
-            11,
-            10,
+            9,
+            9,
             9,
             9
           ],
-          "outbreak_prob": 14,
+          "outbreak_prob": 11,
           "level": "low",
           "mu": 16,
-          "sigma": 2
+          "sigma": 7
         },
         "villages": {
           "Amalapuram": {
             "weeks": [
-              6,
-              7,
-              8,
-              9
+              4,
+              3,
+              4,
+              4
             ],
-            "outbreak_prob": 65,
-            "level": "high",
+            "outbreak_prob": 11,
+            "level": "low",
             "mu": 6,
-            "sigma": 1
+            "sigma": 3
           },
           "Mummidivaram": {
             "weeks": [
+              5,
+              5,
               6,
-              6,
-              6,
-              5
+              6
             ],
-            "outbreak_prob": 9,
+            "outbreak_prob": 11,
             "level": "low",
             "mu": 10,
-            "sigma": 2
+            "sigma": 5
           }
         }
       }
@@ -24018,68 +24096,71 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
   "NTR": {
     "district_forecast": {
       "weeks": [
-        66,
-        67,
-        70,
-        68
+        44,
+        41,
+        43,
+        40
       ],
-      "outbreak_prob": 28
+      "outbreak_prob": 12,
+      "level": "low",
+      "mu": 62,
+      "sigma": 29
     },
     "district_baseline": {
       "mu": 62,
-      "sigma": 11
+      "sigma": 29
     },
-    "district_level": "moderate",
+    "district_level": "low",
     "municipalities": {
       "NTR Municipal Council": {
         "forecast": {
           "weeks": [
-            26,
-            25,
             24,
-            21
+            28,
+            27,
+            33
           ],
-          "outbreak_prob": 17,
+          "outbreak_prob": 12,
           "level": "low",
           "mu": 40,
-          "sigma": 7
+          "sigma": 19
         },
         "wards": {
           "NTR Town": {
             "weeks": [
               9,
               8,
-              7,
-              7
+              9,
+              9
             ],
-            "outbreak_prob": 15,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 13,
-            "sigma": 2
+            "sigma": 6
           },
           "Eluru Road": {
             "weeks": [
-              16,
-              17,
-              16,
-              16
+              9,
+              11,
+              12,
+              13
             ],
-            "outbreak_prob": 36,
-            "level": "moderate",
+            "outbreak_prob": 13,
+            "level": "low",
             "mu": 15,
-            "sigma": 3
+            "sigma": 7
           },
           "Currency Nagar": {
             "weeks": [
-              9,
-              9,
-              7,
-              7
+              8,
+              8,
+              8,
+              9
             ],
-            "outbreak_prob": 5,
+            "outbreak_prob": 11,
             "level": "low",
             "mu": 13,
-            "sigma": 2
+            "sigma": 6
           }
         }
       }
@@ -24088,120 +24169,120 @@ export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
       "Tiruvuru": {
         "forecast": {
           "weeks": [
-            11,
-            12,
-            14,
-            14
+            6,
+            7,
+            6,
+            6
           ],
-          "outbreak_prob": 62,
-          "level": "high",
+          "outbreak_prob": 11,
+          "level": "low",
           "mu": 10,
-          "sigma": 2
+          "sigma": 5
         },
         "villages": {
           "Tiruvuru": {
             "weeks": [
               4,
               4,
-              3,
-              3
+              4,
+              5
             ],
-            "outbreak_prob": 16,
+            "outbreak_prob": 12,
             "level": "low",
             "mu": 6,
-            "sigma": 1
+            "sigma": 3
           },
           "A. Konduru": {
             "weeks": [
-              3,
+              2,
               2,
               2,
               2
             ],
-            "outbreak_prob": 20,
+            "outbreak_prob": 10,
             "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Nuzividu": {
         "forecast": {
           "weeks": [
-            6,
-            7,
-            6,
-            6
+            4,
+            4,
+            4,
+            4
           ],
-          "outbreak_prob": 52,
-          "level": "moderate",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Nuzividu Rural": {
             "weeks": [
               2,
-              3,
-              3,
-              2
-            ],
-            "outbreak_prob": 39,
-            "level": "moderate",
-            "mu": 2,
-            "sigma": 1
-          },
-          "Reddigudem": {
-            "weeks": [
-              3,
-              3,
+              2,
               2,
               2
             ],
             "outbreak_prob": 15,
             "level": "low",
+            "mu": 2,
+            "sigma": 2
+          },
+          "Reddigudem": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       },
       "Vissannapeta": {
         "forecast": {
           "weeks": [
-            7,
-            7,
-            8,
-            9
+            4,
+            4,
+            4,
+            4
           ],
-          "outbreak_prob": 57,
-          "level": "high",
+          "outbreak_prob": 12,
+          "level": "low",
           "mu": 6,
-          "sigma": 1
+          "sigma": 3
         },
         "villages": {
           "Vissannapeta": {
             "weeks": [
-              3,
-              3,
-              4,
-              4
+              1,
+              1,
+              1,
+              1
             ],
-            "outbreak_prob": 59,
-            "level": "high",
+            "outbreak_prob": 10,
+            "level": "low",
             "mu": 2,
-            "sigma": 1
+            "sigma": 2
           },
           "Chatrai": {
             "weeks": [
-              5,
-              5,
-              5,
-              6
+              3,
+              3,
+              3,
+              4
             ],
-            "outbreak_prob": 55,
-            "level": "high",
+            "outbreak_prob": 13,
+            "level": "low",
             "mu": 4,
-            "sigma": 1
+            "sigma": 2
           }
         }
       }

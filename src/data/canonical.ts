@@ -534,3 +534,23 @@ function candidateLeaves(stateLabel: string, filters: DashboardFiltersLike): Lea
 }
 
 export { WEEK_ENDINGS };
+
+// ──────────────── Dropdown helpers ────────────────
+
+/** Returns all municipalities + blocks under a district (mid-level dropdown). */
+export function getBlockDropdown(district: string): string[] {
+  const d = MOCK_DATASET[district];
+  if (!d) return [];
+  return [...d.municipalities.map((m) => m.name), ...d.blocks.map((b) => b.name)];
+}
+
+/** Returns wards (if municipality) or villages (if block) under a mid-level entry. */
+export function getLeafDropdown(district: string, midLevel: string): string[] {
+  const d = MOCK_DATASET[district];
+  if (!d) return [];
+  const muni = d.municipalities.find((m) => m.name === midLevel);
+  if (muni) return muni.wards.map((w) => w.name);
+  const block = d.blocks.find((b) => b.name === midLevel);
+  if (block) return block.villages.map((v) => v.name);
+  return [];
+}

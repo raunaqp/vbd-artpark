@@ -2122,9 +2122,46 @@ export const getRiskForecast = (input?: DashboardFiltersLike | string, legacyBlo
   const canon = canonicalRiskForecast(stateLabel, filters);
   return canon.length ? canon : buildDerivedDashboardData(filters).riskForecast;
 };
-export const getWeeklyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).weeklyTimeSeries;
-export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).dailyTimeSeries;
-export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).monthlyTimeSeries;
+/**
+ * Canonical-aware scale: ratio of recent (last 8 weeks) cases at the deepest
+ * selected geography vs. the same window at the state level. Lets time-series
+ * magnitudes track the user's drill level (block / ward / village) without
+ * touching the underlying generators.
+ */
+function canonicalScopeScale(filters: DashboardFiltersLike): number {
+  const stateLabel = stateLabelFromId(activeStateId);
+  const stateSeries = getCanonicalWeeklySeries(stateLabel, { ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" });
+  const scopeSeries = getCanonicalWeeklySeries(stateLabel, filters);
+  const stateRecent = stateSeries.slice(-8).reduce((a, b) => a + b, 0);
+  const scopeRecent = scopeSeries.slice(-8).reduce((a, b) => a + b, 0);
+  if (stateRecent <= 0) return 1;
+  return Math.max(0, scopeRecent / stateRecent);
+}
+
+function scaleSeries(series: TimeSeriesPoint[], scale: number): TimeSeriesPoint[] {
+  if (scale === 1) return series;
+  return series.map((p) => {
+    const positive = Math.max(0, Math.round(p.positive * scale));
+    const samples = Math.max(positive, Math.round(p.samples * scale));
+    return { ...p, positive, samples, tpr: Number(((positive / Math.max(samples, 1)) * 100).toFixed(1)) };
+  });
+}
+
+export const getWeeklyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
+  const filters = resolveFilters(input, legacyBlock);
+  const stateSeries = buildDerivedDashboardData({ ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" }).weeklyTimeSeries;
+  return scaleSeries(stateSeries, canonicalScopeScale(filters));
+};
+export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
+  const filters = resolveFilters(input, legacyBlock);
+  const stateSeries = buildDerivedDashboardData({ ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" }).dailyTimeSeries;
+  return scaleSeries(stateSeries, canonicalScopeScale(filters));
+};
+export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
+  const filters = resolveFilters(input, legacyBlock);
+  const stateSeries = buildDerivedDashboardData({ ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" }).monthlyTimeSeries;
+  return scaleSeries(stateSeries, canonicalScopeScale(filters));
+};
 export const getForecastData = (input?: DashboardFiltersLike | string, legacyBlock?: string): ForecastChartPoint[] => buildDerivedDashboardData(input, legacyBlock).forecastData;
 export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherObserved;
 export const getWeatherForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherForecast;

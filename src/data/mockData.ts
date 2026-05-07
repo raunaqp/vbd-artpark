@@ -964,6 +964,26 @@ export const stateBundles: Record<StateId, StateBundle> = { andhra_pradesh: AP, 
 // hotspots, predictions, alerts). Non-seeded districts keep synthesized baselines.
 import { applySeedOverlayAll } from "./seedOverlay";
 applySeedOverlayAll(stateBundles);
+
+// Inject canonical district lists from MOCK_DATASET so dropdowns include all 21 districts.
+{
+  const labels: Record<StateId, string> = { andhra_pradesh: "Andhra Pradesh", karnataka: "Karnataka", odisha: "Odisha" };
+  for (const sid of Object.keys(labels) as StateId[]) {
+    const canon = getDistrictMetrics(labels[sid]);
+    if (canon.length) {
+      const names = ["All Districts", ...canon.map((m) => m.name)];
+      const blockNames = ["All Blocks"];
+      const blockSet = new Set<string>();
+      canon.forEach((m) => {
+        m.district.municipalities.forEach((x) => blockSet.add(x.name));
+        m.district.blocks.forEach((x) => blockSet.add(x.name));
+      });
+      stateBundles[sid].districts = names;
+      stateBundles[sid].blocks = [...blockNames, ...Array.from(blockSet)];
+    }
+  }
+}
+
 export const stateOptions: { id: StateId; label: string }[] = [
   { id: "andhra_pradesh", label: "Andhra Pradesh" },
   { id: "odisha", label: "Odisha" },

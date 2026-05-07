@@ -34,8 +34,8 @@ function Router() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   useEffect(() => {
-    if (isDataOperator && activeTab !== "surveillance" && activeTab !== "upload") {
-      setActiveTab("surveillance");
+    if (isDataOperator && activeTab !== "upload") {
+      setActiveTab("upload");
     } else if (!isAdmin && activeTab === "admin") {
       setActiveTab("overview");
     }

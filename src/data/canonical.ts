@@ -471,8 +471,22 @@ export function canonicalRiskForecast(stateLabel: string, filters: DashboardFilt
   if (filters.district && filters.district !== "All Districts") {
     const parent = metrics.find((m) => m.name === filters.district);
     if (!parent) return [];
-    weeks = parent.forecast4w;
-    summaryRisk = parent.legacyRisk;
+
+    // Drill: block / municipality and (optionally) ward / village.
+    if (filters.block && filters.block !== "All Blocks") {
+      const wardSel = filters.ward && filters.ward !== "All Wards" ? filters.ward : undefined;
+      const f = getForecastForGeography(parent.name, filters.block, wardSel);
+      if (f) {
+        weeks = f.weeks.slice(0, 4);
+        summaryRisk = levelToLegacy(f.level as HForecastLevel);
+      } else {
+        weeks = parent.forecast4w;
+        summaryRisk = parent.legacyRisk;
+      }
+    } else {
+      weeks = parent.forecast4w;
+      summaryRisk = parent.legacyRisk;
+    }
   } else {
     weeks = [0, 1, 2, 3].map((wi) =>
       metrics.reduce((acc, m) => acc + (m.forecast4w[wi] ?? 0), 0),

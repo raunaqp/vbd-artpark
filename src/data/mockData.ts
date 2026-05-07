@@ -1988,7 +1988,10 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
 }
 
 export function getFilteredRegions(input?: DashboardFiltersLike | string, legacyBlock?: string): RegionData[] {
-  return buildDerivedDashboardData(input, legacyBlock).regions;
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalRegions(stateLabel, filters);
+  return canon.length ? canon : buildDerivedDashboardData(filters).regions;
 }
 
 export function getKpiFromRegions(regions: RegionData[]) {

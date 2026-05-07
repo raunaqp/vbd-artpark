@@ -33,6 +33,7 @@ export interface OutbreakPrediction {
   area: string;
   probability: number;
   risk: "high" | "moderate" | "low";
+  riskLabel?: string;     // state-aware: WHO or ICMR class
   expectedWeek: string;
   signal: string;
   parentDistrict?: string;

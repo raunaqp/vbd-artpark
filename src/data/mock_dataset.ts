@@ -1,7 +1,8 @@
-// Auto-generated mock dataset — PRISM-H Dashboard
+// Auto-generated mock dataset — PRISM-H Dashboard v3.1
 // 21 districts × 36 weeks × 4 levels (district/mun/block → ward/village)
 // Period: Sep 7, 2025 → May 10, 2026 (week endings)
 // Seasonality: peak Oct 2025, trough Feb-Mar 2026, early signal rising May 2026
+// Forecast spread: realistic distribution across Low/Moderate/High/Very High at every level
 
 export interface WardData { name: string; weekly: number[]; }
 export interface MunicipalityData { name: string; weekly: number[]; wards: WardData[]; }
@@ -14,6 +15,28 @@ export interface DistrictData {
   weekly_total: number[];
   municipalities: MunicipalityData[];
   blocks: BlockData[];
+}
+
+export interface ForecastEntry {
+  weeks: number[];
+  outbreak_prob: number;
+  level?: 'low'|'moderate'|'high'|'very_high';
+  mu?: number;
+  sigma?: number;
+}
+
+export interface HierarchyForecast {
+  district_forecast: ForecastEntry;
+  district_baseline: { mu: number; sigma: number };
+  district_level: 'low'|'moderate'|'high'|'very_high';
+  municipalities: Record<string, {
+    forecast: ForecastEntry;
+    wards: Record<string, ForecastEntry>;
+  }>;
+  blocks: Record<string, {
+    forecast: ForecastEntry;
+    villages: Record<string, ForecastEntry>;
+  }>;
 }
 
 export const WEEK_ENDINGS = ["2025-09-07", "2025-09-14", "2025-09-21", "2025-09-28", "2025-10-05", "2025-10-12", "2025-10-19", "2025-10-26", "2025-11-02", "2025-11-09", "2025-11-16", "2025-11-23", "2025-11-30", "2025-12-07", "2025-12-14", "2025-12-21", "2025-12-28", "2026-01-04", "2026-01-11", "2026-01-18", "2026-01-25", "2026-02-01", "2026-02-08", "2026-02-15", "2026-02-22", "2026-03-01", "2026-03-08", "2026-03-15", "2026-03-22", "2026-03-29", "2026-04-05", "2026-04-12", "2026-04-19", "2026-04-26", "2026-05-03", "2026-05-10"];
@@ -18103,7 +18126,7 @@ export const MOCK_DATASET: Record<string, DistrictData> =
   }
 }
 
-// Population estimates — Census 2011 + linear projection.
+// Population estimates — Census 2011 + projection.
 // TODO: replace with ECI 2024 voter-roll-derived numbers when PRISM-H pipeline confirms.
 export const DISTRICT_POPULATION: Record<string, number> = {
   "Bengaluru Urban": 13608000,
@@ -18129,288 +18152,6062 @@ export const DISTRICT_POPULATION: Record<string, number> = {
   "NTR": 2220000
 };
 
-// WHO baseline (μ, σ) for current week — from same-week historical 'prior years'.
-// In real production, computed from ≥1 year history of same calendar week.
+// WHO baselines (μ, σ) per district. Computed from peak-period scaled to early-season.
+// In production, computed from ≥1 year history of same calendar week.
 export const WHO_BASELINES: Record<string, {mu:number; sigma:number}> = {
   "Bengaluru Urban": {
-    "mu": 33,
-    "sigma": 5
+    "mu": 119,
+    "sigma": 23
   },
   "Mysuru": {
-    "mu": 8,
-    "sigma": 6
+    "mu": 34,
+    "sigma": 5
   },
   "Udupi": {
-    "mu": 17,
-    "sigma": 2
+    "mu": 61,
+    "sigma": 8
   },
   "Dakshina Kannada": {
-    "mu": 21,
-    "sigma": 3
+    "mu": 78,
+    "sigma": 8
   },
   "Belagavi": {
-    "mu": 11,
-    "sigma": 2
+    "mu": 39,
+    "sigma": 5
   },
   "Tumakuru": {
-    "mu": 7,
-    "sigma": 2
+    "mu": 26,
+    "sigma": 5
   },
   "Khordha": {
-    "mu": 25,
-    "sigma": 2
+    "mu": 92,
+    "sigma": 15
   },
   "Cuttack": {
-    "mu": 20,
-    "sigma": 3
+    "mu": 75,
+    "sigma": 10
   },
   "Puri": {
-    "mu": 17,
-    "sigma": 2
+    "mu": 56,
+    "sigma": 6
   },
   "Balasore": {
-    "mu": 18,
-    "sigma": 2
+    "mu": 64,
+    "sigma": 10
   },
   "Sundargarh": {
-    "mu": 15,
-    "sigma": 2
+    "mu": 52,
+    "sigma": 8
   },
   "Angul": {
-    "mu": 12,
-    "sigma": 2
+    "mu": 43,
+    "sigma": 5
   },
   "Mayurbhanj": {
-    "mu": 6,
-    "sigma": 4
+    "mu": 35,
+    "sigma": 5
   },
   "Sambalpur": {
-    "mu": 12,
-    "sigma": 2
+    "mu": 46,
+    "sigma": 5
   },
   "Visakhapatnam": {
-    "mu": 25,
-    "sigma": 3
+    "mu": 88,
+    "sigma": 8
   },
   "Vijayawada": {
-    "mu": 24,
-    "sigma": 3
+    "mu": 86,
+    "sigma": 12
   },
   "Guntur": {
-    "mu": 18,
-    "sigma": 2
+    "mu": 66,
+    "sigma": 8
   },
   "Krishna": {
-    "mu": 14,
-    "sigma": 2
+    "mu": 50,
+    "sigma": 6
   },
   "Kurnool": {
-    "mu": 12,
-    "sigma": 2
+    "mu": 46,
+    "sigma": 7
   },
   "East Godavari": {
-    "mu": 15,
-    "sigma": 2
+    "mu": 60,
+    "sigma": 9
   },
   "NTR": {
-    "mu": 18,
-    "sigma": 2
+    "mu": 62,
+    "sigma": 11
   }
 };
 
-// Forecast — model output for next 4 weeks per district.
-// Generated deterministically from recent trajectory + characteristic.
-export const FORECAST: Record<string, {weeks: number[]; outbreak_prob: number}> = {
+// District-level forecast — top-level summary.
+// Spread: 5 Low, 7 Moderate, 5 High, 4 Very High across 21 districts.
+export const FORECAST: Record<string, ForecastEntry> = {
   "Bengaluru Urban": {
     "weeks": [
-      167,
-      190,
-      233,
-      260
+      141,
+      168,
+      194,
+      214
     ],
-    "outbreak_prob": 95
-  },
-  "Mysuru": {
-    "weeks": [
-      14,
-      17,
-      21,
-      27
-    ],
-    "outbreak_prob": 50
+    "outbreak_prob": 89
   },
   "Udupi": {
     "weeks": [
-      80,
-      95,
-      106,
-      119
+      55,
+      70,
+      78,
+      90
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 73
   },
   "Dakshina Kannada": {
     "weeks": [
-      108,
-      136,
-      153,
-      176
+      73,
+      89,
+      101,
+      124
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 84
+  },
+  "Mysuru": {
+    "weeks": [
+      37,
+      37,
+      36,
+      36
+    ],
+    "outbreak_prob": 50
   },
   "Belagavi": {
     "weeks": [
-      24,
-      26,
-      27,
-      27
+      42,
+      40,
+      39,
+      42
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 51
   },
   "Tumakuru": {
     "weeks": [
-      8,
-      6,
-      6,
-      5
+      17,
+      17,
+      15,
+      14
     ],
     "outbreak_prob": 6
   },
   "Khordha": {
     "weeks": [
-      134,
-      156,
-      197,
-      224
+      100,
+      124,
+      139,
+      161
     ],
-    "outbreak_prob": 95
-  },
-  "Cuttack": {
-    "weeks": [
-      40,
-      41,
-      41,
-      43
-    ],
-    "outbreak_prob": 95
-  },
-  "Puri": {
-    "weeks": [
-      31,
-      30,
-      30,
-      33
-    ],
-    "outbreak_prob": 95
+    "outbreak_prob": 87
   },
   "Balasore": {
     "weeks": [
-      87,
-      101,
-      123,
-      146
+      58,
+      70,
+      86,
+      96
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 70
   },
   "Sundargarh": {
     "weeks": [
-      71,
-      89,
-      110,
-      127
+      59,
+      58,
+      57,
+      55
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 45
   },
-  "Angul": {
+  "Cuttack": {
     "weeks": [
-      24,
-      25,
-      27,
-      28
+      80,
+      76,
+      81,
+      77
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 35
+  },
+  "Puri": {
+    "weeks": [
+      61,
+      58,
+      62,
+      61
+    ],
+    "outbreak_prob": 31
   },
   "Mayurbhanj": {
     "weeks": [
-      12,
-      17,
-      20,
-      26
+      32,
+      41,
+      44,
+      51
     ],
-    "outbreak_prob": 76
+    "outbreak_prob": 55
   },
-  "Sambalpur": {
+  "Angul": {
     "weeks": [
-      25,
-      24,
+      29,
+      27,
       24,
       23
     ],
-    "outbreak_prob": 90
+    "outbreak_prob": 17
+  },
+  "Sambalpur": {
+    "weeks": [
+      30,
+      28,
+      28,
+      25
+    ],
+    "outbreak_prob": 15
   },
   "Visakhapatnam": {
     "weeks": [
-      134,
-      167,
-      203,
-      258
+      81,
+      102,
+      110,
+      132
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 83
   },
   "Vijayawada": {
     "weeks": [
-      113,
-      139,
-      170,
-      206
+      78,
+      97,
+      111,
+      123
     ],
-    "outbreak_prob": 95
-  },
-  "Guntur": {
-    "weeks": [
-      37,
-      40,
-      44,
-      45
-    ],
-    "outbreak_prob": 95
+    "outbreak_prob": 70
   },
   "Krishna": {
     "weeks": [
+      47,
+      54,
+      63,
+      72
+    ],
+    "outbreak_prob": 78
+  },
+  "Guntur": {
+    "weeks": [
+      67,
       73,
-      81,
-      101,
-      124
+      73,
+      71
     ],
-    "outbreak_prob": 95
-  },
-  "Kurnool": {
-    "weeks": [
-      14,
-      12,
-      10,
-      8
-    ],
-    "outbreak_prob": 12
-  },
-  "East Godavari": {
-    "weeks": [
-      32,
-      33,
-      32,
-      30
-    ],
-    "outbreak_prob": 95
+    "outbreak_prob": 34
   },
   "NTR": {
     "weeks": [
-      34,
-      36,
-      34,
-      34
+      66,
+      67,
+      70,
+      68
     ],
-    "outbreak_prob": 95
+    "outbreak_prob": 28
+  },
+  "Kurnool": {
+    "weeks": [
+      29,
+      28,
+      26,
+      23
+    ],
+    "outbreak_prob": 8
+  },
+  "East Godavari": {
+    "weeks": [
+      42,
+      37,
+      33,
+      31
+    ],
+    "outbreak_prob": 15
   }
 };
+
+// Hierarchical forecast — every geography (district, municipality, block, ward, village)
+// has its own 4-week forecast and risk class.
+// Use this for child-level rendering on the Forecast tab and choropleth maps.
+export const HIERARCHY_FORECAST: Record<string, HierarchyForecast> = {
+  "Bengaluru Urban": {
+    "district_forecast": {
+      "weeks": [
+        141,
+        168,
+        194,
+        214
+      ],
+      "outbreak_prob": 89
+    },
+    "district_baseline": {
+      "mu": 119,
+      "sigma": 23
+    },
+    "district_level": "very_high",
+    "municipalities": {
+      "BBMP East Zone": {
+        "forecast": {
+          "weeks": [
+            21,
+            20,
+            21,
+            20
+          ],
+          "outbreak_prob": 49,
+          "level": "moderate",
+          "mu": 18,
+          "sigma": 3
+        },
+        "wards": {
+          "Whitefield": {
+            "weeks": [
+              4,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 35,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Mahadevapura": {
+            "weeks": [
+              5,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 55,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Marathahalli": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Hoodi": {
+            "weeks": [
+              4,
+              4,
+              3,
+              4
+            ],
+            "outbreak_prob": 41,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "K.R. Pura": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 52,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Bellandur": {
+            "weeks": [
+              4,
+              5,
+              5,
+              5
+            ],
+            "outbreak_prob": 48,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "BBMP South Zone": {
+        "forecast": {
+          "weeks": [
+            13,
+            17,
+            18,
+            21
+          ],
+          "outbreak_prob": 90,
+          "level": "very_high",
+          "mu": 12,
+          "sigma": 2
+        },
+        "wards": {
+          "Jayanagar": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 64,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "JP Nagar": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 67,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "BTM Layout": {
+            "weeks": [
+              3,
+              3,
+              4,
+              5
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Bommanahalli": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 78,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "HSR Layout": {
+            "weeks": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 89,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Begur": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 94,
+            "level": "very_high",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "BBMP West Zone": {
+        "forecast": {
+          "weeks": [
+            18,
+            22,
+            24,
+            29
+          ],
+          "outbreak_prob": 93,
+          "level": "very_high",
+          "mu": 16,
+          "sigma": 3
+        },
+        "wards": {
+          "Rajajinagar": {
+            "weeks": [
+              4,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 73,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Vijaynagar": {
+            "weeks": [
+              5,
+              5,
+              4,
+              4
+            ],
+            "outbreak_prob": 49,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Basaveshwaranagar": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 72,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Mahalakshmi Layout": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 59,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Kamakshipalya": {
+            "weeks": [
+              5,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 57,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "BBMP Mahadevapura": {
+        "forecast": {
+          "weeks": [
+            11,
+            13,
+            14,
+            15
+          ],
+          "outbreak_prob": 59,
+          "level": "high",
+          "mu": 10,
+          "sigma": 2
+        },
+        "wards": {
+          "Varthur": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 64,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Hagadur": {
+            "weeks": [
+              3,
+              3,
+              2,
+              2
+            ],
+            "outbreak_prob": 18,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Doddanekkundi": {
+            "weeks": [
+              4,
+              3,
+              4,
+              3
+            ],
+            "outbreak_prob": 35,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Garudacharpalya": {
+            "weeks": [
+              2,
+              3,
+              3,
+              2
+            ],
+            "outbreak_prob": 42,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "BBMP Bommanahalli": {
+        "forecast": {
+          "weeks": [
+            16,
+            20,
+            22,
+            24
+          ],
+          "outbreak_prob": 85,
+          "level": "very_high",
+          "mu": 13,
+          "sigma": 3
+        },
+        "wards": {
+          "Hongasandra": {
+            "weeks": [
+              4,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 59,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Mangammanapalya": {
+            "weeks": [
+              5,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 74,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Singasandra": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 73,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Bilekahalli": {
+            "weeks": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 87,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      },
+      "BBMP Yelahanka": {
+        "forecast": {
+          "weeks": [
+            16,
+            18,
+            23,
+            24
+          ],
+          "outbreak_prob": 95,
+          "level": "very_high",
+          "mu": 13,
+          "sigma": 3
+        },
+        "wards": {
+          "Yelahanka": {
+            "weeks": [
+              2,
+              2,
+              3,
+              2
+            ],
+            "outbreak_prob": 34,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Jakkur": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 94,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Thanisandra": {
+            "weeks": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 83,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Byatarayanapura": {
+            "weeks": [
+              5,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 59,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "BBMP RR Nagar": {
+        "forecast": {
+          "weeks": [
+            6,
+            6,
+            6,
+            6
+          ],
+          "outbreak_prob": 5,
+          "level": "low",
+          "mu": 10,
+          "sigma": 2
+        },
+        "wards": {
+          "Rajarajeshwarinagar": {
+            "weeks": [
+              4,
+              6,
+              6,
+              7
+            ],
+            "outbreak_prob": 68,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Hemmigepura": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 56,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Kengeri": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "BBMP Dasarahalli": {
+        "forecast": {
+          "weeks": [
+            11,
+            12,
+            12,
+            13
+          ],
+          "outbreak_prob": 62,
+          "level": "high",
+          "mu": 9,
+          "sigma": 2
+        },
+        "wards": {
+          "Peenya": {
+            "weeks": [
+              3,
+              4,
+              5,
+              6
+            ],
+            "outbreak_prob": 94,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Bagalakunte": {
+            "weeks": [
+              5,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 61,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Lakshmidevinagar": {
+            "weeks": [
+              4,
+              4,
+              5,
+              6
+            ],
+            "outbreak_prob": 89,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Anekal": {
+        "forecast": {
+          "weeks": [
+            8,
+            9,
+            9,
+            11
+          ],
+          "outbreak_prob": 70,
+          "level": "high",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Attibele": {
+            "weeks": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Jigani": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Sarjapur": {
+            "weeks": [
+              2,
+              1,
+              2,
+              1
+            ],
+            "outbreak_prob": 28,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Chandapura": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 52,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Bengaluru South": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            9,
+            11
+          ],
+          "outbreak_prob": 85,
+          "level": "very_high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Uttarahalli": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 95,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Kanakapura Road": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 30,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Konanakunte": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Bengaluru East": {
+        "forecast": {
+          "weeks": [
+            5,
+            5,
+            6,
+            7
+          ],
+          "outbreak_prob": 73,
+          "level": "high",
+          "mu": 4,
+          "sigma": 1
+        },
+        "villages": {
+          "Hoskote outskirts": {
+            "weeks": [
+              2,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 36,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Devanahalli outskirts": {
+            "weeks": [
+              3,
+              3,
+              2,
+              3
+            ],
+            "outbreak_prob": 30,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Mysuru": {
+    "district_forecast": {
+      "weeks": [
+        37,
+        37,
+        36,
+        36
+      ],
+      "outbreak_prob": 50
+    },
+    "district_baseline": {
+      "mu": 34,
+      "sigma": 5
+    },
+    "district_level": "moderate",
+    "municipalities": {
+      "Mysuru City Corporation": {
+        "forecast": {
+          "weeks": [
+            15,
+            14,
+            13,
+            11
+          ],
+          "outbreak_prob": 19,
+          "level": "low",
+          "mu": 22,
+          "sigma": 3
+        },
+        "wards": {
+          "Jayalakshmipuram": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Saraswathipuram": {
+            "weeks": [
+              2,
+              2,
+              2,
+              1
+            ],
+            "outbreak_prob": 22,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Vijayanagar": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Kuvempunagar": {
+            "weeks": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 84,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Hebbal": {
+            "weeks": [
+              6,
+              6,
+              6,
+              7
+            ],
+            "outbreak_prob": 76,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Vidyaranyapuram": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Nanjangud": {
+        "forecast": {
+          "weeks": [
+            6,
+            7,
+            8,
+            8
+          ],
+          "outbreak_prob": 60,
+          "level": "high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Nanjangud Town": {
+            "weeks": [
+              3,
+              2,
+              2,
+              3
+            ],
+            "outbreak_prob": 46,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Hadinaru": {
+            "weeks": [
+              2,
+              2,
+              2,
+              3
+            ],
+            "outbreak_prob": 48,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Chamalapur": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 12,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "T. Narsipur": {
+        "forecast": {
+          "weeks": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "outbreak_prob": 22,
+          "level": "low",
+          "mu": 3,
+          "sigma": 1
+        },
+        "villages": {
+          "T. Narsipur": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Talakad": {
+            "weeks": [
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 63,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Sosale": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 35,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Hunsur": {
+        "forecast": {
+          "weeks": [
+            4,
+            3,
+            4,
+            4
+          ],
+          "outbreak_prob": 39,
+          "level": "moderate",
+          "mu": 3,
+          "sigma": 1
+        },
+        "villages": {
+          "Hunsur Town": {
+            "weeks": [
+              3,
+              3,
+              3,
+              2
+            ],
+            "outbreak_prob": 29,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Ratnapuri": {
+            "weeks": [
+              2,
+              1,
+              1,
+              2
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Bilikere": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 41,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Udupi": {
+    "district_forecast": {
+      "weeks": [
+        55,
+        70,
+        78,
+        90
+      ],
+      "outbreak_prob": 73
+    },
+    "district_baseline": {
+      "mu": 61,
+      "sigma": 8
+    },
+    "district_level": "high",
+    "municipalities": {
+      "Udupi City Municipal Council": {
+        "forecast": {
+          "weeks": [
+            16,
+            19,
+            21,
+            25
+          ],
+          "outbreak_prob": 94,
+          "level": "very_high",
+          "mu": 15,
+          "sigma": 2
+        },
+        "wards": {
+          "Udupi Town": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Manipal": {
+            "weeks": [
+              3,
+              4,
+              5,
+              6
+            ],
+            "outbreak_prob": 82,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Malpe": {
+            "weeks": [
+              4,
+              4,
+              3,
+              3
+            ],
+            "outbreak_prob": 16,
+            "level": "low",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Ajjarkadu": {
+            "weeks": [
+              6,
+              7,
+              7,
+              9
+            ],
+            "outbreak_prob": 61,
+            "level": "high",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Bannanje": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Karkala Municipal Council": {
+        "forecast": {
+          "weeks": [
+            8,
+            8,
+            7,
+            7
+          ],
+          "outbreak_prob": 21,
+          "level": "low",
+          "mu": 12,
+          "sigma": 1
+        },
+        "wards": {
+          "Karkala Town": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 19,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Hebri Junction": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 71,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Ajekar": {
+            "weeks": [
+              3,
+              3,
+              2,
+              2
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Kundapura Municipal Council": {
+        "forecast": {
+          "weeks": [
+            8,
+            8,
+            9,
+            10
+          ],
+          "outbreak_prob": 68,
+          "level": "high",
+          "mu": 7,
+          "sigma": 1
+        },
+        "wards": {
+          "Kundapura Town": {
+            "weeks": [
+              4,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 84,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Gangolli": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Basrur": {
+            "weeks": [
+              4,
+              4,
+              4,
+              5
+            ],
+            "outbreak_prob": 62,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Brahmavar": {
+        "forecast": {
+          "weeks": [
+            12,
+            13,
+            12,
+            12
+          ],
+          "outbreak_prob": 50,
+          "level": "moderate",
+          "mu": 12,
+          "sigma": 2
+        },
+        "villages": {
+          "Brahmavar": {
+            "weeks": [
+              4,
+              3,
+              4,
+              3
+            ],
+            "outbreak_prob": 51,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Saligrama": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 47,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Hangarakatte": {
+            "weeks": [
+              5,
+              5,
+              4,
+              5
+            ],
+            "outbreak_prob": 50,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Kota": {
+            "weeks": [
+              3,
+              3,
+              4,
+              3
+            ],
+            "outbreak_prob": 33,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      },
+      "Hebri": {
+        "forecast": {
+          "weeks": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "outbreak_prob": 55,
+          "level": "high",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Hebri": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 86,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Shivapura": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 77,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Charmadi": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 35,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Byndoor": {
+        "forecast": {
+          "weeks": [
+            5,
+            5,
+            5,
+            4
+          ],
+          "outbreak_prob": 15,
+          "level": "low",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Byndoor": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Maravanthe": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 21,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Trasi": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 18,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Yedthare": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 84,
+            "level": "very_high",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Dakshina Kannada": {
+    "district_forecast": {
+      "weeks": [
+        73,
+        89,
+        101,
+        124
+      ],
+      "outbreak_prob": 84
+    },
+    "district_baseline": {
+      "mu": 78,
+      "sigma": 8
+    },
+    "district_level": "very_high",
+    "municipalities": {
+      "Mangaluru City Corporation": {
+        "forecast": {
+          "weeks": [
+            35,
+            37,
+            39,
+            43
+          ],
+          "outbreak_prob": 78,
+          "level": "high",
+          "mu": 33,
+          "sigma": 4
+        },
+        "wards": {
+          "Mangalore Central": {
+            "weeks": [
+              8,
+              8,
+              10,
+              10
+            ],
+            "outbreak_prob": 67,
+            "level": "high",
+            "mu": 8,
+            "sigma": 1
+          },
+          "Bunder": {
+            "weeks": [
+              5,
+              5,
+              5,
+              4
+            ],
+            "outbreak_prob": 6,
+            "level": "low",
+            "mu": 8,
+            "sigma": 1
+          },
+          "Bejai": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Kadri": {
+            "weeks": [
+              4,
+              4,
+              3,
+              4
+            ],
+            "outbreak_prob": 37,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Surathkal": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 18,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Ullal": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 62,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Kankanady": {
+            "weeks": [
+              4,
+              4,
+              4,
+              5
+            ],
+            "outbreak_prob": 33,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Bondel": {
+            "weeks": [
+              3,
+              4,
+              5,
+              6
+            ],
+            "outbreak_prob": 95,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Puttur Municipal Council": {
+        "forecast": {
+          "weeks": [
+            10,
+            11,
+            14,
+            15
+          ],
+          "outbreak_prob": 86,
+          "level": "very_high",
+          "mu": 10,
+          "sigma": 1
+        },
+        "wards": {
+          "Puttur Town": {
+            "weeks": [
+              5,
+              5,
+              6,
+              5
+            ],
+            "outbreak_prob": 40,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Bantwala Road": {
+            "weeks": [
+              5,
+              6,
+              7,
+              7
+            ],
+            "outbreak_prob": 75,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Bantwal": {
+        "forecast": {
+          "weeks": [
+            9,
+            8,
+            8,
+            8
+          ],
+          "outbreak_prob": 8,
+          "level": "low",
+          "mu": 14,
+          "sigma": 2
+        },
+        "villages": {
+          "Bantwal Town": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 11,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Vittal": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 18,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Kavalakatte": {
+            "weeks": [
+              4,
+              4,
+              3,
+              3
+            ],
+            "outbreak_prob": 17,
+            "level": "low",
+            "mu": 6,
+            "sigma": 1
+          }
+        }
+      },
+      "Belthangady": {
+        "forecast": {
+          "weeks": [
+            11,
+            12,
+            13,
+            15
+          ],
+          "outbreak_prob": 77,
+          "level": "high",
+          "mu": 11,
+          "sigma": 1
+        },
+        "villages": {
+          "Belthangady": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 44,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Dharmasthala": {
+            "weeks": [
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 67,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Ujire": {
+            "weeks": [
+              4,
+              4,
+              4,
+              3
+            ],
+            "outbreak_prob": 17,
+            "level": "low",
+            "mu": 6,
+            "sigma": 1
+          }
+        }
+      },
+      "Sullia": {
+        "forecast": {
+          "weeks": [
+            7,
+            7,
+            6,
+            6
+          ],
+          "outbreak_prob": 13,
+          "level": "low",
+          "mu": 11,
+          "sigma": 1
+        },
+        "villages": {
+          "Sullia Town": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Kollamogru": {
+            "weeks": [
+              7,
+              7,
+              8,
+              9
+            ],
+            "outbreak_prob": 63,
+            "level": "high",
+            "mu": 6,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Belagavi": {
+    "district_forecast": {
+      "weeks": [
+        42,
+        40,
+        39,
+        42
+      ],
+      "outbreak_prob": 51
+    },
+    "district_baseline": {
+      "mu": 39,
+      "sigma": 5
+    },
+    "district_level": "moderate",
+    "municipalities": {
+      "Belagavi City Corporation": {
+        "forecast": {
+          "weeks": [
+            13,
+            17,
+            18,
+            20
+          ],
+          "outbreak_prob": 94,
+          "level": "very_high",
+          "mu": 12,
+          "sigma": 2
+        },
+        "wards": {
+          "Camp": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 55,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Tilakwadi": {
+            "weeks": [
+              3,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 83,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Shahapur": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Vadgaon": {
+            "weeks": [
+              5,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 84,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Ramatirth Nagar": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 18,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Khanapur": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            9,
+            11
+          ],
+          "outbreak_prob": 83,
+          "level": "very_high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Khanapur": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 74,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Londa": {
+            "weeks": [
+              4,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 43,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Kakti": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 68,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Hukkeri": {
+        "forecast": {
+          "weeks": [
+            11,
+            12,
+            12,
+            13
+          ],
+          "outbreak_prob": 29,
+          "level": "moderate",
+          "mu": 11,
+          "sigma": 2
+        },
+        "villages": {
+          "Hukkeri": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 64,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Sankeshwar": {
+            "weeks": [
+              5,
+              7,
+              7,
+              7
+            ],
+            "outbreak_prob": 70,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Yamakanmaradi": {
+            "weeks": [
+              3,
+              4,
+              3,
+              4
+            ],
+            "outbreak_prob": 63,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Chikkodi": {
+        "forecast": {
+          "weeks": [
+            12,
+            12,
+            12,
+            11
+          ],
+          "outbreak_prob": 37,
+          "level": "moderate",
+          "mu": 11,
+          "sigma": 1
+        },
+        "villages": {
+          "Chikkodi": {
+            "weeks": [
+              5,
+              6,
+              5,
+              5
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Nipani": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 82,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Sadalga": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 42,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Tumakuru": {
+    "district_forecast": {
+      "weeks": [
+        17,
+        17,
+        15,
+        14
+      ],
+      "outbreak_prob": 6
+    },
+    "district_baseline": {
+      "mu": 26,
+      "sigma": 5
+    },
+    "district_level": "low",
+    "municipalities": {
+      "Tumakuru City Corporation": {
+        "forecast": {
+          "weeks": [
+            5,
+            5,
+            5,
+            4
+          ],
+          "outbreak_prob": 5,
+          "level": "low",
+          "mu": 8,
+          "sigma": 1
+        },
+        "wards": {
+          "Town Hall": {
+            "weeks": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Shettyhalli": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Sira Gate": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 22,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Bangalore Road": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 22,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Sira": {
+        "forecast": {
+          "weeks": [
+            3,
+            3,
+            3,
+            2
+          ],
+          "outbreak_prob": 13,
+          "level": "low",
+          "mu": 5,
+          "sigma": 1
+        },
+        "villages": {
+          "Sira Town": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 20,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Hagalavadi": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Tiptur": {
+        "forecast": {
+          "weeks": [
+            5,
+            4,
+            4,
+            4
+          ],
+          "outbreak_prob": 13,
+          "level": "low",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Tiptur Town": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 19,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Honnavalli": {
+            "weeks": [
+              4,
+              5,
+              4,
+              4
+            ],
+            "outbreak_prob": 29,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Madhugiri": {
+        "forecast": {
+          "weeks": [
+            7,
+            6,
+            6,
+            7
+          ],
+          "outbreak_prob": 46,
+          "level": "moderate",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Madhugiri": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Koratagere": {
+            "weeks": [
+              4,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 6,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Khordha": {
+    "district_forecast": {
+      "weeks": [
+        100,
+        124,
+        139,
+        161
+      ],
+      "outbreak_prob": 87
+    },
+    "district_baseline": {
+      "mu": 92,
+      "sigma": 15
+    },
+    "district_level": "very_high",
+    "municipalities": {
+      "Bhubaneswar Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            62,
+            68,
+            66,
+            63
+          ],
+          "outbreak_prob": 29,
+          "level": "moderate",
+          "mu": 61,
+          "sigma": 10
+        },
+        "wards": {
+          "Saheed Nagar": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 18,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Nayapalli": {
+            "weeks": [
+              2,
+              3,
+              2,
+              3
+            ],
+            "outbreak_prob": 71,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Patia": {
+            "weeks": [
+              10,
+              10,
+              9,
+              10
+            ],
+            "outbreak_prob": 50,
+            "level": "moderate",
+            "mu": 9,
+            "sigma": 1
+          },
+          "Old Town": {
+            "weeks": [
+              5,
+              5,
+              5,
+              4
+            ],
+            "outbreak_prob": 20,
+            "level": "low",
+            "mu": 8,
+            "sigma": 1
+          },
+          "Chandrasekharpur": {
+            "weeks": [
+              11,
+              11,
+              11,
+              11
+            ],
+            "outbreak_prob": 49,
+            "level": "moderate",
+            "mu": 10,
+            "sigma": 2
+          },
+          "Khandagiri": {
+            "weeks": [
+              10,
+              11,
+              12,
+              14
+            ],
+            "outbreak_prob": 65,
+            "level": "high",
+            "mu": 10,
+            "sigma": 1
+          },
+          "Jaydev Vihar": {
+            "weeks": [
+              8,
+              8,
+              9,
+              8
+            ],
+            "outbreak_prob": 33,
+            "level": "moderate",
+            "mu": 8,
+            "sigma": 1
+          },
+          "Vani Vihar": {
+            "weeks": [
+              10,
+              10,
+              9,
+              9
+            ],
+            "outbreak_prob": 39,
+            "level": "moderate",
+            "mu": 9,
+            "sigma": 1
+          }
+        }
+      },
+      "Khordha Municipal Council": {
+        "forecast": {
+          "weeks": [
+            19,
+            25,
+            26,
+            31
+          ],
+          "outbreak_prob": 89,
+          "level": "very_high",
+          "mu": 18,
+          "sigma": 3
+        },
+        "wards": {
+          "Khordha Town": {
+            "weeks": [
+              9,
+              10,
+              13,
+              13
+            ],
+            "outbreak_prob": 58,
+            "level": "high",
+            "mu": 10,
+            "sigma": 1
+          },
+          "Jatani": {
+            "weeks": [
+              8,
+              9,
+              10,
+              12
+            ],
+            "outbreak_prob": 68,
+            "level": "high",
+            "mu": 8,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Balipatna": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            8,
+            8
+          ],
+          "outbreak_prob": 75,
+          "level": "high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Balipatna": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Begunia": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 85,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Banpur": {
+        "forecast": {
+          "weeks": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "outbreak_prob": 46,
+          "level": "moderate",
+          "mu": 3,
+          "sigma": 1
+        },
+        "villages": {
+          "Banpur": {
+            "weeks": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Tangi": {
+            "weeks": [
+              2,
+              1,
+              2,
+              2
+            ],
+            "outbreak_prob": 38,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Bolgarh": {
+        "forecast": {
+          "weeks": [
+            6,
+            7,
+            9,
+            10
+          ],
+          "outbreak_prob": 94,
+          "level": "very_high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Bolgarh": {
+            "weeks": [
+              3,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 84,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Barakhandia": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 94,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Cuttack": {
+    "district_forecast": {
+      "weeks": [
+        80,
+        76,
+        81,
+        77
+      ],
+      "outbreak_prob": 35
+    },
+    "district_baseline": {
+      "mu": 75,
+      "sigma": 10
+    },
+    "district_level": "moderate",
+    "municipalities": {
+      "Cuttack Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            48,
+            50,
+            55,
+            54
+          ],
+          "outbreak_prob": 45,
+          "level": "moderate",
+          "mu": 48,
+          "sigma": 7
+        },
+        "wards": {
+          "Choudhury Bazar": {
+            "weeks": [
+              6,
+              5,
+              5,
+              4
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 9,
+            "sigma": 1
+          },
+          "Buxi Bazar": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Mangalabag": {
+            "weeks": [
+              8,
+              8,
+              8,
+              8
+            ],
+            "outbreak_prob": 44,
+            "level": "moderate",
+            "mu": 7,
+            "sigma": 1
+          },
+          "Badambadi": {
+            "weeks": [
+              9,
+              10,
+              10,
+              10
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 9,
+            "sigma": 1
+          },
+          "CDA Sector 6": {
+            "weeks": [
+              12,
+              12,
+              11,
+              11
+            ],
+            "outbreak_prob": 29,
+            "level": "moderate",
+            "mu": 10,
+            "sigma": 2
+          },
+          "Link Road": {
+            "weeks": [
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 35,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "College Square": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Salepur": {
+        "forecast": {
+          "weeks": [
+            9,
+            9,
+            11,
+            12
+          ],
+          "outbreak_prob": 73,
+          "level": "high",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Salepur": {
+            "weeks": [
+              6,
+              8,
+              9,
+              10
+            ],
+            "outbreak_prob": 82,
+            "level": "very_high",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Mahanga": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 58,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Athagarh": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            10,
+            10
+          ],
+          "outbreak_prob": 90,
+          "level": "very_high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Athagarh": {
+            "weeks": [
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 77,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Tigiria": {
+            "weeks": [
+              6,
+              5,
+              6,
+              5
+            ],
+            "outbreak_prob": 33,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      },
+      "Banki": {
+        "forecast": {
+          "weeks": [
+            13,
+            14,
+            16,
+            16
+          ],
+          "outbreak_prob": 61,
+          "level": "high",
+          "mu": 12,
+          "sigma": 2
+        },
+        "villages": {
+          "Banki": {
+            "weeks": [
+              7,
+              9,
+              11,
+              11
+            ],
+            "outbreak_prob": 89,
+            "level": "very_high",
+            "mu": 7,
+            "sigma": 1
+          },
+          "Damapada": {
+            "weeks": [
+              5,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 56,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Puri": {
+    "district_forecast": {
+      "weeks": [
+        61,
+        58,
+        62,
+        61
+      ],
+      "outbreak_prob": 31
+    },
+    "district_baseline": {
+      "mu": 56,
+      "sigma": 6
+    },
+    "district_level": "moderate",
+    "municipalities": {
+      "Puri Municipality": {
+        "forecast": {
+          "weeks": [
+            37,
+            38,
+            40,
+            38
+          ],
+          "outbreak_prob": 49,
+          "level": "moderate",
+          "mu": 36,
+          "sigma": 4
+        },
+        "wards": {
+          "Bada Danda": {
+            "weeks": [
+              8,
+              10,
+              11,
+              14
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 8,
+            "sigma": 1
+          },
+          "Swargadwar": {
+            "weeks": [
+              5,
+              4,
+              4,
+              3
+            ],
+            "outbreak_prob": 14,
+            "level": "low",
+            "mu": 7,
+            "sigma": 1
+          },
+          "VIP Road": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 47,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Chakratirtha": {
+            "weeks": [
+              7,
+              8,
+              9,
+              10
+            ],
+            "outbreak_prob": 78,
+            "level": "high",
+            "mu": 7,
+            "sigma": 1
+          },
+          "Grand Road": {
+            "weeks": [
+              5,
+              6,
+              6,
+              8
+            ],
+            "outbreak_prob": 57,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Mochisahi": {
+            "weeks": [
+              8,
+              7,
+              8,
+              7
+            ],
+            "outbreak_prob": 38,
+            "level": "moderate",
+            "mu": 7,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Pipili": {
+        "forecast": {
+          "weeks": [
+            4,
+            4,
+            3,
+            3
+          ],
+          "outbreak_prob": 19,
+          "level": "low",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Pipili": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Sakhigopal": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Brahmagiri": {
+        "forecast": {
+          "weeks": [
+            6,
+            6,
+            7,
+            7
+          ],
+          "outbreak_prob": 49,
+          "level": "moderate",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Brahmagiri": {
+            "weeks": [
+              1,
+              2,
+              1,
+              2
+            ],
+            "outbreak_prob": 47,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Nimapara": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      },
+      "Krushnaprasad": {
+        "forecast": {
+          "weeks": [
+            7,
+            7,
+            7,
+            8
+          ],
+          "outbreak_prob": 35,
+          "level": "moderate",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Satapada": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 78,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Naugaon": {
+            "weeks": [
+              6,
+              6,
+              6,
+              5
+            ],
+            "outbreak_prob": 28,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Balasore": {
+    "district_forecast": {
+      "weeks": [
+        58,
+        70,
+        86,
+        96
+      ],
+      "outbreak_prob": 70
+    },
+    "district_baseline": {
+      "mu": 64,
+      "sigma": 10
+    },
+    "district_level": "high",
+    "municipalities": {
+      "Balasore Municipality": {
+        "forecast": {
+          "weeks": [
+            43,
+            49,
+            53,
+            63
+          ],
+          "outbreak_prob": 78,
+          "level": "high",
+          "mu": 41,
+          "sigma": 7
+        },
+        "wards": {
+          "Sahadevkhunta": {
+            "weeks": [
+              12,
+              13,
+              17,
+              19
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 10,
+            "sigma": 2
+          },
+          "OT Road": {
+            "weeks": [
+              5,
+              5,
+              4,
+              4
+            ],
+            "outbreak_prob": 6,
+            "level": "low",
+            "mu": 7,
+            "sigma": 1
+          },
+          "FM College": {
+            "weeks": [
+              12,
+              15,
+              16,
+              17
+            ],
+            "outbreak_prob": 58,
+            "level": "high",
+            "mu": 12,
+            "sigma": 2
+          },
+          "Industrial Estate": {
+            "weeks": [
+              6,
+              6,
+              5,
+              5
+            ],
+            "outbreak_prob": 14,
+            "level": "low",
+            "mu": 9,
+            "sigma": 1
+          },
+          "Vivekananda Marg": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 71,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Soro": {
+        "forecast": {
+          "weeks": [
+            6,
+            7,
+            8,
+            10
+          ],
+          "outbreak_prob": 95,
+          "level": "very_high",
+          "mu": 5,
+          "sigma": 1
+        },
+        "villages": {
+          "Soro": {
+            "weeks": [
+              4,
+              5,
+              4,
+              5
+            ],
+            "outbreak_prob": 74,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Khaira": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Nilgiri": {
+        "forecast": {
+          "weeks": [
+            5,
+            5,
+            6,
+            6
+          ],
+          "outbreak_prob": 61,
+          "level": "high",
+          "mu": 4,
+          "sigma": 1
+        },
+        "villages": {
+          "Nilgiri": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 71,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Oupada": {
+            "weeks": [
+              3,
+              4,
+              3,
+              3
+            ],
+            "outbreak_prob": 52,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      },
+      "Jaleswar": {
+        "forecast": {
+          "weeks": [
+            7,
+            9,
+            10,
+            12
+          ],
+          "outbreak_prob": 86,
+          "level": "very_high",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Jaleswar": {
+            "weeks": [
+              6,
+              7,
+              9,
+              9
+            ],
+            "outbreak_prob": 90,
+            "level": "very_high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Bhograi": {
+            "weeks": [
+              2,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Basta": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "outbreak_prob": 71,
+          "level": "high",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Basta": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 66,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Kamarda": {
+            "weeks": [
+              4,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 58,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Sundargarh": {
+    "district_forecast": {
+      "weeks": [
+        59,
+        58,
+        57,
+        55
+      ],
+      "outbreak_prob": 45
+    },
+    "district_baseline": {
+      "mu": 52,
+      "sigma": 8
+    },
+    "district_level": "moderate",
+    "municipalities": {
+      "Rourkela Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            11,
+            10,
+            10,
+            9
+          ],
+          "outbreak_prob": 11,
+          "level": "low",
+          "mu": 17,
+          "sigma": 3
+        },
+        "wards": {
+          "Sector 1": {
+            "weeks": [
+              2,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Sector 4": {
+            "weeks": [
+              2,
+              2,
+              1,
+              1
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Sector 7": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 16,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Civil Township": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 7,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Basanti Colony": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Koel Nagar": {
+            "weeks": [
+              3,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 35,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Chhend Colony": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 21,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Sundargarh Municipality": {
+        "forecast": {
+          "weeks": [
+            6,
+            5,
+            5,
+            5
+          ],
+          "outbreak_prob": 9,
+          "level": "low",
+          "mu": 9,
+          "sigma": 1
+        },
+        "wards": {
+          "Sundargarh Town": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Bhasma Road": {
+            "weeks": [
+              4,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 16,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Hemgir": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            10,
+            12
+          ],
+          "outbreak_prob": 88,
+          "level": "very_high",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Hemgir": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 64,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Garjan Jharan": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Lephripara": {
+        "forecast": {
+          "weeks": [
+            11,
+            11,
+            11,
+            10
+          ],
+          "outbreak_prob": 51,
+          "level": "moderate",
+          "mu": 10,
+          "sigma": 2
+        },
+        "villages": {
+          "Lephripara": {
+            "weeks": [
+              3,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 91,
+            "level": "very_high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Bisra": {
+            "weeks": [
+              8,
+              9,
+              12,
+              12
+            ],
+            "outbreak_prob": 85,
+            "level": "very_high",
+            "mu": 8,
+            "sigma": 1
+          }
+        }
+      },
+      "Kuanrmunda": {
+        "forecast": {
+          "weeks": [
+            6,
+            5,
+            5,
+            4
+          ],
+          "outbreak_prob": 10,
+          "level": "low",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Kuanrmunda": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Kalunga": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 6,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Angul": {
+    "district_forecast": {
+      "weeks": [
+        29,
+        27,
+        24,
+        23
+      ],
+      "outbreak_prob": 17
+    },
+    "district_baseline": {
+      "mu": 43,
+      "sigma": 5
+    },
+    "district_level": "low",
+    "municipalities": {
+      "Angul Municipality": {
+        "forecast": {
+          "weeks": [
+            9,
+            10,
+            13,
+            14
+          ],
+          "outbreak_prob": 89,
+          "level": "very_high",
+          "mu": 9,
+          "sigma": 1
+        },
+        "wards": {
+          "Angul Town": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 12,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Talcher Road": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 67,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "NTPC Colony": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 83,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Talcher Municipality": {
+        "forecast": {
+          "weeks": [
+            12,
+            14,
+            15,
+            16
+          ],
+          "outbreak_prob": 71,
+          "level": "high",
+          "mu": 13,
+          "sigma": 1
+        },
+        "wards": {
+          "Talcher Town": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 92,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "MCL Colony": {
+            "weeks": [
+              6,
+              7,
+              8,
+              8
+            ],
+            "outbreak_prob": 59,
+            "level": "high",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Nandira": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 51,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Chhendipada": {
+        "forecast": {
+          "weeks": [
+            8,
+            9,
+            8,
+            9
+          ],
+          "outbreak_prob": 52,
+          "level": "moderate",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Chhendipada": {
+            "weeks": [
+              6,
+              7,
+              7,
+              7
+            ],
+            "outbreak_prob": 40,
+            "level": "moderate",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Banarpal": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 14,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Athamallik": {
+        "forecast": {
+          "weeks": [
+            4,
+            3,
+            3,
+            3
+          ],
+          "outbreak_prob": 18,
+          "level": "low",
+          "mu": 5,
+          "sigma": 1
+        },
+        "villages": {
+          "Athamallik": {
+            "weeks": [
+              5,
+              4,
+              5,
+              4
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Boinda": {
+            "weeks": [
+              2,
+              3,
+              3,
+              2
+            ],
+            "outbreak_prob": 35,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Pallahara": {
+        "forecast": {
+          "weeks": [
+            9,
+            9,
+            9,
+            8
+          ],
+          "outbreak_prob": 35,
+          "level": "moderate",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Pallahara": {
+            "weeks": [
+              5,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 69,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Kaniha": {
+            "weeks": [
+              4,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 76,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Mayurbhanj": {
+    "district_forecast": {
+      "weeks": [
+        32,
+        41,
+        44,
+        51
+      ],
+      "outbreak_prob": 55
+    },
+    "district_baseline": {
+      "mu": 35,
+      "sigma": 5
+    },
+    "district_level": "high",
+    "municipalities": {
+      "Baripada Municipality": {
+        "forecast": {
+          "weeks": [
+            12,
+            11,
+            11,
+            11
+          ],
+          "outbreak_prob": 33,
+          "level": "moderate",
+          "mu": 10,
+          "sigma": 2
+        },
+        "wards": {
+          "Baripada Town": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 58,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Bhanjpur": {
+            "weeks": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "ITDA Colony": {
+            "weeks": [
+              2,
+              2,
+              3,
+              2
+            ],
+            "outbreak_prob": 37,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "FM University": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 7,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Karanjia": {
+        "forecast": {
+          "weeks": [
+            8,
+            8,
+            8,
+            8
+          ],
+          "outbreak_prob": 31,
+          "level": "moderate",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Karanjia": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 94,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Jashipur": {
+            "weeks": [
+              3,
+              3,
+              2,
+              2
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Rairangpur": {
+        "forecast": {
+          "weeks": [
+            5,
+            5,
+            6,
+            7
+          ],
+          "outbreak_prob": 68,
+          "level": "high",
+          "mu": 4,
+          "sigma": 1
+        },
+        "villages": {
+          "Rairangpur": {
+            "weeks": [
+              1,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 40,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Bisoi": {
+            "weeks": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 91,
+            "level": "very_high",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      },
+      "Udala": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "outbreak_prob": 72,
+          "level": "high",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Udala": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 65,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Khunta": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 90,
+            "level": "very_high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Kaptipada": {
+        "forecast": {
+          "weeks": [
+            4,
+            5,
+            4,
+            5
+          ],
+          "outbreak_prob": 44,
+          "level": "moderate",
+          "mu": 4,
+          "sigma": 1
+        },
+        "villages": {
+          "Kaptipada": {
+            "weeks": [
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 59,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Saraskana": {
+            "weeks": [
+              3,
+              2,
+              3,
+              2
+            ],
+            "outbreak_prob": 41,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Sambalpur": {
+    "district_forecast": {
+      "weeks": [
+        30,
+        28,
+        28,
+        25
+      ],
+      "outbreak_prob": 15
+    },
+    "district_baseline": {
+      "mu": 46,
+      "sigma": 5
+    },
+    "district_level": "low",
+    "municipalities": {
+      "Sambalpur Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            21,
+            18,
+            17,
+            17
+          ],
+          "outbreak_prob": 10,
+          "level": "low",
+          "mu": 30,
+          "sigma": 3
+        },
+        "wards": {
+          "Sambalpur Town": {
+            "weeks": [
+              9,
+              9,
+              11,
+              13
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 8,
+            "sigma": 1
+          },
+          "Budharaja": {
+            "weeks": [
+              3,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 40,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Modipara": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Burla": {
+            "weeks": [
+              5,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 20,
+            "level": "low",
+            "mu": 7,
+            "sigma": 1
+          },
+          "Hirakud": {
+            "weeks": [
+              11,
+              10,
+              11,
+              10
+            ],
+            "outbreak_prob": 52,
+            "level": "moderate",
+            "mu": 10,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Bamra": {
+        "forecast": {
+          "weeks": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "outbreak_prob": 22,
+          "level": "low",
+          "mu": 3,
+          "sigma": 1
+        },
+        "villages": {
+          "Bamra": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 75,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Kuchinda": {
+            "weeks": [
+              3,
+              3,
+              2,
+              3
+            ],
+            "outbreak_prob": 45,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Rairakhol": {
+        "forecast": {
+          "weeks": [
+            6,
+            5,
+            5,
+            4
+          ],
+          "outbreak_prob": 14,
+          "level": "low",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Rairakhol": {
+            "weeks": [
+              5,
+              5,
+              5,
+              4
+            ],
+            "outbreak_prob": 45,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Naktideul": {
+            "weeks": [
+              4,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 73,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Maneswar": {
+        "forecast": {
+          "weeks": [
+            3,
+            3,
+            3,
+            2
+          ],
+          "outbreak_prob": 10,
+          "level": "low",
+          "mu": 5,
+          "sigma": 1
+        },
+        "villages": {
+          "Maneswar": {
+            "weeks": [
+              2,
+              2,
+              2,
+              3
+            ],
+            "outbreak_prob": 61,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Jujomura": {
+            "weeks": [
+              5,
+              4,
+              5,
+              4
+            ],
+            "outbreak_prob": 47,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Visakhapatnam": {
+    "district_forecast": {
+      "weeks": [
+        81,
+        102,
+        110,
+        132
+      ],
+      "outbreak_prob": 83
+    },
+    "district_baseline": {
+      "mu": 88,
+      "sigma": 8
+    },
+    "district_level": "very_high",
+    "municipalities": {
+      "Greater Visakhapatnam Municipal Corp": {
+        "forecast": {
+          "weeks": [
+            69,
+            83,
+            93,
+            94
+          ],
+          "outbreak_prob": 65,
+          "level": "high",
+          "mu": 75,
+          "sigma": 7
+        },
+        "wards": {
+          "MVP Colony": {
+            "weeks": [
+              6,
+              6,
+              5,
+              4
+            ],
+            "outbreak_prob": 22,
+            "level": "low",
+            "mu": 9,
+            "sigma": 1
+          },
+          "Dwaraka Nagar": {
+            "weeks": [
+              10,
+              11,
+              13,
+              13
+            ],
+            "outbreak_prob": 75,
+            "level": "high",
+            "mu": 10,
+            "sigma": 1
+          },
+          "Madhurawada": {
+            "weeks": [
+              13,
+              13,
+              16,
+              16
+            ],
+            "outbreak_prob": 70,
+            "level": "high",
+            "mu": 13,
+            "sigma": 1
+          },
+          "Gajuwaka": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 14,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Pendurthi": {
+            "weeks": [
+              13,
+              12,
+              13,
+              13
+            ],
+            "outbreak_prob": 47,
+            "level": "moderate",
+            "mu": 12,
+            "sigma": 1
+          },
+          "Asilmetta": {
+            "weeks": [
+              12,
+              13,
+              12,
+              13
+            ],
+            "outbreak_prob": 47,
+            "level": "moderate",
+            "mu": 12,
+            "sigma": 1
+          },
+          "Maddilapalem": {
+            "weeks": [
+              7,
+              6,
+              6,
+              5
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 10,
+            "sigma": 1
+          },
+          "Seethammadhara": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 62,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Bheemunipatnam": {
+        "forecast": {
+          "weeks": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "outbreak_prob": 62,
+          "level": "high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Bheemunipatnam": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 8,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Anandapuram": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 70,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      },
+      "Anakapalle": {
+        "forecast": {
+          "weeks": [
+            5,
+            4,
+            4,
+            5
+          ],
+          "outbreak_prob": 38,
+          "level": "moderate",
+          "mu": 4,
+          "sigma": 1
+        },
+        "villages": {
+          "Anakapalle": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Yelamanchili": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 17,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Paderu": {
+        "forecast": {
+          "weeks": [
+            4,
+            3,
+            4,
+            4
+          ],
+          "outbreak_prob": 45,
+          "level": "moderate",
+          "mu": 3,
+          "sigma": 1
+        },
+        "villages": {
+          "Paderu": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 16,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Araku": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Vijayawada": {
+    "district_forecast": {
+      "weeks": [
+        78,
+        97,
+        111,
+        123
+      ],
+      "outbreak_prob": 70
+    },
+    "district_baseline": {
+      "mu": 86,
+      "sigma": 12
+    },
+    "district_level": "high",
+    "municipalities": {
+      "Vijayawada Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            80,
+            86,
+            98,
+            126
+          ],
+          "outbreak_prob": 82,
+          "level": "very_high",
+          "mu": 73,
+          "sigma": 10
+        },
+        "wards": {
+          "Governorpet": {
+            "weeks": [
+              14,
+              16,
+              18,
+              20
+            ],
+            "outbreak_prob": 64,
+            "level": "high",
+            "mu": 14,
+            "sigma": 2
+          },
+          "Patamata": {
+            "weeks": [
+              7,
+              8,
+              9,
+              11
+            ],
+            "outbreak_prob": 95,
+            "level": "very_high",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Benz Circle": {
+            "weeks": [
+              8,
+              9,
+              10,
+              11
+            ],
+            "outbreak_prob": 85,
+            "level": "very_high",
+            "mu": 7,
+            "sigma": 1
+          },
+          "Auto Nagar": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 6,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "MG Road": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 78,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Krishna Lanka": {
+            "weeks": [
+              9,
+              9,
+              8,
+              7
+            ],
+            "outbreak_prob": 21,
+            "level": "low",
+            "mu": 14,
+            "sigma": 2
+          },
+          "Ajit Singh Nagar": {
+            "weeks": [
+              11,
+              10,
+              11,
+              11
+            ],
+            "outbreak_prob": 41,
+            "level": "moderate",
+            "mu": 10,
+            "sigma": 1
+          },
+          "Bhavanipuram": {
+            "weeks": [
+              16,
+              15,
+              15,
+              15
+            ],
+            "outbreak_prob": 33,
+            "level": "moderate",
+            "mu": 14,
+            "sigma": 2
+          }
+        }
+      }
+    },
+    "blocks": {
+      "G. Konduru": {
+        "forecast": {
+          "weeks": [
+            9,
+            8,
+            8,
+            9
+          ],
+          "outbreak_prob": 40,
+          "level": "moderate",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "G. Konduru": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 57,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Mylavaram": {
+            "weeks": [
+              5,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      },
+      "Vijayawada Rural": {
+        "forecast": {
+          "weeks": [
+            6,
+            6,
+            7,
+            7
+          ],
+          "outbreak_prob": 66,
+          "level": "high",
+          "mu": 5,
+          "sigma": 1
+        },
+        "villages": {
+          "Gannavaram": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 72,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Kankipadu": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 68,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Guntur": {
+    "district_forecast": {
+      "weeks": [
+        67,
+        73,
+        73,
+        71
+      ],
+      "outbreak_prob": 34
+    },
+    "district_baseline": {
+      "mu": 66,
+      "sigma": 8
+    },
+    "district_level": "moderate",
+    "municipalities": {
+      "Guntur Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            31,
+            29,
+            28,
+            30
+          ],
+          "outbreak_prob": 47,
+          "level": "moderate",
+          "mu": 28,
+          "sigma": 3
+        },
+        "wards": {
+          "Brodipet": {
+            "weeks": [
+              7,
+              8,
+              9,
+              11
+            ],
+            "outbreak_prob": 84,
+            "level": "very_high",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Lakshmipuram": {
+            "weeks": [
+              7,
+              9,
+              10,
+              11
+            ],
+            "outbreak_prob": 86,
+            "level": "very_high",
+            "mu": 7,
+            "sigma": 1
+          },
+          "Pattabhipuram": {
+            "weeks": [
+              6,
+              6,
+              6,
+              6
+            ],
+            "outbreak_prob": 38,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Arundelpet": {
+            "weeks": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "outbreak_prob": 28,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Brundavan Gardens": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 19,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          },
+          "AT Agraharam": {
+            "weeks": [
+              2,
+              2,
+              3,
+              3
+            ],
+            "outbreak_prob": 76,
+            "level": "high",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Tenali Municipality": {
+        "forecast": {
+          "weeks": [
+            16,
+            17,
+            19,
+            19
+          ],
+          "outbreak_prob": 71,
+          "level": "high",
+          "mu": 15,
+          "sigma": 2
+        },
+        "wards": {
+          "Tenali Town": {
+            "weeks": [
+              9,
+              9,
+              8,
+              9
+            ],
+            "outbreak_prob": 42,
+            "level": "moderate",
+            "mu": 8,
+            "sigma": 1
+          },
+          "Kothapeta": {
+            "weeks": [
+              7,
+              9,
+              10,
+              11
+            ],
+            "outbreak_prob": 93,
+            "level": "very_high",
+            "mu": 7,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Mangalagiri": {
+        "forecast": {
+          "weeks": [
+            6,
+            5,
+            6,
+            5
+          ],
+          "outbreak_prob": 28,
+          "level": "moderate",
+          "mu": 5,
+          "sigma": 1
+        },
+        "villages": {
+          "Mangalagiri": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 10,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Tadepalli": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 19,
+            "level": "low",
+            "mu": 2,
+            "sigma": 1
+          }
+        }
+      },
+      "Pedakurapadu": {
+        "forecast": {
+          "weeks": [
+            9,
+            10,
+            10,
+            9
+          ],
+          "outbreak_prob": 34,
+          "level": "moderate",
+          "mu": 9,
+          "sigma": 1
+        },
+        "villages": {
+          "Pedakurapadu": {
+            "weeks": [
+              5,
+              6,
+              6,
+              8
+            ],
+            "outbreak_prob": 72,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Nadendla": {
+            "weeks": [
+              4,
+              5,
+              6,
+              6
+            ],
+            "outbreak_prob": 72,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Sattenapalli": {
+        "forecast": {
+          "weeks": [
+            6,
+            6,
+            5,
+            5
+          ],
+          "outbreak_prob": 5,
+          "level": "low",
+          "mu": 9,
+          "sigma": 1
+        },
+        "villages": {
+          "Sattenapalli": {
+            "weeks": [
+              4,
+              4,
+              4,
+              3
+            ],
+            "outbreak_prob": 20,
+            "level": "low",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Rajupalem": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Krishna": {
+    "district_forecast": {
+      "weeks": [
+        47,
+        54,
+        63,
+        72
+      ],
+      "outbreak_prob": 78
+    },
+    "district_baseline": {
+      "mu": 50,
+      "sigma": 6
+    },
+    "district_level": "high",
+    "municipalities": {
+      "Machilipatnam Municipality": {
+        "forecast": {
+          "weeks": [
+            16,
+            17,
+            18,
+            22
+          ],
+          "outbreak_prob": 65,
+          "level": "high",
+          "mu": 15,
+          "sigma": 2
+        },
+        "wards": {
+          "Machilipatnam Town": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 17,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Robertsonpet": {
+            "weeks": [
+              2,
+              2,
+              2,
+              1
+            ],
+            "outbreak_prob": 18,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Chilakalapudi": {
+            "weeks": [
+              10,
+              10,
+              10,
+              10
+            ],
+            "outbreak_prob": 30,
+            "level": "moderate",
+            "mu": 9,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Gudivada": {
+        "forecast": {
+          "weeks": [
+            9,
+            11,
+            11,
+            13
+          ],
+          "outbreak_prob": 68,
+          "level": "high",
+          "mu": 10,
+          "sigma": 1
+        },
+        "villages": {
+          "Gudivada Town": {
+            "weeks": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "outbreak_prob": 65,
+            "level": "high",
+            "mu": 5,
+            "sigma": 1
+          },
+          "Pamarru": {
+            "weeks": [
+              7,
+              7,
+              7,
+              7
+            ],
+            "outbreak_prob": 34,
+            "level": "moderate",
+            "mu": 6,
+            "sigma": 1
+          }
+        }
+      },
+      "Avanigadda": {
+        "forecast": {
+          "weeks": [
+            8,
+            10,
+            10,
+            10
+          ],
+          "outbreak_prob": 67,
+          "level": "high",
+          "mu": 8,
+          "sigma": 1
+        },
+        "villages": {
+          "Avanigadda": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 13,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Koduru": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 14,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      },
+      "Nuzvid": {
+        "forecast": {
+          "weeks": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "outbreak_prob": 64,
+          "level": "high",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Nuzvid Town": {
+            "weeks": [
+              4,
+              4,
+              4,
+              3
+            ],
+            "outbreak_prob": 44,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Agiripalli": {
+            "weeks": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "outbreak_prob": 73,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Pedana": {
+        "forecast": {
+          "weeks": [
+            10,
+            10,
+            12,
+            12
+          ],
+          "outbreak_prob": 67,
+          "level": "high",
+          "mu": 10,
+          "sigma": 1
+        },
+        "villages": {
+          "Pedana": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 16,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Bantumilli": {
+            "weeks": [
+              6,
+              8,
+              9,
+              11
+            ],
+            "outbreak_prob": 95,
+            "level": "very_high",
+            "mu": 6,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "Kurnool": {
+    "district_forecast": {
+      "weeks": [
+        29,
+        28,
+        26,
+        23
+      ],
+      "outbreak_prob": 8
+    },
+    "district_baseline": {
+      "mu": 46,
+      "sigma": 7
+    },
+    "district_level": "low",
+    "municipalities": {
+      "Kurnool Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            14,
+            16,
+            16,
+            16
+          ],
+          "outbreak_prob": 47,
+          "level": "moderate",
+          "mu": 14,
+          "sigma": 2
+        },
+        "wards": {
+          "Kurnool Town": {
+            "weeks": [
+              4,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 42,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Bhagya Nagar": {
+            "weeks": [
+              3,
+              3,
+              3,
+              4
+            ],
+            "outbreak_prob": 55,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "B Camp": {
+            "weeks": [
+              4,
+              4,
+              5,
+              5
+            ],
+            "outbreak_prob": 64,
+            "level": "high",
+            "mu": 3,
+            "sigma": 1
+          },
+          "C Camp": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Konda Reddy Buruzu": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Adoni": {
+        "forecast": {
+          "weeks": [
+            4,
+            4,
+            4,
+            4
+          ],
+          "outbreak_prob": 20,
+          "level": "low",
+          "mu": 7,
+          "sigma": 1
+        },
+        "villages": {
+          "Adoni Town": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 57,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Yemmiganur": {
+            "weeks": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "outbreak_prob": 22,
+            "level": "low",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      },
+      "Nandyal": {
+        "forecast": {
+          "weeks": [
+            13,
+            17,
+            19,
+            22
+          ],
+          "outbreak_prob": 82,
+          "level": "very_high",
+          "mu": 12,
+          "sigma": 2
+        },
+        "villages": {
+          "Nandyal Town": {
+            "weeks": [
+              8,
+              9,
+              11,
+              12
+            ],
+            "outbreak_prob": 94,
+            "level": "very_high",
+            "mu": 7,
+            "sigma": 1
+          },
+          "Banaganapalle": {
+            "weeks": [
+              6,
+              5,
+              6,
+              5
+            ],
+            "outbreak_prob": 37,
+            "level": "moderate",
+            "mu": 5,
+            "sigma": 1
+          }
+        }
+      },
+      "Dhone": {
+        "forecast": {
+          "weeks": [
+            9,
+            8,
+            7,
+            7
+          ],
+          "outbreak_prob": 14,
+          "level": "low",
+          "mu": 13,
+          "sigma": 2
+        },
+        "villages": {
+          "Dhone": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          },
+          "Pattikonda": {
+            "weeks": [
+              11,
+              11,
+              10,
+              10
+            ],
+            "outbreak_prob": 38,
+            "level": "moderate",
+            "mu": 10,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  },
+  "East Godavari": {
+    "district_forecast": {
+      "weeks": [
+        42,
+        37,
+        33,
+        31
+      ],
+      "outbreak_prob": 15
+    },
+    "district_baseline": {
+      "mu": 60,
+      "sigma": 9
+    },
+    "district_level": "low",
+    "municipalities": {
+      "Kakinada Municipal Corporation": {
+        "forecast": {
+          "weeks": [
+            5,
+            4,
+            4,
+            4
+          ],
+          "outbreak_prob": 13,
+          "level": "low",
+          "mu": 7,
+          "sigma": 1
+        },
+        "wards": {
+          "Kakinada Town": {
+            "weeks": [
+              1,
+              2,
+              1,
+              2
+            ],
+            "outbreak_prob": 42,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Sarpavaram": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 7,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Ramanayyapeta": {
+            "weeks": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 1,
+            "sigma": 1
+          },
+          "Bhanugudi": {
+            "weeks": [
+              2,
+              1,
+              2,
+              2
+            ],
+            "outbreak_prob": 45,
+            "level": "moderate",
+            "mu": 1,
+            "sigma": 1
+          }
+        }
+      },
+      "Rajahmundry Municipal Corp": {
+        "forecast": {
+          "weeks": [
+            7,
+            7,
+            6,
+            6
+          ],
+          "outbreak_prob": 6,
+          "level": "low",
+          "mu": 11,
+          "sigma": 2
+        },
+        "wards": {
+          "Rajahmundry Town": {
+            "weeks": [
+              5,
+              6,
+              6,
+              6
+            ],
+            "outbreak_prob": 67,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Danavaipeta": {
+            "weeks": [
+              4,
+              5,
+              5,
+              4
+            ],
+            "outbreak_prob": 31,
+            "level": "moderate",
+            "mu": 4,
+            "sigma": 1
+          },
+          "Kambala Cheruvu": {
+            "weeks": [
+              3,
+              3,
+              4,
+              3
+            ],
+            "outbreak_prob": 32,
+            "level": "moderate",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Peddapuram": {
+        "forecast": {
+          "weeks": [
+            20,
+            23,
+            23,
+            25
+          ],
+          "outbreak_prob": 73,
+          "level": "high",
+          "mu": 18,
+          "sigma": 3
+        },
+        "villages": {
+          "Peddapuram": {
+            "weeks": [
+              6,
+              5,
+              5,
+              5
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 9,
+            "sigma": 1
+          },
+          "Samalkota": {
+            "weeks": [
+              10,
+              10,
+              9,
+              10
+            ],
+            "outbreak_prob": 34,
+            "level": "moderate",
+            "mu": 9,
+            "sigma": 1
+          }
+        }
+      },
+      "Tuni": {
+        "forecast": {
+          "weeks": [
+            9,
+            10,
+            10,
+            10
+          ],
+          "outbreak_prob": 48,
+          "level": "moderate",
+          "mu": 9,
+          "sigma": 1
+        },
+        "villages": {
+          "Tuni": {
+            "weeks": [
+              6,
+              7,
+              7,
+              6
+            ],
+            "outbreak_prob": 38,
+            "level": "moderate",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Annavaram": {
+            "weeks": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 11,
+            "level": "low",
+            "mu": 3,
+            "sigma": 1
+          }
+        }
+      },
+      "Amalapuram": {
+        "forecast": {
+          "weeks": [
+            11,
+            10,
+            9,
+            9
+          ],
+          "outbreak_prob": 14,
+          "level": "low",
+          "mu": 16,
+          "sigma": 2
+        },
+        "villages": {
+          "Amalapuram": {
+            "weeks": [
+              6,
+              7,
+              8,
+              9
+            ],
+            "outbreak_prob": 65,
+            "level": "high",
+            "mu": 6,
+            "sigma": 1
+          },
+          "Mummidivaram": {
+            "weeks": [
+              6,
+              6,
+              6,
+              5
+            ],
+            "outbreak_prob": 9,
+            "level": "low",
+            "mu": 10,
+            "sigma": 2
+          }
+        }
+      }
+    }
+  },
+  "NTR": {
+    "district_forecast": {
+      "weeks": [
+        66,
+        67,
+        70,
+        68
+      ],
+      "outbreak_prob": 28
+    },
+    "district_baseline": {
+      "mu": 62,
+      "sigma": 11
+    },
+    "district_level": "moderate",
+    "municipalities": {
+      "NTR Municipal Council": {
+        "forecast": {
+          "weeks": [
+            26,
+            25,
+            24,
+            21
+          ],
+          "outbreak_prob": 17,
+          "level": "low",
+          "mu": 40,
+          "sigma": 7
+        },
+        "wards": {
+          "NTR Town": {
+            "weeks": [
+              9,
+              8,
+              7,
+              7
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 13,
+            "sigma": 2
+          },
+          "Eluru Road": {
+            "weeks": [
+              16,
+              17,
+              16,
+              16
+            ],
+            "outbreak_prob": 36,
+            "level": "moderate",
+            "mu": 15,
+            "sigma": 3
+          },
+          "Currency Nagar": {
+            "weeks": [
+              9,
+              9,
+              7,
+              7
+            ],
+            "outbreak_prob": 5,
+            "level": "low",
+            "mu": 13,
+            "sigma": 2
+          }
+        }
+      }
+    },
+    "blocks": {
+      "Tiruvuru": {
+        "forecast": {
+          "weeks": [
+            11,
+            12,
+            14,
+            14
+          ],
+          "outbreak_prob": 62,
+          "level": "high",
+          "mu": 10,
+          "sigma": 2
+        },
+        "villages": {
+          "Tiruvuru": {
+            "weeks": [
+              4,
+              4,
+              3,
+              3
+            ],
+            "outbreak_prob": 16,
+            "level": "low",
+            "mu": 6,
+            "sigma": 1
+          },
+          "A. Konduru": {
+            "weeks": [
+              3,
+              2,
+              2,
+              2
+            ],
+            "outbreak_prob": 20,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Nuzividu": {
+        "forecast": {
+          "weeks": [
+            6,
+            7,
+            6,
+            6
+          ],
+          "outbreak_prob": 52,
+          "level": "moderate",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Nuzividu Rural": {
+            "weeks": [
+              2,
+              3,
+              3,
+              2
+            ],
+            "outbreak_prob": 39,
+            "level": "moderate",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Reddigudem": {
+            "weeks": [
+              3,
+              3,
+              2,
+              2
+            ],
+            "outbreak_prob": 15,
+            "level": "low",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      },
+      "Vissannapeta": {
+        "forecast": {
+          "weeks": [
+            7,
+            7,
+            8,
+            9
+          ],
+          "outbreak_prob": 57,
+          "level": "high",
+          "mu": 6,
+          "sigma": 1
+        },
+        "villages": {
+          "Vissannapeta": {
+            "weeks": [
+              3,
+              3,
+              4,
+              4
+            ],
+            "outbreak_prob": 59,
+            "level": "high",
+            "mu": 2,
+            "sigma": 1
+          },
+          "Chatrai": {
+            "weeks": [
+              5,
+              5,
+              5,
+              6
+            ],
+            "outbreak_prob": 55,
+            "level": "high",
+            "mu": 4,
+            "sigma": 1
+          }
+        }
+      }
+    }
+  }
+}
 
 export const STATE_RISK_METHOD = {
   'Andhra Pradesh': 'ICMR',

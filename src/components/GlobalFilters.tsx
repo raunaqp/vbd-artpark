@@ -1,5 +1,6 @@
 import { useFilters } from "@/contexts/FilterContext";
-import { districts, subDistrictData, villageData, wardData, getDateWindow } from "@/data/mockData";
+import { districts, getDateWindow } from "@/data/mockData";
+import { getBlockDropdown, getLeafDropdown } from "@/data/canonical";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -12,23 +13,19 @@ interface GlobalFiltersProps {
 export default function GlobalFilters({ showDates = false, freshnessLabel }: GlobalFiltersProps = {}) {
   const { filters, setFilters, applyFilters, resetFilters, isLocked, getLabel } = useFilters();
   const { stateId } = useStateSelection();
-  void stateId; // re-render on state change so cascading lists refresh
+  void stateId;
   const [collapsed, setCollapsed] = useState(false);
   const window = getDateWindow(filters);
 
   const availableBlocks = useMemo(() => {
     if (filters.district === "All Districts") return ["All Blocks"];
-    const subs = subDistrictData.filter(s => s.parentDistrict === filters.district);
-    return ["All Blocks", ...subs.map(s => s.name)];
+    return ["All Blocks", ...getBlockDropdown(filters.district)];
   }, [filters.district]);
 
   const availableWards = useMemo(() => {
-    if (filters.block === "All Blocks") return ["All Wards"];
-    const villages = villageData.filter(v => v.parentBlock === filters.block);
-    const wards = wardData.filter(w => w.parentBlock === filters.block);
-    const all = [...villages, ...wards];
-    return ["All Wards", ...all.map(a => a.name)];
-  }, [filters.block]);
+    if (filters.block === "All Blocks" || filters.district === "All Districts") return ["All Wards"];
+    return ["All Wards", ...getLeafDropdown(filters.district, filters.block)];
+  }, [filters.district, filters.block]);
 
   return (
     <div className="mb-6">

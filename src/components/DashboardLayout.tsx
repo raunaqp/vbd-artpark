@@ -261,6 +261,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
       <main className="flex-1 p-6 overflow-auto">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }

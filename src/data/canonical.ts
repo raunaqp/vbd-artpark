@@ -334,6 +334,7 @@ export function canonicalPredictions(
       area: m.name,
       probability: m.outbreakProb,
       risk: m.legacyRisk,
+      riskLabel: String(m.riskLabel),
       expectedWeek: m.trend === "Rising" ? "W+2" : m.trend === "NewEmergence" ? "W+2" : "W+4",
       signal: buildDriverString(m.district.type, m.district.characteristic, m.trend, Math.round(m.forecastAvg)),
       areaType: "District",

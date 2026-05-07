@@ -229,11 +229,9 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
       <nav className="bg-card border-b border-border px-6 py-2">
         <div className="tab-nav inline-flex">
           {(() => {
-            const allowedIds: TabId[] = isDataOperator
-              ? ["upload"]
-              : isAdmin
+            const allowedIds: TabId[] = isAdmin
               ? [...baseTabs.map((t) => t.id) as TabId[], adminTab.id]
-              : baseTabs.filter((t) => t.id !== "upload").map((t) => t.id) as TabId[];
+              : baseTabs.map((t) => t.id) as TabId[];
             const fullTabs = [...baseTabs, adminTab];
             // Apply section visibility (admins always see all)
             const hidden = new Set<TabId>();

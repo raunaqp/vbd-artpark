@@ -314,10 +314,17 @@ export function canonicalHotspots(
         m.district.blocks.some((x) => x.name === filters.block),
     );
     if (parent) {
+      const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
       const muni = parent.district.municipalities.find((m) => m.name === filters.block);
-      if (muni) muni.wards.forEach((w) => sources.push({ name: w.name, weekly: w.weekly, parentDistrict: parent.name, parentBlock: muni.name }));
+      if (muni) {
+        const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+        wards.forEach((w) => sources.push({ name: w.name, weekly: w.weekly, parentDistrict: parent.name, parentBlock: muni.name }));
+      }
       const block = parent.district.blocks.find((b) => b.name === filters.block);
-      if (block) block.villages.forEach((v) => sources.push({ name: v.name, weekly: v.weekly, parentDistrict: parent.name, parentBlock: block.name }));
+      if (block) {
+        const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+        villages.forEach((v) => sources.push({ name: v.name, weekly: v.weekly, parentDistrict: parent.name, parentBlock: block.name }));
+      }
     }
   } else if (filters.district && filters.district !== "All Districts") {
     const parent = metrics.find((m) => m.name === filters.district);

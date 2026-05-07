@@ -5,7 +5,7 @@ export interface BlockDef {
   label: string;
 }
 
-export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings">, BlockDef[]> = {
+export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings" | "admin">, BlockDef[]> = {
   overview: [
     { id: "situation_summary", label: "Situation Summary" },
     { id: "kpis", label: "Key Metrics" },

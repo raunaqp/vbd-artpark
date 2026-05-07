@@ -229,12 +229,20 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
         <div className="tab-nav inline-flex">
           {(() => {
             const allowedIds: TabId[] = isDataOperator
-              ? ["surveillance", "upload"]
+              ? ["upload"]
               : isAdmin
               ? [...baseTabs.map((t) => t.id) as TabId[], adminTab.id]
-              : baseTabs.map((t) => t.id) as TabId[];
+              : baseTabs.filter((t) => t.id !== "upload").map((t) => t.id) as TabId[];
             const fullTabs = [...baseTabs, adminTab];
-            const visible = fullTabs.filter((t) => allowedIds.includes(t.id));
+            // Apply section visibility (admins always see all)
+            const hidden = new Set<TabId>();
+            if (!isAdmin) {
+              if (toggles.forecast_tab === false) hidden.add("forecast");
+              if (toggles.hotspots_tab === false) hidden.add("hotspots");
+              if (toggles.signals_tab === false) hidden.add("signals");
+              if (toggles.data_upload === false) hidden.add("upload");
+            }
+            const visible = fullTabs.filter((t) => allowedIds.includes(t.id) && !hidden.has(t.id));
             return visible.map((tab) => (
               <button
                 key={tab.id}

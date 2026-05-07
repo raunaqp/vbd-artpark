@@ -1,5 +1,15 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
 import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions, walkSeedNodes, type SeedConcernNode } from "./seed";
+import {
+  canonicalRegions,
+  canonicalHotspots,
+  canonicalPredictions,
+  canonicalRiskForecast,
+  canonicalNewEmergence,
+  canonicalRisingClusters,
+  stateLabelFromId,
+  getDistrictMetrics,
+} from "./canonical";
 
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)
 // Active state is set via setActiveState(); all getters/proxies read from the active bundle.
@@ -36,6 +46,7 @@ export interface HotspotData {
   prevCases: number;
   trend: "up" | "down" | "stable";
   risk: "high" | "moderate" | "low";
+  hotspotClass?: "None" | "Stable" | "Moderate" | "High";
   parentDistrict?: string;
   parentBlock?: string;
 }
@@ -953,6 +964,26 @@ export const stateBundles: Record<StateId, StateBundle> = { andhra_pradesh: AP, 
 // hotspots, predictions, alerts). Non-seeded districts keep synthesized baselines.
 import { applySeedOverlayAll } from "./seedOverlay";
 applySeedOverlayAll(stateBundles);
+
+// Inject canonical district lists from MOCK_DATASET so dropdowns include all 21 districts.
+{
+  const labels: Record<StateId, string> = { andhra_pradesh: "Andhra Pradesh", karnataka: "Karnataka", odisha: "Odisha" };
+  for (const sid of Object.keys(labels) as StateId[]) {
+    const canon = getDistrictMetrics(labels[sid]);
+    if (canon.length) {
+      const names = ["All Districts", ...canon.map((m) => m.name)];
+      const blockNames = ["All Blocks"];
+      const blockSet = new Set<string>();
+      canon.forEach((m) => {
+        m.district.municipalities.forEach((x) => blockSet.add(x.name));
+        m.district.blocks.forEach((x) => blockSet.add(x.name));
+      });
+      stateBundles[sid].districts = names;
+      stateBundles[sid].blocks = [...blockNames, ...Array.from(blockSet)];
+    }
+  }
+}
+
 export const stateOptions: { id: StateId; label: string }[] = [
   { id: "andhra_pradesh", label: "Andhra Pradesh" },
   { id: "odisha", label: "Odisha" },
@@ -1977,7 +2008,10 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
 }
 
 export function getFilteredRegions(input?: DashboardFiltersLike | string, legacyBlock?: string): RegionData[] {
-  return buildDerivedDashboardData(input, legacyBlock).regions;
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalRegions(stateLabel, filters);
+  return canon.length ? canon : buildDerivedDashboardData(filters).regions;
 }
 
 export function getKpiFromRegions(regions: RegionData[]) {
@@ -2047,11 +2081,18 @@ export function getSituationSummary(regions: RegionData[], diseaseName: string, 
 }
 
 export function getOutbreakPredictions(input?: DashboardFiltersLike | string, legacyBlock?: string): OutbreakPrediction[] {
-  return buildDerivedDashboardData(input, legacyBlock).predictions;
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalPredictions(stateLabel, filters);
+  return canon.length ? canon : buildDerivedDashboardData(filters).predictions;
 }
 
 export function getFilteredHotspots(input?: DashboardFiltersLike | string, lookbackWeeks: 2 | 4 = 4): HotspotData[] {
-  const derived = buildDerivedDashboardData(input);
+  const filters = resolveFilters(input);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalHotspots(stateLabel, filters, lookbackWeeks);
+  if (canon.length) return canon;
+  const derived = buildDerivedDashboardData(filters);
   return lookbackWeeks === 2 ? derived.hotspots2w : derived.hotspots4w;
 }
 
@@ -2072,7 +2113,12 @@ export function getLineListing(input?: DashboardFiltersLike | string, legacyBloc
 }
 
 // ──────────────── State-aware getters (preferred for components that re-render on filters/state change) ────────────────
-export const getRiskForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): RiskForecastPoint[] => buildDerivedDashboardData(input, legacyBlock).riskForecast;
+export const getRiskForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): RiskForecastPoint[] => {
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalRiskForecast(stateLabel, filters);
+  return canon.length ? canon : buildDerivedDashboardData(filters).riskForecast;
+};
 export const getWeeklyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).weeklyTimeSeries;
 export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).dailyTimeSeries;
 export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).monthlyTimeSeries;
@@ -2240,37 +2286,8 @@ function seedConcernNodesInScope(filters: DashboardFiltersLike): SeedConcernNode
  */
 export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): ConcernArea[] {
   const base = resolveFilters(input);
-  const level = inferLevel(base);
-  const recent = getFilteredRegions(buildWindowFilters(base, 14, 0));
-  const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
-  const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
-
-  const derived: ConcernArea[] = recent
-    .sort((a, b) => b.confirmed - a.confirmed)
-    .slice(0, 6)
-    .map((r) => ({
-      name: r.name,
-      cases: r.confirmed,
-      prevCases: priorByName.get(r.name) ?? 0,
-      changePct: 100,
-      parent: r.parentBlock || r.parentDistrict,
-      level,
-    }));
-
-  if (derived.length >= 2) return derived;
-
-  // Seed-driven fallback: surface any seeded node tagged as new_emergence in scope.
-  const seedNodes = seedConcernNodesInScope(base)
-    .filter((n) => n.signal === "new_emergence")
-    .sort((a, b) => b.cases_2w - a.cases_2w);
-  const seen = new Set(derived.map((d) => d.name));
-  for (const n of seedNodes) {
-    if (seen.has(n.name)) continue;
-    derived.push(seedNodeToConcern(n, "new"));
-    seen.add(n.name);
-    if (derived.length >= 6) break;
-  }
-  return derived;
+  const stateLabel = stateLabelFromId(activeStateId);
+  return canonicalNewEmergence(stateLabel, base) as ConcernArea[];
 }
 
 /**
@@ -2278,47 +2295,8 @@ export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): Con
  */
 export function getRisingClusters(input?: DashboardFiltersLike | string): ConcernArea[] {
   const base = resolveFilters(input);
-  const level = inferLevel(base);
-  const recent = getFilteredRegions(buildWindowFilters(base, 14, 0));
-  const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
-  const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
-
-  const derived: ConcernArea[] = recent
-    .map((r) => {
-      const prev = priorByName.get(r.name) ?? 0;
-      const delta = r.confirmed - prev;
-      const pct = prev > 0 ? (delta / prev) * 100 : (r.confirmed > 0 ? 100 : 0);
-      return { region: r, prev, delta, pct };
-    })
-    .filter(({ region, prev, delta, pct }) => region.confirmed >= 3 && delta >= 2 && (prev === 0 ? region.confirmed >= 4 : pct >= 30))
-    .sort((a, b) => b.pct - a.pct || b.delta - a.delta)
-    .slice(0, 5)
-    .map(({ region, prev, pct }) => ({
-      name: region.name,
-      cases: region.confirmed,
-      prevCases: prev,
-      changePct: Math.round(pct),
-      parent: region.parentBlock || region.parentDistrict,
-      level,
-    }));
-
-  if (derived.length >= 2) return derived;
-
-  // Seed fallback: nodes whose last 2w > prior 2w (cases_4w - cases_2w).
-  const seedNodes = seedConcernNodesInScope(base)
-    .filter((n) => {
-      const prior2w = n.cases_4w - n.cases_2w;
-      return n.cases_2w >= 3 && n.cases_2w > prior2w;
-    })
-    .sort((a, b) => (b.cases_2w - (b.cases_4w - b.cases_2w)) - (a.cases_2w - (a.cases_4w - a.cases_2w)));
-  const seen = new Set(derived.map((d) => d.name));
-  for (const n of seedNodes) {
-    if (seen.has(n.name)) continue;
-    derived.push(seedNodeToConcern(n, "rising"));
-    seen.add(n.name);
-    if (derived.length >= 5) break;
-  }
-  return derived;
+  const stateLabel = stateLabelFromId(activeStateId);
+  return canonicalRisingClusters(stateLabel, base) as ConcernArea[];
 }
 
 // ──────────────── Action Focus engine ────────────────

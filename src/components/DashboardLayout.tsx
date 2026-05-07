@@ -33,6 +33,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
   const { currentRole, setRole, availableRoles, isAdmin, isDataOperator } = useRole();
   const { currentDisease, setDisease } = useDisease();
   const { stateId, setStateId, options: stateOptions } = useStateSelection();
+  const [toggles] = useSectionToggles(stateId);
   const { appliedFilters } = useFilters();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showReportMenu, setShowReportMenu] = useState(false);

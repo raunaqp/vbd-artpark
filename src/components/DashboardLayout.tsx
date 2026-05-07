@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings, Shield } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -18,8 +18,9 @@ const baseTabs = [
 ] as const;
 
 const settingsTab = { id: "settings", label: "View Settings", icon: Settings } as const;
+const adminTab = { id: "admin", label: "Admin", icon: Shield } as const;
 
-export type TabId = (typeof baseTabs)[number]["id"] | typeof settingsTab.id;
+export type TabId = (typeof baseTabs)[number]["id"] | typeof settingsTab.id | typeof adminTab.id;
 
 interface Props {
   activeTab: TabId;
@@ -28,7 +29,7 @@ interface Props {
 }
 
 export default function DashboardLayout({ activeTab, onTabChange, children }: Props) {
-  const { currentRole, setRole, availableRoles, isAnalyst } = useRole();
+  const { currentRole, setRole, availableRoles, isAdmin, isDataOperator } = useRole();
   const { currentDisease, setDisease } = useDisease();
   const { stateId, setStateId, options: stateOptions } = useStateSelection();
   const { appliedFilters } = useFilters();
@@ -225,16 +226,25 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
 
       <nav className="bg-card border-b border-border px-6 py-2">
         <div className="tab-nav inline-flex">
-          {[...baseTabs, ...(isAnalyst ? [settingsTab] : [])].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`tab-nav-item flex items-center gap-2 ${activeTab === tab.id ? "tab-nav-item-active" : ""}`}
-            >
-              <tab.icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
+          {(() => {
+            const allowedIds: TabId[] = isDataOperator
+              ? ["surveillance", "upload"]
+              : isAdmin
+              ? [...baseTabs.map((t) => t.id) as TabId[], adminTab.id]
+              : baseTabs.map((t) => t.id) as TabId[];
+            const fullTabs = [...baseTabs, adminTab];
+            const visible = fullTabs.filter((t) => allowedIds.includes(t.id));
+            return visible.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={`tab-nav-item flex items-center gap-2 ${activeTab === tab.id ? "tab-nav-item-active" : ""}`}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ));
+          })()}
         </div>
       </nav>
 

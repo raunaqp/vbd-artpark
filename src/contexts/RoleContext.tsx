@@ -29,7 +29,8 @@ const apRoles: RoleInfo[] = [
   { id: "ap_b_tenali", stateId: "andhra_pradesh", label: "Block — Tenali", scope: "block", location: "Tenali", roleName: "Block Worker", userName: "Prasad Varma", district: "Guntur", block: "Tenali" },
   { id: "ap_m_vizag", stateId: "andhra_pradesh", label: "Municipality — Visakhapatnam MC", scope: "municipality", location: "Visakhapatnam MC", roleName: "Municipal Officer", userName: "Padmavathi", district: "Visakhapatnam", block: "Vizag MC", areaType: "urban" },
   { id: "ap_m_vij", stateId: "andhra_pradesh", label: "Municipality — Vijayawada MC", scope: "municipality", location: "Vijayawada MC", roleName: "Municipal Officer", userName: "Kishore Babu", district: "Krishna", block: "Vijayawada MC", areaType: "urban" },
-  { id: "ap_analyst", stateId: "andhra_pradesh", label: "Analyst (Full Access)", scope: "state", location: "Andhra Pradesh", roleName: "Analyst", userName: "Analyst" },
+  { id: "ap_admin", stateId: "andhra_pradesh", label: "Admin (Full Access)", scope: "state", location: "Andhra Pradesh", roleName: "Admin", userName: "Admin" },
+  { id: "ap_dataop", stateId: "andhra_pradesh", label: "Data Operator", scope: "state", location: "Andhra Pradesh", roleName: "Data Operator", userName: "Data Operator" },
 ];
 
 const odishaRoles: RoleInfo[] = [
@@ -49,7 +50,8 @@ const odishaRoles: RoleInfo[] = [
   { id: "od_m_cut", stateId: "odisha", label: "Municipality — Cuttack MC", scope: "municipality", location: "Cuttack MC", roleName: "Municipal Officer", userName: "K. Kar", district: "Cuttack", block: "Cuttack MC", areaType: "urban" },
   { id: "od_m_rkl", stateId: "odisha", label: "Municipality — Rourkela MC", scope: "municipality", location: "Rourkela MC", roleName: "Municipal Officer", userName: "R. Minz", district: "Sundargarh", block: "Rourkela MC", areaType: "urban" },
   { id: "od_m_sam", stateId: "odisha", label: "Municipality — Sambalpur MC", scope: "municipality", location: "Sambalpur MC", roleName: "Municipal Officer", userName: "S. Pradhan", district: "Sambalpur", block: "Sambalpur MC", areaType: "urban" },
-  { id: "od_analyst", stateId: "odisha", label: "Analyst (Full Access)", scope: "state", location: "Odisha", roleName: "Analyst", userName: "Analyst" },
+  { id: "od_admin", stateId: "odisha", label: "Admin (Full Access)", scope: "state", location: "Odisha", roleName: "Admin", userName: "Admin" },
+  { id: "od_dataop", stateId: "odisha", label: "Data Operator", scope: "state", location: "Odisha", roleName: "Data Operator", userName: "Data Operator" },
 ];
 
 const karnatakaRoles: RoleInfo[] = [
@@ -64,7 +66,8 @@ const karnatakaRoles: RoleInfo[] = [
   { id: "ka_m_bbmp", stateId: "karnataka", label: "Municipality — BBMP East Zone", scope: "municipality", location: "BBMP East Zone", roleName: "Municipal Officer", userName: "Savita M", district: "Bengaluru Urban", block: "BBMP East Zone", areaType: "urban" },
   { id: "ka_m_mys", stateId: "karnataka", label: "Municipality — Mysuru City", scope: "municipality", location: "Mysuru City", roleName: "Municipal Officer", userName: "Vinay S", district: "Mysuru", block: "Mysuru City", areaType: "urban" },
   { id: "ka_m_udu", stateId: "karnataka", label: "Municipality — Udupi City", scope: "municipality", location: "Udupi City", roleName: "Municipal Officer", userName: "Deepa U", district: "Udupi", block: "Udupi City", areaType: "urban" },
-  { id: "ka_analyst", stateId: "karnataka", label: "Analyst (Full Access)", scope: "state", location: "Karnataka", roleName: "Analyst", userName: "Analyst" },
+  { id: "ka_admin", stateId: "karnataka", label: "Admin (Full Access)", scope: "state", location: "Karnataka", roleName: "Admin", userName: "Admin" },
+  { id: "ka_dataop", stateId: "karnataka", label: "Data Operator", scope: "state", location: "Karnataka", roleName: "Data Operator", userName: "Data Operator" },
 ];
 
 export const allRoles: RoleInfo[] = [...apRoles, ...odishaRoles, ...karnatakaRoles];
@@ -79,7 +82,9 @@ export const roles = allRoles;
 interface RoleContextType {
   currentRole: RoleInfo;
   setRole: (id: RoleType) => void;
-  isAnalyst: boolean;
+  isAdmin: boolean;
+  isAnalyst: boolean; // alias for backwards compatibility
+  isDataOperator: boolean;
   availableRoles: RoleInfo[];
 }
 
@@ -90,7 +95,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const availableRoles = getRolesForState(stateId);
   const [roleId, setRoleId] = useState<RoleType>(availableRoles[0].id);
 
-  // When state changes, reset role to that state's first role
   useEffect(() => {
     const list = getRolesForState(stateId);
     if (!list.find((r) => r.id === roleId)) {
@@ -99,9 +103,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   }, [stateId, roleId]);
 
   const currentRole = availableRoles.find((r) => r.id === roleId) || availableRoles[0];
+  const isAdmin = currentRole.roleName === "Admin" || currentRole.roleName === "Analyst";
+  const isDataOperator = currentRole.roleName === "Data Operator";
 
   return (
-    <RoleContext.Provider value={{ currentRole, setRole: setRoleId, isAnalyst: currentRole.roleName === "Analyst", availableRoles }}>
+    <RoleContext.Provider value={{ currentRole, setRole: setRoleId, isAdmin, isAnalyst: isAdmin, isDataOperator, availableRoles }}>
       {children}
     </RoleContext.Provider>
   );

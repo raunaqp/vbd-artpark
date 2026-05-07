@@ -16,7 +16,7 @@ function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) 
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              {["Week of", "Date Range", "Rain (mm)", "Temp (°C)", "Max T", "Min T", "Humidity %"].map((h) => (
+              {["Week of", "Date Range", "Rain (mm)", "Wet Days", "Temp (°C)", "Max T", "Min T", "Humidity %"].map((h) => (
                 <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
               ))}
             </tr>
@@ -26,11 +26,13 @@ function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) 
               const rainHigh = r.rainfall > 80;
               const tempInRange = r.temp >= 25 && r.temp <= 32;
               const humInRange = r.humidity >= 60 && r.humidity <= 80;
+              const wetDays = r.rainfall <= 2.5 ? 0 : Math.min(7, Math.max(1, Math.round(r.rainfall / 8)));
               return (
                 <tr key={r.week} className="border-b border-border/50 hover:bg-muted/30">
                   <td className="py-2 px-3 font-medium">{r.week}</td>
                   <td className="py-2 px-3">{r.endDate}</td>
                   <td className={`py-2 px-3 ${rainHigh ? "font-bold text-risk-high" : ""}`}>{r.rainfall}</td>
+                  <td className="py-2 px-3">{wetDays}</td>
                   <td className={`py-2 px-3 ${tempInRange ? "font-bold text-chart-temperature" : ""}`}>{r.temp}</td>
                   <td className="py-2 px-3">{r.maxT}</td>
                   <td className="py-2 px-3">{r.minT}</td>

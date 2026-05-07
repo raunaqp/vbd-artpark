@@ -3,8 +3,6 @@ import { AlertTriangle, ArrowUp, ArrowDown, ArrowRight, Info } from "lucide-reac
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
 import TablePagination from "@/components/TablePagination";
-import HotspotDailyTrend from "@/components/HotspotDailyTrend";
-import Sparkline, { synthSparkSeries } from "@/components/Sparkline";
 import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
@@ -12,6 +10,13 @@ import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 
 const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
+
+const hotspotClassBadge: Record<string, string> = {
+  High: "bg-risk-high/15 text-risk-high border-risk-high/40",
+  Moderate: "bg-risk-moderate/15 text-risk-moderate border-risk-moderate/40",
+  Stable: "bg-risk-low/15 text-risk-low border-risk-low/40",
+  None: "bg-muted text-muted-foreground border-border",
+};
 
 export default function HotspotsScreen() {
   const [timeRange, setTimeRange] = useState<"2weeks" | "4weeks">("4weeks");
@@ -99,10 +104,6 @@ export default function HotspotsScreen() {
         <DashboardMap height="350px" mode="hotspot" hotspotLookbackWeeks={timeRange === "2weeks" ? 2 : 4} />
       )}
 
-      {show("hotspot_daily_trend") && (
-        <HotspotDailyTrend lookbackDays={timeRange === "2weeks" ? 14 : 28} />
-      )}
-
       {show("hotspot_table") && (displayHotspots.length > 0 ? (
         <div className="section-card p-5">
           <h3 className="section-title mb-3">{diseaseName} Hotspot Analysis — Last {timeRange === "4weeks" ? "4" : "2"} Weeks · {areaLabel}</h3>
@@ -110,7 +111,7 @@ export default function HotspotsScreen() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  {["District", "Block / Municipality", "Village / Ward", "Cases", "Trend", `Sparkline (${timeRange === "2weeks" ? "14d" : "28d"})`, "Basis"].map((h) => (
+                  {["District", "Block / Municipality", "Village / Ward", "Cases", "Trend", "Hotspot Class", "Basis"].map((h) => (
                     <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                   ))}
                 </tr>
@@ -118,14 +119,12 @@ export default function HotspotsScreen() {
               <tbody>
                 {visibleHotspots.map((r) => {
                   const TrendIcon = trendIcon[r.trend];
-                  const sparkPoints = timeRange === "2weeks" ? 14 : 28;
-                  const sparkValues = synthSparkSeries(r.area, r.currentCases, r.prevCases, r.trend, sparkPoints);
-                  // Hierarchy column resolution based on current filter scope.
                   const isWardLevel = appliedFilters.block !== "All Blocks";
                   const isBlockLevel = !isWardLevel && appliedFilters.district !== "All Districts";
                   const districtCol = r.parentDistrict || (isWardLevel || isBlockLevel ? appliedFilters.district : r.area);
                   const blockCol = r.parentBlock || (isWardLevel ? appliedFilters.block : isBlockLevel ? r.area : "—");
                   const villageCol = isWardLevel ? r.area : "—";
+                  const cls = (r as any).hotspotClass ?? "None";
                   return (
                     <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-3 font-medium">{districtCol}</td>
@@ -139,7 +138,7 @@ export default function HotspotsScreen() {
                         </span>
                       </td>
                       <td className="py-2 px-3">
-                        <Sparkline values={sparkValues} trend={r.trend} width={90} height={22} />
+                        <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded border ${hotspotClassBadge[cls] || hotspotClassBadge.None}`}>{cls}</span>
                       </td>
                       <td className="py-2 px-3 text-xs text-muted-foreground">{timeRange === "2weeks" ? "2W" : "4W"}</td>
                     </tr>

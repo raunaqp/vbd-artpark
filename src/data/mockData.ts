@@ -2123,44 +2123,69 @@ export const getRiskForecast = (input?: DashboardFiltersLike | string, legacyBlo
   return canon.length ? canon : buildDerivedDashboardData(filters).riskForecast;
 };
 /**
- * Canonical-aware scale: ratio of recent (last 8 weeks) cases at the deepest
- * selected geography vs. the same window at the state level. Lets time-series
- * magnitudes track the user's drill level (block / ward / village) without
- * touching the underlying generators.
+ * Build TimeSeriesPoint shape from a raw weekly count array (one number per ISO week).
+ * Reads real per-geography weekly arrays from MOCK_DATASET — no scaling.
  */
-function canonicalScopeScale(filters: DashboardFiltersLike): number {
-  const stateLabel = stateLabelFromId(activeStateId);
-  const stateSeries = getCanonicalWeeklySeries(stateLabel, { ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" });
-  const scopeSeries = getCanonicalWeeklySeries(stateLabel, filters);
-  const stateRecent = stateSeries.slice(-8).reduce((a, b) => a + b, 0);
-  const scopeRecent = scopeSeries.slice(-8).reduce((a, b) => a + b, 0);
-  if (stateRecent <= 0) return 1;
-  return Math.max(0, scopeRecent / stateRecent);
-}
-
-function scaleSeries(series: TimeSeriesPoint[], scale: number): TimeSeriesPoint[] {
-  if (scale === 1) return series;
-  return series.map((p) => {
-    const positive = Math.max(0, Math.round(p.positive * scale));
-    const samples = Math.max(positive, Math.round(p.samples * scale));
-    return { ...p, positive, samples, tpr: Number(((positive / Math.max(samples, 1)) * 100).toFixed(1)) };
+function pointsFromWeekly(weekly: number[], take = 10): TimeSeriesPoint[] {
+  const slice = weekly.slice(-take);
+  const offset = slice.length;
+  return slice.map((positive, i) => {
+    const samples = Math.max(positive, Math.round(positive * 4.2 + 6));
+    const tpr = Number(((positive / Math.max(samples, 1)) * 100).toFixed(1));
+    const weekLabel = `W-${offset - 1 - i}`.replace("W--", "W+").replace("W-0", "W0");
+    // Date label: derive from WEEK_ENDINGS when available
+    const globalIdx = weekly.length - slice.length + i;
+    const ending = WEEK_ENDINGS[globalIdx];
+    const date = ending ? format(addDays(parseISO(ending), -6), "d MMM") + "–" + format(parseISO(ending), "d MMM") : weekLabel;
+    return { week: weekLabel, date, positive, samples, tpr };
   });
 }
 
 export const getWeeklyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
   const filters = resolveFilters(input, legacyBlock);
-  const stateSeries = buildDerivedDashboardData({ ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" }).weeklyTimeSeries;
-  return scaleSeries(stateSeries, canonicalScopeScale(filters));
+  const stateLabel = stateLabelFromId(activeStateId);
+  const weekly = getCanonicalWeeklySeries(stateLabel, filters);
+  return pointsFromWeekly(weekly, 10);
 };
 export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
   const filters = resolveFilters(input, legacyBlock);
-  const stateSeries = buildDerivedDashboardData({ ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" }).dailyTimeSeries;
-  return scaleSeries(stateSeries, canonicalScopeScale(filters));
+  const stateLabel = stateLabelFromId(activeStateId);
+  const weekly = getCanonicalWeeklySeries(stateLabel, filters);
+  // Last 4 weeks → 28 daily points, distributed evenly within each week (deterministic).
+  const last4 = weekly.slice(-4);
+  const out: TimeSeriesPoint[] = [];
+  last4.forEach((wkTotal, wi) => {
+    const base = Math.floor(wkTotal / 7);
+    const rem = wkTotal - base * 7;
+    for (let d = 0; d < 7; d++) {
+      const positive = base + (d < rem ? 1 : 0);
+      const samples = Math.max(positive, Math.round(positive * 4.2 + 2));
+      const tpr = Number(((positive / Math.max(samples, 1)) * 100).toFixed(1));
+      const dayIdx = wi * 7 + d;
+      const ending = WEEK_ENDINGS[WEEK_ENDINGS.length - 4 + wi];
+      const date = ending ? format(addDays(parseISO(ending), -6 + d), "d MMM") : `D${dayIdx + 1}`;
+      out.push({ date, positive, samples, tpr });
+    }
+  });
+  return out;
 };
 export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
   const filters = resolveFilters(input, legacyBlock);
-  const stateSeries = buildDerivedDashboardData({ ...filters, district: "All Districts", block: "All Blocks", ward: "All Wards" }).monthlyTimeSeries;
-  return scaleSeries(stateSeries, canonicalScopeScale(filters));
+  const stateLabel = stateLabelFromId(activeStateId);
+  const weekly = getCanonicalWeeklySeries(stateLabel, filters);
+  // Group 36 weeks into 9 monthly buckets (4-week chunks)
+  const out: TimeSeriesPoint[] = [];
+  const chunkSize = 4;
+  for (let i = 0; i + chunkSize <= weekly.length; i += chunkSize) {
+    const chunk = weekly.slice(i, i + chunkSize);
+    const positive = chunk.reduce((a, b) => a + b, 0);
+    const samples = Math.max(positive, Math.round(positive * 4.2 + 8));
+    const tpr = Number(((positive / Math.max(samples, 1)) * 100).toFixed(1));
+    const ending = WEEK_ENDINGS[i + chunkSize - 1];
+    const month = ending ? format(parseISO(ending), "MMM yy") : `M${out.length + 1}`;
+    out.push({ month, positive, samples, tpr });
+  }
+  return out;
 };
 export const getForecastData = (input?: DashboardFiltersLike | string, legacyBlock?: string): ForecastChartPoint[] => buildDerivedDashboardData(input, legacyBlock).forecastData;
 export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherObserved;

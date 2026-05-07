@@ -2275,47 +2275,8 @@ export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): Con
  */
 export function getRisingClusters(input?: DashboardFiltersLike | string): ConcernArea[] {
   const base = resolveFilters(input);
-  const level = inferLevel(base);
-  const recent = getFilteredRegions(buildWindowFilters(base, 14, 0));
-  const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
-  const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
-
-  const derived: ConcernArea[] = recent
-    .map((r) => {
-      const prev = priorByName.get(r.name) ?? 0;
-      const delta = r.confirmed - prev;
-      const pct = prev > 0 ? (delta / prev) * 100 : (r.confirmed > 0 ? 100 : 0);
-      return { region: r, prev, delta, pct };
-    })
-    .filter(({ region, prev, delta, pct }) => region.confirmed >= 3 && delta >= 2 && (prev === 0 ? region.confirmed >= 4 : pct >= 30))
-    .sort((a, b) => b.pct - a.pct || b.delta - a.delta)
-    .slice(0, 5)
-    .map(({ region, prev, pct }) => ({
-      name: region.name,
-      cases: region.confirmed,
-      prevCases: prev,
-      changePct: Math.round(pct),
-      parent: region.parentBlock || region.parentDistrict,
-      level,
-    }));
-
-  if (derived.length >= 2) return derived;
-
-  // Seed fallback: nodes whose last 2w > prior 2w (cases_4w - cases_2w).
-  const seedNodes = seedConcernNodesInScope(base)
-    .filter((n) => {
-      const prior2w = n.cases_4w - n.cases_2w;
-      return n.cases_2w >= 3 && n.cases_2w > prior2w;
-    })
-    .sort((a, b) => (b.cases_2w - (b.cases_4w - b.cases_2w)) - (a.cases_2w - (a.cases_4w - a.cases_2w)));
-  const seen = new Set(derived.map((d) => d.name));
-  for (const n of seedNodes) {
-    if (seen.has(n.name)) continue;
-    derived.push(seedNodeToConcern(n, "rising"));
-    seen.add(n.name);
-    if (derived.length >= 5) break;
-  }
-  return derived;
+  const stateLabel = stateLabelFromId(activeStateId);
+  return canonicalRisingClusters(stateLabel, base) as ConcernArea[];
 }
 
 // ──────────────── Action Focus engine ────────────────

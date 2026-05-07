@@ -50,7 +50,8 @@ const odishaRoles: RoleInfo[] = [
   { id: "od_m_cut", stateId: "odisha", label: "Municipality — Cuttack MC", scope: "municipality", location: "Cuttack MC", roleName: "Municipal Officer", userName: "K. Kar", district: "Cuttack", block: "Cuttack MC", areaType: "urban" },
   { id: "od_m_rkl", stateId: "odisha", label: "Municipality — Rourkela MC", scope: "municipality", location: "Rourkela MC", roleName: "Municipal Officer", userName: "R. Minz", district: "Sundargarh", block: "Rourkela MC", areaType: "urban" },
   { id: "od_m_sam", stateId: "odisha", label: "Municipality — Sambalpur MC", scope: "municipality", location: "Sambalpur MC", roleName: "Municipal Officer", userName: "S. Pradhan", district: "Sambalpur", block: "Sambalpur MC", areaType: "urban" },
-  { id: "od_analyst", stateId: "odisha", label: "Analyst (Full Access)", scope: "state", location: "Odisha", roleName: "Analyst", userName: "Analyst" },
+  { id: "od_admin", stateId: "odisha", label: "Admin (Full Access)", scope: "state", location: "Odisha", roleName: "Admin", userName: "Admin" },
+  { id: "od_dataop", stateId: "odisha", label: "Data Operator", scope: "state", location: "Odisha", roleName: "Data Operator", userName: "Data Operator" },
 ];
 
 const karnatakaRoles: RoleInfo[] = [

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { ArrowUp, ArrowDown, ArrowRight } from "lucide-react";
 import { getFilteredRegions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
+import { useStateSelection } from "@/contexts/StateContext";
+import { getRiskLabel } from "@/lib/forecast_labels";
 import TablePagination from "@/components/TablePagination";
 
 const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
@@ -11,6 +13,7 @@ interface Props { maxRows?: number }
 
 export default function RegionTable({ maxRows }: Props = {}) {
   const { appliedFilters } = useFilters();
+  const { stateId } = useStateSelection();
   const regions = getFilteredRegions(appliedFilters);
   const sorted = [...regions].sort((a, b) => b.confirmed - a.confirmed);
   const limited = maxRows ? sorted.slice(0, maxRows) : sorted;
@@ -62,7 +65,7 @@ export default function RegionTable({ maxRows }: Props = {}) {
                       <span className="text-muted-foreground capitalize">{r.trend === "up" ? "Rising" : r.trend === "down" ? "Falling" : "Stable"}</span>
                     </span>
                   </td>
-                  <td className="py-2 px-2 text-center"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
+                  <td className="py-2 px-2 text-center"><span className={`risk-badge-${r.risk}`}>{getRiskLabel(stateId, r.risk)}</span></td>
                 </tr>
               );
             })}

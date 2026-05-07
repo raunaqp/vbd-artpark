@@ -8,6 +8,9 @@ import ActionFocusAreas from "@/components/ActionFocusAreas";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
+import { useStateSelection } from "@/contexts/StateContext";
+import { useRole } from "@/contexts/RoleContext";
+import { useIsSectionVisible } from "@/lib/sectionVisibility";
 import {
   getFilteredRegions,
   getSituationSummary,
@@ -25,6 +28,9 @@ export default function OverviewScreen({ onNavigate }: Props) {
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
   const { isVisible } = useBlockVisibility();
+  const { stateId } = useStateSelection();
+  const { isAdmin } = useRole();
+  const showActionFocus = useIsSectionVisible("overview_action_focus", stateId, isAdmin);
   const show = (id: string) => isVisible("overview", id);
   const rawRegions = getFilteredRegions(appliedFilters);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
@@ -91,7 +97,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
       {show("areas_of_concern") && <AreasOfConcern />}
 
       {/* 5. Action Focus Areas */}
-      {show("action_focus") && <ActionFocusAreas />}
+      {show("action_focus") && showActionFocus && <ActionFocusAreas />}
 
       {/* 6. Forecast cards */}
       {show("forecast_cards") && (

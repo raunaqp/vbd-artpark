@@ -185,6 +185,40 @@ export function getForecastForGeography(
   return h.municipalities[childName]?.forecast ?? h.blocks[childName]?.forecast;
 }
 
+/**
+ * Weekly case series for the deepest selected geography (from MOCK_DATASET).
+ * State view aggregates across districts of that state; otherwise descends
+ * district → mun/block → ward/village.
+ */
+export function getCanonicalWeeklySeries(
+  stateLabel: string,
+  filters: DashboardFiltersLike,
+): number[] {
+  const districtSel = filters.district && filters.district !== "All Districts" ? filters.district : null;
+  const blockSel = filters.block && filters.block !== "All Blocks" ? filters.block : null;
+  const wardSel = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
+
+  if (!districtSel) {
+    const districts = Object.values(MOCK_DATASET).filter((d) => d.state === stateLabel);
+    const len = districts[0]?.weekly_total.length ?? 0;
+    return Array.from({ length: len }, (_, i) => districts.reduce((s, d) => s + (d.weekly_total[i] ?? 0), 0));
+  }
+  const d = MOCK_DATASET[districtSel];
+  if (!d) return [];
+  if (!blockSel) return d.weekly_total;
+  const muni = d.municipalities.find((m) => m.name === blockSel);
+  if (muni) {
+    if (!wardSel) return muni.weekly;
+    return muni.wards.find((w) => w.name === wardSel)?.weekly ?? muni.weekly;
+  }
+  const blk = d.blocks.find((b) => b.name === blockSel);
+  if (blk) {
+    if (!wardSel) return blk.weekly;
+    return blk.villages.find((v) => v.name === wardSel)?.weekly ?? blk.weekly;
+  }
+  return d.weekly_total;
+}
+
 // ──────────────── Per-screen converters ────────────────
 
 function metricToRegion(m: DistrictMetrics): RegionData {
@@ -270,13 +304,16 @@ export function canonicalRegions(stateLabel: string, filters: DashboardFiltersLi
         m.district.blocks.some((x) => x.name === filters.block),
     );
     if (!parent) return [];
+    const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
     const muni = parent.district.municipalities.find((m) => m.name === filters.block);
     if (muni) {
-      return muni.wards.map((w) => leafToRegion(parent, muni.name, "ward", w.name, w.weekly));
+      const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+      return wards.map((w) => leafToRegion(parent, muni.name, "ward", w.name, w.weekly));
     }
     const block = parent.district.blocks.find((b) => b.name === filters.block);
     if (block) {
-      return block.villages.map((v) => leafToRegion(parent, block.name, "village", v.name, v.weekly));
+      const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+      return villages.map((v) => leafToRegion(parent, block.name, "village", v.name, v.weekly));
     }
     return [];
   }
@@ -311,10 +348,17 @@ export function canonicalHotspots(
         m.district.blocks.some((x) => x.name === filters.block),
     );
     if (parent) {
+      const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
       const muni = parent.district.municipalities.find((m) => m.name === filters.block);
-      if (muni) muni.wards.forEach((w) => sources.push({ name: w.name, weekly: w.weekly, parentDistrict: parent.name, parentBlock: muni.name }));
+      if (muni) {
+        const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+        wards.forEach((w) => sources.push({ name: w.name, weekly: w.weekly, parentDistrict: parent.name, parentBlock: muni.name }));
+      }
       const block = parent.district.blocks.find((b) => b.name === filters.block);
-      if (block) block.villages.forEach((v) => sources.push({ name: v.name, weekly: v.weekly, parentDistrict: parent.name, parentBlock: block.name }));
+      if (block) {
+        const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+        villages.forEach((v) => sources.push({ name: v.name, weekly: v.weekly, parentDistrict: parent.name, parentBlock: block.name }));
+      }
     }
   } else if (filters.district && filters.district !== "All Districts") {
     const parent = metrics.find((m) => m.name === filters.district);
@@ -355,23 +399,23 @@ export function canonicalPredictions(
   const metrics = getDistrictMetrics(stateLabel);
 
   if (filters.district && filters.district !== "All Districts") {
-    // Drill into block / municipality level — derive forecast from recent trajectory * rate.
     const parent = metrics.find((m) => m.name === filters.district);
     if (!parent) return [];
     const districtForecastRatio = parent.forecastAvg / Math.max(1, parent.cases4w / 4);
+
     const buildPred = (
       name: string,
       areaType: string,
       weekly: number[],
+      forecast?: ForecastEntry,
     ): OutbreakPrediction => {
       const trend = computeTrend(weekly.slice(-8));
       const recent4 = weekly.slice(-4).reduce((a, b) => a + b, 0);
       const projected = Math.round((recent4 / 4) * districtForecastRatio);
-      const f = getForecastForGeography(parent.name, name);
-      const childLevel = f?.level as HForecastLevel | undefined;
+      const childLevel = forecast?.level as HForecastLevel | undefined;
       const childRisk = childLevel ? levelToLegacy(childLevel) : parent.legacyRisk;
       const childRiskLabel = childLevel ? labelForLevel(stateLabel, childLevel) : String(parent.riskLabel);
-      const probability = f?.outbreak_prob ?? Math.min(95, Math.max(5, Math.round(parent.outbreakProb * (recent4 / Math.max(1, parent.cases4w)))));
+      const probability = forecast?.outbreak_prob ?? Math.min(95, Math.max(5, Math.round(parent.outbreakProb * (recent4 / Math.max(1, parent.cases4w)))));
       return {
         area: name,
         probability,
@@ -383,8 +427,29 @@ export function canonicalPredictions(
         areaType,
       };
     };
-    const munis = parent.district.municipalities.map((m) => buildPred(m.name, "Municipality", m.weekly));
-    const blocks = parent.district.blocks.map((b) => buildPred(b.name, "Block", b.weekly));
+
+    // Block / Municipality scope → return wards or villages under it.
+    if (filters.block && filters.block !== "All Blocks") {
+      const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
+      const muni = parent.district.municipalities.find((m) => m.name === filters.block);
+      if (muni) {
+        const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+        return wards
+          .map((w) => buildPred(w.name, "Ward", w.weekly, getForecastForGeography(parent.name, muni.name, w.name)))
+          .sort((a, b) => b.probability - a.probability);
+      }
+      const block = parent.district.blocks.find((b) => b.name === filters.block);
+      if (block) {
+        const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+        return villages
+          .map((v) => buildPred(v.name, "Village", v.weekly, getForecastForGeography(parent.name, block.name, v.name)))
+          .sort((a, b) => b.probability - a.probability);
+      }
+      return [];
+    }
+
+    const munis = parent.district.municipalities.map((m) => buildPred(m.name, "Municipality", m.weekly, getForecastForGeography(parent.name, m.name)));
+    const blocks = parent.district.blocks.map((b) => buildPred(b.name, "Block", b.weekly, getForecastForGeography(parent.name, b.name)));
     return [...munis, ...blocks].sort((a, b) => b.probability - a.probability);
   }
 
@@ -440,8 +505,22 @@ export function canonicalRiskForecast(stateLabel: string, filters: DashboardFilt
   if (filters.district && filters.district !== "All Districts") {
     const parent = metrics.find((m) => m.name === filters.district);
     if (!parent) return [];
-    weeks = parent.forecast4w;
-    summaryRisk = parent.legacyRisk;
+
+    // Drill: block / municipality and (optionally) ward / village.
+    if (filters.block && filters.block !== "All Blocks") {
+      const wardSel = filters.ward && filters.ward !== "All Wards" ? filters.ward : undefined;
+      const f = getForecastForGeography(parent.name, filters.block, wardSel);
+      if (f) {
+        weeks = f.weeks.slice(0, 4);
+        summaryRisk = levelToLegacy(f.level as HForecastLevel);
+      } else {
+        weeks = parent.forecast4w;
+        summaryRisk = parent.legacyRisk;
+      }
+    } else {
+      weeks = parent.forecast4w;
+      summaryRisk = parent.legacyRisk;
+    }
   } else {
     weeks = [0, 1, 2, 3].map((wi) =>
       metrics.reduce((acc, m) => acc + (m.forecast4w[wi] ?? 0), 0),
@@ -516,10 +595,17 @@ function candidateLeaves(stateLabel: string, filters: DashboardFiltersLike): Lea
         m.district.blocks.some((x) => x.name === filters.block),
     );
     if (parent) {
+      const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
       const muni = parent.district.municipalities.find((m) => m.name === filters.block);
-      if (muni) muni.wards.forEach((w) => out.push({ name: w.name, weeklyLast8: w.weekly.slice(-8), parentDistrict: parent.name, parentBlock: muni.name, population: parent.population / 50, level: "ward" }));
+      if (muni) {
+        const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+        wards.forEach((w) => out.push({ name: w.name, weeklyLast8: w.weekly.slice(-8), parentDistrict: parent.name, parentBlock: muni.name, population: parent.population / 50, level: "ward" }));
+      }
       const block = parent.district.blocks.find((b) => b.name === filters.block);
-      if (block) block.villages.forEach((v) => out.push({ name: v.name, weeklyLast8: v.weekly.slice(-8), parentDistrict: parent.name, parentBlock: block.name, population: parent.population / 50, level: "ward" }));
+      if (block) {
+        const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+        villages.forEach((v) => out.push({ name: v.name, weeklyLast8: v.weekly.slice(-8), parentDistrict: parent.name, parentBlock: block.name, population: parent.population / 50, level: "ward" }));
+      }
     }
   } else if (filters.district && filters.district !== "All Districts") {
     const parent = metrics.find((m) => m.name === filters.district);

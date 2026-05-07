@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings, Shield } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -18,8 +18,9 @@ const baseTabs = [
 ] as const;
 
 const settingsTab = { id: "settings", label: "View Settings", icon: Settings } as const;
+const adminTab = { id: "admin", label: "Admin", icon: Shield } as const;
 
-export type TabId = (typeof baseTabs)[number]["id"] | typeof settingsTab.id;
+export type TabId = (typeof baseTabs)[number]["id"] | typeof settingsTab.id | typeof adminTab.id;
 
 interface Props {
   activeTab: TabId;

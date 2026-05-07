@@ -85,20 +85,26 @@ export default function GlobalFilters({ showDates = false, freshnessLabel }: Glo
               <option value="rural">Rural</option>
             </select>
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">From</label>
-            <input type="date" min={window.minDate} max={filters.toDate || window.maxDate} value={filters.fromDate} onChange={(e) => setFilters({ fromDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">To</label>
-            <input type="date" min={filters.fromDate || window.minDate} max={window.maxDate} value={filters.toDate} onChange={(e) => setFilters({ toDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
-          </div>
-          {/* Forecast date chip intentionally removed from global filter bar — only shown inside Forecast tab. */}
+          {showDates && (
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">From</label>
+                <input type="date" min={window.minDate} max={filters.toDate || window.maxDate} value={filters.fromDate} onChange={(e) => setFilters({ fromDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">To</label>
+                <input type="date" min={filters.fromDate || window.minDate} max={window.maxDate} value={filters.toDate} onChange={(e) => setFilters({ toDate: e.target.value })} className="h-9 rounded-md border border-input bg-card px-3 text-sm" />
+              </div>
+            </>
+          )}
           <div className="flex gap-2 self-end">
             <button onClick={applyFilters} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium">Apply</button>
             <button onClick={resetFilters} className="h-9 px-4 rounded-md border border-input text-sm font-medium text-muted-foreground">Reset</button>
           </div>
         </div>
+      )}
+      {freshnessLabel && (
+        <p className="text-xs text-muted-foreground mt-2">{freshnessLabel}</p>
       )}
     </div>
   );

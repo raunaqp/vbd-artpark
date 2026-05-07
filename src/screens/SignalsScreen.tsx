@@ -20,9 +20,15 @@ export default function SignalsScreen() {
   const { isVisible } = useBlockVisibility();
   const show = (id: string) => isVisible("signals", id);
   void stateId;
+  const isSubDistrict =
+    (appliedFilters.block && appliedFilters.block !== "All Blocks") ||
+    (appliedFilters.ward && appliedFilters.ward !== "All Wards");
   const filteredNews = getNewsAlerts(appliedFilters);
   const filteredGeo = getGeoTaggedAlerts(appliedFilters);
   const mapCenter = getMapCenter();
+  const emptyMessage = isSubDistrict
+    ? `No field signals or news alerts available below district level for ${appliedFilters.block || appliedFilters.ward}.`
+    : `No ${diseaseName.toLowerCase()} alerts for selected district.`;
 
   return (
     <div className="space-y-6">
@@ -33,6 +39,12 @@ export default function SignalsScreen() {
         <p className="text-xs text-muted-foreground">External signals to complement model predictions and ground reality</p>
       </div>
 
+      {isSubDistrict && (
+        <div className="rounded-md border border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+          Signals data is currently available at <strong>district level only</strong>. Sub-district signals (block / ward / village) are not yet ingested.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {show("news_alerts") && (
         <div className="section-card p-5">
@@ -41,7 +53,7 @@ export default function SignalsScreen() {
             <h3 className="section-title">News / Media Alerts</h3>
           </div>
           {filteredNews.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No {diseaseName.toLowerCase()} alerts for selected district</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">{emptyMessage}</p>
           ) : (
             <div className="space-y-3">
               {filteredNews.map((alert) => (

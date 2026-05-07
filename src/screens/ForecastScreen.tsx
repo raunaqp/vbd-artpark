@@ -155,7 +155,7 @@ export default function ForecastScreen() {
                       <span className="font-semibold text-foreground">{r.probability}%</span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-3"><span className={`risk-badge-${r.risk}`}>{r.risk}</span></td>
+                  <td className="py-2.5 px-3"><span className={`risk-badge-${r.risk}`}>{r.riskLabel ?? r.risk}</span></td>
                   <td className="py-2.5 px-3 font-medium">{r.expectedWeek}</td>
                   <td className="py-2.5 px-3 text-xs text-muted-foreground max-w-xs">{r.signal}</td>
                 </tr>

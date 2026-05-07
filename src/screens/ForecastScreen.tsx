@@ -46,7 +46,7 @@ export default function ForecastScreen() {
 
   return (
     <div className="space-y-6">
-      <GlobalFilters />
+      <GlobalFilters freshnessLabel="Forecast generated: this week" />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>

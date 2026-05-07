@@ -58,7 +58,7 @@ export default function WeatherScreen() {
   void observedLabel; void forecastLabel;
   return (
     <div className="space-y-6">
-      <GlobalFilters />
+      <GlobalFilters freshnessLabel="Weather as of: this week" />
 
       {/* Section A: Observed */}
       {show("observed_climate") && (

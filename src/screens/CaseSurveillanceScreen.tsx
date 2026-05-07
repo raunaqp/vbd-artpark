@@ -40,7 +40,7 @@ export default function CaseSurveillanceScreen() {
 
   return (
     <div>
-      <GlobalFilters />
+      <GlobalFilters showDates freshnessLabel="Data window: user-selected" />
       {show("kpis") && <KpiCards />}
 
       {show("cases_over_time") && (

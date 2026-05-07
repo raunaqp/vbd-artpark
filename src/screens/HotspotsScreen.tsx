@@ -47,7 +47,7 @@ export default function HotspotsScreen() {
 
   return (
     <div className="space-y-6">
-      <GlobalFilters />
+      <GlobalFilters freshnessLabel="Hotspots updated: this week" />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>

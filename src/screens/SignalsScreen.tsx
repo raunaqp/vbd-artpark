@@ -26,7 +26,7 @@ export default function SignalsScreen() {
 
   return (
     <div className="space-y-6">
-      <GlobalFilters />
+      <GlobalFilters freshnessLabel="Signals — last 4 weeks (locked)" />
 
       <div>
         <h2 className="text-lg font-semibold text-foreground">{diseaseName} Signals / Field Intelligence</h2>

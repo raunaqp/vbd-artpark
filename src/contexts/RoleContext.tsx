@@ -29,7 +29,8 @@ const apRoles: RoleInfo[] = [
   { id: "ap_b_tenali", stateId: "andhra_pradesh", label: "Block — Tenali", scope: "block", location: "Tenali", roleName: "Block Worker", userName: "Prasad Varma", district: "Guntur", block: "Tenali" },
   { id: "ap_m_vizag", stateId: "andhra_pradesh", label: "Municipality — Visakhapatnam MC", scope: "municipality", location: "Visakhapatnam MC", roleName: "Municipal Officer", userName: "Padmavathi", district: "Visakhapatnam", block: "Vizag MC", areaType: "urban" },
   { id: "ap_m_vij", stateId: "andhra_pradesh", label: "Municipality — Vijayawada MC", scope: "municipality", location: "Vijayawada MC", roleName: "Municipal Officer", userName: "Kishore Babu", district: "Krishna", block: "Vijayawada MC", areaType: "urban" },
-  { id: "ap_analyst", stateId: "andhra_pradesh", label: "Analyst (Full Access)", scope: "state", location: "Andhra Pradesh", roleName: "Analyst", userName: "Analyst" },
+  { id: "ap_admin", stateId: "andhra_pradesh", label: "Admin (Full Access)", scope: "state", location: "Andhra Pradesh", roleName: "Admin", userName: "Admin" },
+  { id: "ap_dataop", stateId: "andhra_pradesh", label: "Data Operator", scope: "state", location: "Andhra Pradesh", roleName: "Data Operator", userName: "Data Operator" },
 ];
 
 const odishaRoles: RoleInfo[] = [

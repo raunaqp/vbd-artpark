@@ -7,6 +7,7 @@ import { getDataQualityIssues } from "@/data/mockData";
 import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecastCsv } from "@/lib/exportCsv";
 import { useEffect, useState } from "react";
 import { useSectionToggles } from "@/lib/sectionVisibility";
+import Footer from "@/components/Footer";
 
 const baseTabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -65,7 +66,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
       <header className="dashboard-header px-6 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Early Warning System for Vector-Borne Diseases</h1>
-          <p className="text-xs opacity-80">Department of Health · {currentStateLabel}</p>
+          <p className="text-xs opacity-80">Department of Health</p>
         </div>
         <div className="flex items-center gap-3">
           {/* State Selector */}
@@ -197,6 +198,8 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
               </div>
             )}
           </div>
+
+          <span className="inline-flex items-center rounded-full bg-amber-400/20 text-amber-100 border border-amber-300/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Demo</span>
         </div>
       </header>
 
@@ -259,6 +262,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
       <main className="flex-1 p-6 overflow-auto">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }

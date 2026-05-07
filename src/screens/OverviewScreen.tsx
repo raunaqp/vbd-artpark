@@ -28,6 +28,9 @@ export default function OverviewScreen({ onNavigate }: Props) {
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
   const { isVisible } = useBlockVisibility();
+  const { stateId } = useStateSelection();
+  const { isAdmin } = useRole();
+  const showActionFocus = useIsSectionVisible("overview_action_focus", stateId, isAdmin);
   const show = (id: string) => isVisible("overview", id);
   const rawRegions = getFilteredRegions(appliedFilters);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);

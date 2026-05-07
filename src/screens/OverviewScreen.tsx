@@ -97,7 +97,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
       {show("areas_of_concern") && <AreasOfConcern />}
 
       {/* 5. Action Focus Areas */}
-      {show("action_focus") && <ActionFocusAreas />}
+      {show("action_focus") && showActionFocus && <ActionFocusAreas />}
 
       {/* 6. Forecast cards */}
       {show("forecast_cards") && (

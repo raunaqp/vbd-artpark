@@ -1,5 +1,15 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
 import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions, walkSeedNodes, type SeedConcernNode } from "./seed";
+import {
+  canonicalRegions,
+  canonicalHotspots,
+  canonicalPredictions,
+  canonicalRiskForecast,
+  canonicalNewEmergence,
+  canonicalRisingClusters,
+  stateLabelFromId,
+  getDistrictMetrics,
+} from "./canonical";
 
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)
 // Active state is set via setActiveState(); all getters/proxies read from the active bundle.

@@ -8,6 +8,9 @@ import ActionFocusAreas from "@/components/ActionFocusAreas";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
+import { useStateSelection } from "@/contexts/StateContext";
+import { useRole } from "@/contexts/RoleContext";
+import { useIsSectionVisible } from "@/lib/sectionVisibility";
 import {
   getFilteredRegions,
   getSituationSummary,

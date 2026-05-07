@@ -83,30 +83,36 @@ export default function SignalsScreen() {
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <h3 className="section-title">Geo-tagged Signal Map</h3>
           </div>
-          <div className="rounded-lg overflow-hidden border border-border" style={{ height: "400px" }}>
-            <MapContainer center={mapCenter} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              />
-              {filteredGeo.map((a) => (
-                <CircleMarker
-                  key={a.id}
-                  center={[a.lat, a.lng]}
-                  radius={10}
-                  pathOptions={{ fillColor: severityColor[a.severity], fillOpacity: 0.7, color: severityColor[a.severity], weight: 2 }}
-                >
-                  <Tooltip>
-                    <div className="text-xs">
-                      <strong>{a.district}</strong><br />
-                      {a.message}<br />
-                      Severity: {a.severity}
-                    </div>
-                  </Tooltip>
-                </CircleMarker>
-              ))}
-            </MapContainer>
-          </div>
+          {filteredGeo.length === 0 ? (
+            <div className="rounded-lg border border-border bg-muted/20 flex items-center justify-center text-sm text-muted-foreground" style={{ height: "400px" }}>
+              {emptyMessage}
+            </div>
+          ) : (
+            <div className="rounded-lg overflow-hidden border border-border" style={{ height: "400px" }}>
+              <MapContainer center={mapCenter} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                />
+                {filteredGeo.map((a) => (
+                  <CircleMarker
+                    key={a.id}
+                    center={[a.lat, a.lng]}
+                    radius={10}
+                    pathOptions={{ fillColor: severityColor[a.severity], fillOpacity: 0.7, color: severityColor[a.severity], weight: 2 }}
+                  >
+                    <Tooltip>
+                      <div className="text-xs">
+                        <strong>{a.district}</strong><br />
+                        {a.message}<br />
+                        Severity: {a.severity}
+                      </div>
+                    </Tooltip>
+                  </CircleMarker>
+                ))}
+              </MapContainer>
+            </div>
+          )}
           <div className="flex gap-4 mt-3">
             {(["high", "moderate", "low"] as const).map((level) => (
               <div key={level} className="flex items-center gap-1.5 text-xs">

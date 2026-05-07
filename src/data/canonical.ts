@@ -270,13 +270,16 @@ export function canonicalRegions(stateLabel: string, filters: DashboardFiltersLi
         m.district.blocks.some((x) => x.name === filters.block),
     );
     if (!parent) return [];
+    const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
     const muni = parent.district.municipalities.find((m) => m.name === filters.block);
     if (muni) {
-      return muni.wards.map((w) => leafToRegion(parent, muni.name, "ward", w.name, w.weekly));
+      const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+      return wards.map((w) => leafToRegion(parent, muni.name, "ward", w.name, w.weekly));
     }
     const block = parent.district.blocks.find((b) => b.name === filters.block);
     if (block) {
-      return block.villages.map((v) => leafToRegion(parent, block.name, "village", v.name, v.weekly));
+      const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+      return villages.map((v) => leafToRegion(parent, block.name, "village", v.name, v.weekly));
     }
     return [];
   }

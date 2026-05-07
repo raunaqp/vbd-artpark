@@ -34,7 +34,7 @@ export default function RiskStrip() {
             <div className="text-lg font-bold">{f.cases}</div>
             <div className="text-xs opacity-80">cases (predicted)</div>
             <div className="mt-1">
-              <span className={`risk-badge-${f.risk}`}>{f.risk}</span>
+              <span className={`risk-badge-${f.risk}`}>{f.riskLabel ?? f.risk}</span>
             </div>
           </div>
         ))}

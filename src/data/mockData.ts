@@ -2266,37 +2266,8 @@ function seedConcernNodesInScope(filters: DashboardFiltersLike): SeedConcernNode
  */
 export function getNewEmergenceAreas(input?: DashboardFiltersLike | string): ConcernArea[] {
   const base = resolveFilters(input);
-  const level = inferLevel(base);
-  const recent = getFilteredRegions(buildWindowFilters(base, 14, 0));
-  const prior = getFilteredRegions(buildWindowFilters(base, 14, 14));
-  const priorByName = new Map(prior.map((r) => [r.name, r.confirmed]));
-
-  const derived: ConcernArea[] = recent
-    .sort((a, b) => b.confirmed - a.confirmed)
-    .slice(0, 6)
-    .map((r) => ({
-      name: r.name,
-      cases: r.confirmed,
-      prevCases: priorByName.get(r.name) ?? 0,
-      changePct: 100,
-      parent: r.parentBlock || r.parentDistrict,
-      level,
-    }));
-
-  if (derived.length >= 2) return derived;
-
-  // Seed-driven fallback: surface any seeded node tagged as new_emergence in scope.
-  const seedNodes = seedConcernNodesInScope(base)
-    .filter((n) => n.signal === "new_emergence")
-    .sort((a, b) => b.cases_2w - a.cases_2w);
-  const seen = new Set(derived.map((d) => d.name));
-  for (const n of seedNodes) {
-    if (seen.has(n.name)) continue;
-    derived.push(seedNodeToConcern(n, "new"));
-    seen.add(n.name);
-    if (derived.length >= 6) break;
-  }
-  return derived;
+  const stateLabel = stateLabelFromId(activeStateId);
+  return canonicalNewEmergence(stateLabel, base) as ConcernArea[];
 }
 
 /**

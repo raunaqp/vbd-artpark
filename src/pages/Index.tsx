@@ -30,16 +30,14 @@ const screens: Record<TabId, React.ComponentType<{ onNavigate?: (tab: TabId) => 
 };
 
 function Router() {
-  const { isDataOperator, isAdmin } = useRole();
+  const { isAdmin } = useRole();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   useEffect(() => {
-    if (isDataOperator && activeTab !== "upload") {
-      setActiveTab("upload");
-    } else if (!isAdmin && activeTab === "admin") {
+    if (!isAdmin && activeTab === "admin") {
       setActiveTab("overview");
     }
-  }, [isDataOperator, isAdmin, activeTab]);
+  }, [isAdmin, activeTab]);
 
   const Screen = screens[activeTab];
   return (

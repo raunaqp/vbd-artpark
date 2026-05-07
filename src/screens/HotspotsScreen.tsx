@@ -3,8 +3,6 @@ import { AlertTriangle, ArrowUp, ArrowDown, ArrowRight, Info } from "lucide-reac
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
 import TablePagination from "@/components/TablePagination";
-import HotspotDailyTrend from "@/components/HotspotDailyTrend";
-import Sparkline, { synthSparkSeries } from "@/components/Sparkline";
 import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
@@ -12,6 +10,13 @@ import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 
 const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
+
+const hotspotClassBadge: Record<string, string> = {
+  High: "bg-risk-high/15 text-risk-high border-risk-high/40",
+  Moderate: "bg-risk-moderate/15 text-risk-moderate border-risk-moderate/40",
+  Stable: "bg-risk-low/15 text-risk-low border-risk-low/40",
+  None: "bg-muted text-muted-foreground border-border",
+};
 
 export default function HotspotsScreen() {
   const [timeRange, setTimeRange] = useState<"2weeks" | "4weeks">("4weeks");

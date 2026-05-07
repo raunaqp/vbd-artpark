@@ -365,23 +365,23 @@ export function canonicalPredictions(
   const metrics = getDistrictMetrics(stateLabel);
 
   if (filters.district && filters.district !== "All Districts") {
-    // Drill into block / municipality level — derive forecast from recent trajectory * rate.
     const parent = metrics.find((m) => m.name === filters.district);
     if (!parent) return [];
     const districtForecastRatio = parent.forecastAvg / Math.max(1, parent.cases4w / 4);
+
     const buildPred = (
       name: string,
       areaType: string,
       weekly: number[],
+      forecast?: ForecastEntry,
     ): OutbreakPrediction => {
       const trend = computeTrend(weekly.slice(-8));
       const recent4 = weekly.slice(-4).reduce((a, b) => a + b, 0);
       const projected = Math.round((recent4 / 4) * districtForecastRatio);
-      const f = getForecastForGeography(parent.name, name);
-      const childLevel = f?.level as HForecastLevel | undefined;
+      const childLevel = forecast?.level as HForecastLevel | undefined;
       const childRisk = childLevel ? levelToLegacy(childLevel) : parent.legacyRisk;
       const childRiskLabel = childLevel ? labelForLevel(stateLabel, childLevel) : String(parent.riskLabel);
-      const probability = f?.outbreak_prob ?? Math.min(95, Math.max(5, Math.round(parent.outbreakProb * (recent4 / Math.max(1, parent.cases4w)))));
+      const probability = forecast?.outbreak_prob ?? Math.min(95, Math.max(5, Math.round(parent.outbreakProb * (recent4 / Math.max(1, parent.cases4w)))));
       return {
         area: name,
         probability,
@@ -393,8 +393,29 @@ export function canonicalPredictions(
         areaType,
       };
     };
-    const munis = parent.district.municipalities.map((m) => buildPred(m.name, "Municipality", m.weekly));
-    const blocks = parent.district.blocks.map((b) => buildPred(b.name, "Block", b.weekly));
+
+    // Block / Municipality scope → return wards or villages under it.
+    if (filters.block && filters.block !== "All Blocks") {
+      const wardFilter = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
+      const muni = parent.district.municipalities.find((m) => m.name === filters.block);
+      if (muni) {
+        const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
+        return wards
+          .map((w) => buildPred(w.name, "Ward", w.weekly, getForecastForGeography(parent.name, muni.name, w.name)))
+          .sort((a, b) => b.probability - a.probability);
+      }
+      const block = parent.district.blocks.find((b) => b.name === filters.block);
+      if (block) {
+        const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
+        return villages
+          .map((v) => buildPred(v.name, "Village", v.weekly, getForecastForGeography(parent.name, block.name, v.name)))
+          .sort((a, b) => b.probability - a.probability);
+      }
+      return [];
+    }
+
+    const munis = parent.district.municipalities.map((m) => buildPred(m.name, "Municipality", m.weekly, getForecastForGeography(parent.name, m.name)));
+    const blocks = parent.district.blocks.map((b) => buildPred(b.name, "Block", b.weekly, getForecastForGeography(parent.name, b.name)));
     return [...munis, ...blocks].sort((a, b) => b.probability - a.probability);
   }
 

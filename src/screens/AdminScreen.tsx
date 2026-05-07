@@ -106,10 +106,10 @@ export default function AdminScreen() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-6xl mx-auto space-y-5">
       <div>
         <h2 className="text-lg font-semibold text-foreground">Admin — {stateLabel}</h2>
-        <p className="text-xs text-muted-foreground">Signed in as {currentRole.userName} · {currentRole.roleName}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Signed in as {currentRole.userName} · {currentRole.roleName}</p>
       </div>
 
       <div className="tab-nav inline-flex">
@@ -125,9 +125,11 @@ export default function AdminScreen() {
         ))}
       </div>
 
-      {tab === "sections" && <SectionVisibilityPanel state={stateId} stateLabel={stateLabel} />}
-      {tab === "users" && <UserManagementPanel state={stateId} adminName={currentRole.userName} />}
-      {tab === "accuracy" && <ForecastAccuracyPanel />}
+      <div>
+        {tab === "sections" && <SectionVisibilityPanel state={stateId} stateLabel={stateLabel} />}
+        {tab === "users" && <UserManagementPanel state={stateId} adminName={currentRole.userName} />}
+        {tab === "accuracy" && <ForecastAccuracyPanel />}
+      </div>
     </div>
   );
 }

@@ -317,6 +317,7 @@ export function canonicalPredictions(
         area: name,
         probability,
         risk: parent.legacyRisk,
+        riskLabel: String(parent.riskLabel),
         expectedWeek: trend === "Rising" ? "W+2" : trend === "NewEmergence" ? "W+2" : "W+4",
         signal: buildDriverString(parent.district.type, parent.district.characteristic, trend, projected),
         parentDistrict: parent.name,

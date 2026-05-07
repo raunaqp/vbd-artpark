@@ -33,6 +33,7 @@ export interface OutbreakPrediction {
   area: string;
   probability: number;
   risk: "high" | "moderate" | "low";
+  riskLabel?: string;     // state-aware: WHO or ICMR class
   expectedWeek: string;
   signal: string;
   parentDistrict?: string;
@@ -56,7 +57,7 @@ export interface GeoAlert { id: number; lat: number; lng: number; message: strin
 export interface LineListing { patient: string; gender: string; age: number; subDistrict: string; block: string; village: string; district: string; diagnosis: string; testType: string; testResult: string; dateOfTesting: string; urbanRural: string; referredBy: string; }
 
 export interface TimeSeriesPoint { week?: string; date?: string; month?: string; positive: number; samples: number; tpr: number; }
-export interface RiskForecastPoint { week: string; risk: "high" | "moderate" | "low"; cases: number; label: string; }
+export interface RiskForecastPoint { week: string; risk: "high" | "moderate" | "low"; riskLabel?: string; cases: number; label: string; }
 export interface ForecastChartPoint { week: string; actual: number | null; predicted: number | null; lower: number | null; upper: number | null; type: string; }
 export interface WeatherPoint { week: string; endDate: string; rainfall: number; temp: number; maxT: number; minT: number; humidity: number; }
 export interface DataIssue { type: string; message: string; severity: "high" | "moderate" | "low"; }

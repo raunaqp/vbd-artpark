@@ -317,6 +317,7 @@ export function canonicalPredictions(
         area: name,
         probability,
         risk: parent.legacyRisk,
+        riskLabel: String(parent.riskLabel),
         expectedWeek: trend === "Rising" ? "W+2" : trend === "NewEmergence" ? "W+2" : "W+4",
         signal: buildDriverString(parent.district.type, parent.district.characteristic, trend, projected),
         parentDistrict: parent.name,
@@ -333,6 +334,7 @@ export function canonicalPredictions(
       area: m.name,
       probability: m.outbreakProb,
       risk: m.legacyRisk,
+      riskLabel: String(m.riskLabel),
       expectedWeek: m.trend === "Rising" ? "W+2" : m.trend === "NewEmergence" ? "W+2" : "W+4",
       signal: buildDriverString(m.district.type, m.district.characteristic, m.trend, Math.round(m.forecastAvg)),
       areaType: "District",
@@ -368,6 +370,10 @@ function buildDriverString(
 export function canonicalRiskForecast(stateLabel: string, filters: DashboardFiltersLike): RiskForecastPoint[] {
   const metrics = getDistrictMetrics(stateLabel);
   if (!metrics.length) return [];
+  const method = (STATE_RISK_METHOD as Record<string, string>)[stateLabel] ?? "WHO";
+  const whoLabels: Record<"high" | "moderate" | "low", string> = { low: "Low", moderate: "Moderate", high: "High" };
+  const icmrLabels: Record<"high" | "moderate" | "low", string> = { low: "Low", moderate: "Caution", high: "High Risk" };
+  const labelFor = (r: "high" | "moderate" | "low") => (method === "ICMR" ? icmrLabels[r] : whoLabels[r]);
 
   let weeks: number[];
   let summaryRisk: "high" | "moderate" | "low" = "low";
@@ -378,7 +384,6 @@ export function canonicalRiskForecast(stateLabel: string, filters: DashboardFilt
     weeks = parent.forecast4w;
     summaryRisk = parent.legacyRisk;
   } else {
-    // Sum per-week across all districts.
     weeks = [0, 1, 2, 3].map((wi) =>
       metrics.reduce((acc, m) => acc + (m.forecast4w[wi] ?? 0), 0),
     );
@@ -389,9 +394,8 @@ export function canonicalRiskForecast(stateLabel: string, filters: DashboardFilt
   const labels = ["W+1", "W+2", "W+3", "W+4"];
   return weeks.map((cases, i) => {
     let risk: "high" | "moderate" | "low" = summaryRisk;
-    // Per-week trend modulation: rising weeks tend to higher risk.
     if (i >= 2 && cases > weeks[0] * 1.15) risk = summaryRisk === "low" ? "moderate" : "high";
-    return { week: labels[i], label: labels[i], cases, risk };
+    return { week: labels[i], label: labels[i], cases, risk, riskLabel: labelFor(risk) };
   });
 }
 

@@ -20,9 +20,15 @@ export default function SignalsScreen() {
   const { isVisible } = useBlockVisibility();
   const show = (id: string) => isVisible("signals", id);
   void stateId;
+  const isSubDistrict =
+    (appliedFilters.block && appliedFilters.block !== "All Blocks") ||
+    (appliedFilters.ward && appliedFilters.ward !== "All Wards");
   const filteredNews = getNewsAlerts(appliedFilters);
   const filteredGeo = getGeoTaggedAlerts(appliedFilters);
   const mapCenter = getMapCenter();
+  const emptyMessage = isSubDistrict
+    ? `No field signals or news alerts available below district level for ${appliedFilters.block || appliedFilters.ward}.`
+    : `No ${diseaseName.toLowerCase()} alerts for selected district.`;
 
   return (
     <div className="space-y-6">
@@ -33,6 +39,12 @@ export default function SignalsScreen() {
         <p className="text-xs text-muted-foreground">External signals to complement model predictions and ground reality</p>
       </div>
 
+      {isSubDistrict && (
+        <div className="rounded-md border border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+          Signals data is currently available at <strong>district level only</strong>. Sub-district signals (block / ward / village) are not yet ingested.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {show("news_alerts") && (
         <div className="section-card p-5">
@@ -41,7 +53,7 @@ export default function SignalsScreen() {
             <h3 className="section-title">News / Media Alerts</h3>
           </div>
           {filteredNews.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No {diseaseName.toLowerCase()} alerts for selected district</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">{emptyMessage}</p>
           ) : (
             <div className="space-y-3">
               {filteredNews.map((alert) => (
@@ -71,30 +83,36 @@ export default function SignalsScreen() {
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <h3 className="section-title">Geo-tagged Signal Map</h3>
           </div>
-          <div className="rounded-lg overflow-hidden border border-border" style={{ height: "400px" }}>
-            <MapContainer center={mapCenter} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              />
-              {filteredGeo.map((a) => (
-                <CircleMarker
-                  key={a.id}
-                  center={[a.lat, a.lng]}
-                  radius={10}
-                  pathOptions={{ fillColor: severityColor[a.severity], fillOpacity: 0.7, color: severityColor[a.severity], weight: 2 }}
-                >
-                  <Tooltip>
-                    <div className="text-xs">
-                      <strong>{a.district}</strong><br />
-                      {a.message}<br />
-                      Severity: {a.severity}
-                    </div>
-                  </Tooltip>
-                </CircleMarker>
-              ))}
-            </MapContainer>
-          </div>
+          {filteredGeo.length === 0 ? (
+            <div className="rounded-lg border border-border bg-muted/20 flex items-center justify-center text-sm text-muted-foreground" style={{ height: "400px" }}>
+              {emptyMessage}
+            </div>
+          ) : (
+            <div className="rounded-lg overflow-hidden border border-border" style={{ height: "400px" }}>
+              <MapContainer center={mapCenter} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                />
+                {filteredGeo.map((a) => (
+                  <CircleMarker
+                    key={a.id}
+                    center={[a.lat, a.lng]}
+                    radius={10}
+                    pathOptions={{ fillColor: severityColor[a.severity], fillOpacity: 0.7, color: severityColor[a.severity], weight: 2 }}
+                  >
+                    <Tooltip>
+                      <div className="text-xs">
+                        <strong>{a.district}</strong><br />
+                        {a.message}<br />
+                        Severity: {a.severity}
+                      </div>
+                    </Tooltip>
+                  </CircleMarker>
+                ))}
+              </MapContainer>
+            </div>
+          )}
           <div className="flex gap-4 mt-3">
             {(["high", "moderate", "low"] as const).map((level) => (
               <div key={level} className="flex items-center gap-1.5 text-xs">

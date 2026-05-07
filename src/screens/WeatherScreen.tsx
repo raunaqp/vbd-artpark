@@ -58,9 +58,19 @@ export default function WeatherScreen() {
   const observedLabel = `${fmtDate(dateWindow.fromDate)} – ${fmtDate(dateWindow.toDate)}`;
   const forecastLabel = `${fmtDate(dateWindow.forecastStartDate)} – ${fmtDate(dateWindow.forecastEndDate)}`;
   void observedLabel; void forecastLabel;
+  const isSubDistrict =
+    (appliedFilters.block && appliedFilters.block !== "All Blocks") ||
+    (appliedFilters.ward && appliedFilters.ward !== "All Wards");
+  const districtLabel = appliedFilters.district && appliedFilters.district !== "All Districts" ? appliedFilters.district : "the selected state";
   return (
     <div className="space-y-6">
       <GlobalFilters freshnessLabel="Weather as of: this week" />
+
+      {isSubDistrict && (
+        <div className="rounded-md border border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+          Climate data is available at <strong>district level</strong>. Showing data for <strong>{districtLabel}</strong>.
+        </div>
+      )}
 
       {/* Section A: Observed */}
       {show("observed_climate") && (

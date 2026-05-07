@@ -82,7 +82,9 @@ export const roles = allRoles;
 interface RoleContextType {
   currentRole: RoleInfo;
   setRole: (id: RoleType) => void;
-  isAnalyst: boolean;
+  isAdmin: boolean;
+  isAnalyst: boolean; // alias for backwards compatibility
+  isDataOperator: boolean;
   availableRoles: RoleInfo[];
 }
 
@@ -93,7 +95,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const availableRoles = getRolesForState(stateId);
   const [roleId, setRoleId] = useState<RoleType>(availableRoles[0].id);
 
-  // When state changes, reset role to that state's first role
   useEffect(() => {
     const list = getRolesForState(stateId);
     if (!list.find((r) => r.id === roleId)) {
@@ -102,9 +103,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   }, [stateId, roleId]);
 
   const currentRole = availableRoles.find((r) => r.id === roleId) || availableRoles[0];
+  const isAdmin = currentRole.roleName === "Admin" || currentRole.roleName === "Analyst";
+  const isDataOperator = currentRole.roleName === "Data Operator";
 
   return (
-    <RoleContext.Provider value={{ currentRole, setRole: setRoleId, isAnalyst: currentRole.roleName === "Analyst", availableRoles }}>
+    <RoleContext.Provider value={{ currentRole, setRole: setRoleId, isAdmin, isAnalyst: isAdmin, isDataOperator, availableRoles }}>
       {children}
     </RoleContext.Provider>
   );

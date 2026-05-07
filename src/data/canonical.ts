@@ -367,12 +367,16 @@ export function canonicalPredictions(
       const trend = computeTrend(weekly.slice(-8));
       const recent4 = weekly.slice(-4).reduce((a, b) => a + b, 0);
       const projected = Math.round((recent4 / 4) * districtForecastRatio);
-      const probability = Math.min(95, Math.max(5, Math.round(parent.outbreakProb * (recent4 / Math.max(1, parent.cases4w)))));
+      const f = getForecastForGeography(parent.name, name);
+      const childLevel = f?.level as HForecastLevel | undefined;
+      const childRisk = childLevel ? levelToLegacy(childLevel) : parent.legacyRisk;
+      const childRiskLabel = childLevel ? labelForLevel(stateLabel, childLevel) : String(parent.riskLabel);
+      const probability = f?.outbreak_prob ?? Math.min(95, Math.max(5, Math.round(parent.outbreakProb * (recent4 / Math.max(1, parent.cases4w)))));
       return {
         area: name,
         probability,
-        risk: parent.legacyRisk,
-        riskLabel: String(parent.riskLabel),
+        risk: childRisk,
+        riskLabel: childRiskLabel,
         expectedWeek: trend === "Rising" ? "W+2" : trend === "NewEmergence" ? "W+2" : "W+4",
         signal: buildDriverString(parent.district.type, parent.district.characteristic, trend, projected),
         parentDistrict: parent.name,

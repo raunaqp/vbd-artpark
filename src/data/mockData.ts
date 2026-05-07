@@ -2061,11 +2061,18 @@ export function getSituationSummary(regions: RegionData[], diseaseName: string, 
 }
 
 export function getOutbreakPredictions(input?: DashboardFiltersLike | string, legacyBlock?: string): OutbreakPrediction[] {
-  return buildDerivedDashboardData(input, legacyBlock).predictions;
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalPredictions(stateLabel, filters);
+  return canon.length ? canon : buildDerivedDashboardData(filters).predictions;
 }
 
 export function getFilteredHotspots(input?: DashboardFiltersLike | string, lookbackWeeks: 2 | 4 = 4): HotspotData[] {
-  const derived = buildDerivedDashboardData(input);
+  const filters = resolveFilters(input);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalHotspots(stateLabel, filters, lookbackWeeks);
+  if (canon.length) return canon;
+  const derived = buildDerivedDashboardData(filters);
   return lookbackWeeks === 2 ? derived.hotspots2w : derived.hotspots4w;
 }
 
@@ -2086,7 +2093,12 @@ export function getLineListing(input?: DashboardFiltersLike | string, legacyBloc
 }
 
 // ──────────────── State-aware getters (preferred for components that re-render on filters/state change) ────────────────
-export const getRiskForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): RiskForecastPoint[] => buildDerivedDashboardData(input, legacyBlock).riskForecast;
+export const getRiskForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): RiskForecastPoint[] => {
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  const canon = canonicalRiskForecast(stateLabel, filters);
+  return canon.length ? canon : buildDerivedDashboardData(filters).riskForecast;
+};
 export const getWeeklyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).weeklyTimeSeries;
 export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).dailyTimeSeries;
 export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => buildDerivedDashboardData(input, legacyBlock).monthlyTimeSeries;

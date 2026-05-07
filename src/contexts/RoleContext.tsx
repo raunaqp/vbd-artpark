@@ -66,7 +66,8 @@ const karnatakaRoles: RoleInfo[] = [
   { id: "ka_m_bbmp", stateId: "karnataka", label: "Municipality — BBMP East Zone", scope: "municipality", location: "BBMP East Zone", roleName: "Municipal Officer", userName: "Savita M", district: "Bengaluru Urban", block: "BBMP East Zone", areaType: "urban" },
   { id: "ka_m_mys", stateId: "karnataka", label: "Municipality — Mysuru City", scope: "municipality", location: "Mysuru City", roleName: "Municipal Officer", userName: "Vinay S", district: "Mysuru", block: "Mysuru City", areaType: "urban" },
   { id: "ka_m_udu", stateId: "karnataka", label: "Municipality — Udupi City", scope: "municipality", location: "Udupi City", roleName: "Municipal Officer", userName: "Deepa U", district: "Udupi", block: "Udupi City", areaType: "urban" },
-  { id: "ka_analyst", stateId: "karnataka", label: "Analyst (Full Access)", scope: "state", location: "Karnataka", roleName: "Analyst", userName: "Analyst" },
+  { id: "ka_admin", stateId: "karnataka", label: "Admin (Full Access)", scope: "state", location: "Karnataka", roleName: "Admin", userName: "Admin" },
+  { id: "ka_dataop", stateId: "karnataka", label: "Data Operator", scope: "state", location: "Karnataka", roleName: "Data Operator", userName: "Data Operator" },
 ];
 
 export const allRoles: RoleInfo[] = [...apRoles, ...odishaRoles, ...karnatakaRoles];

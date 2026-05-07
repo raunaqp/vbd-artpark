@@ -185,6 +185,40 @@ export function getForecastForGeography(
   return h.municipalities[childName]?.forecast ?? h.blocks[childName]?.forecast;
 }
 
+/**
+ * Weekly case series for the deepest selected geography (from MOCK_DATASET).
+ * State view aggregates across districts of that state; otherwise descends
+ * district → mun/block → ward/village.
+ */
+export function getCanonicalWeeklySeries(
+  stateLabel: string,
+  filters: DashboardFiltersLike,
+): number[] {
+  const districtSel = filters.district && filters.district !== "All Districts" ? filters.district : null;
+  const blockSel = filters.block && filters.block !== "All Blocks" ? filters.block : null;
+  const wardSel = filters.ward && filters.ward !== "All Wards" ? filters.ward : null;
+
+  if (!districtSel) {
+    const districts = Object.values(MOCK_DATASET).filter((d) => d.state === stateLabel);
+    const len = districts[0]?.weekly_total.length ?? 0;
+    return Array.from({ length: len }, (_, i) => districts.reduce((s, d) => s + (d.weekly_total[i] ?? 0), 0));
+  }
+  const d = MOCK_DATASET[districtSel];
+  if (!d) return [];
+  if (!blockSel) return d.weekly_total;
+  const muni = d.municipalities.find((m) => m.name === blockSel);
+  if (muni) {
+    if (!wardSel) return muni.weekly;
+    return muni.wards.find((w) => w.name === wardSel)?.weekly ?? muni.weekly;
+  }
+  const blk = d.blocks.find((b) => b.name === blockSel);
+  if (blk) {
+    if (!wardSel) return blk.weekly;
+    return blk.villages.find((v) => v.name === wardSel)?.weekly ?? blk.weekly;
+  }
+  return d.weekly_total;
+}
+
 // ──────────────── Per-screen converters ────────────────
 
 function metricToRegion(m: DistrictMetrics): RegionData {

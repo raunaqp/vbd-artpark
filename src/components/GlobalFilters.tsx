@@ -4,7 +4,12 @@ import { useStateSelection } from "@/contexts/StateContext";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-export default function GlobalFilters() {
+interface GlobalFiltersProps {
+  showDates?: boolean;
+  freshnessLabel?: string;
+}
+
+export default function GlobalFilters({ showDates = false, freshnessLabel }: GlobalFiltersProps = {}) {
   const { filters, setFilters, applyFilters, resetFilters, isLocked, getLabel } = useFilters();
   const { stateId } = useStateSelection();
   void stateId; // re-render on state change so cascading lists refresh

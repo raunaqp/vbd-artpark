@@ -36,6 +36,7 @@ export interface HotspotData {
   prevCases: number;
   trend: "up" | "down" | "stable";
   risk: "high" | "moderate" | "low";
+  hotspotClass?: "None" | "Stable" | "Moderate" | "High";
   parentDistrict?: string;
   parentBlock?: string;
 }

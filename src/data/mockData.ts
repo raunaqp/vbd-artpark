@@ -10,6 +10,7 @@ import {
   stateLabelFromId,
   getDistrictMetrics,
   getCanonicalWeeklySeries,
+  WEEK_ENDINGS,
 } from "./canonical";
 
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)

@@ -2105,11 +2105,16 @@ export function getHotspotAlerts(input?: DashboardFiltersLike | string, legacyBl
 }
 
 export function getNewsAlerts(input?: DashboardFiltersLike | string, legacyBlock?: string) {
-  return buildDerivedDashboardData(input, legacyBlock).newsAlerts;
+  const filters = resolveFilters(input, legacyBlock);
+  // Signals only exist at district level — never silently substitute when user drills deeper.
+  if ((filters.block && filters.block !== "All Blocks") || (filters.ward && filters.ward !== "All Wards")) return [];
+  return buildDerivedDashboardData(filters).newsAlerts;
 }
 
 export function getGeoTaggedAlerts(input?: DashboardFiltersLike | string, legacyBlock?: string) {
-  return buildDerivedDashboardData(input, legacyBlock).geoTaggedAlerts;
+  const filters = resolveFilters(input, legacyBlock);
+  if ((filters.block && filters.block !== "All Blocks") || (filters.ward && filters.ward !== "All Wards")) return [];
+  return buildDerivedDashboardData(filters).geoTaggedAlerts;
 }
 
 export function getLineListing(input?: DashboardFiltersLike | string, legacyBlock?: string) {

@@ -2014,18 +2014,18 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
 
 /**
  * Regions for the current scope, aggregated over a trailing window of weeks.
- * - Pass an explicit `windowWeeks` for panels with locked windows (Overview "Last 4 Weeks").
- * - Omit it on Surveillance to derive the window from the user's From/To date filter.
+ * Default window = 4 weeks (matches the Overview "Last 4 Weeks" spec). Pass an
+ * explicit `windowWeeks` to honour a user date filter (Surveillance) or to lock
+ * to a different cadence.
  */
 export function getFilteredRegions(
   input?: DashboardFiltersLike | string,
-  windowWeeks?: number,
+  windowWeeks: number = 4,
   legacyBlock?: string,
 ): RegionData[] {
   const filters = resolveFilters(input, legacyBlock);
   const stateLabel = stateLabelFromId(activeStateId);
-  const w = windowWeeks ?? weeksFromFilters(filters);
-  const canon = canonicalRegions(stateLabel, filters, w);
+  const canon = canonicalRegions(stateLabel, filters, windowWeeks);
   return canon.length ? canon : buildDerivedDashboardData(filters).regions;
 }
 
@@ -2039,13 +2039,16 @@ export function getKpiFromRegions(regions: RegionData[]) {
 
 /**
  * KPI tiles for the current scope. Aggregates over the same window as
- * `getFilteredRegions` — date-filter aware on Surveillance, locked when the
- * caller passes an explicit `windowWeeks`.
+ * `getFilteredRegions`. Defaults to 4 weeks; Surveillance passes a window
+ * derived from the user's From/To filter.
  */
-export function getFilteredKpi(input?: DashboardFiltersLike | string, windowWeeks?: number) {
+export function getFilteredKpi(input?: DashboardFiltersLike | string, windowWeeks: number = 4) {
   const regions = getFilteredRegions(input, windowWeeks);
   return getKpiFromRegions(regions);
 }
+
+/** Helper re-export so screens can derive a window from filter dates. */
+export { weeksFromFilters };
 
 export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number): RegionData[] {
   if (multiplier === 1) return regions;

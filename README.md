@@ -156,3 +156,75 @@ d. Climate-health initiatives
 
 For more details, contact at: raunaq@artpark.in , https://www.linkedin.com/in/raunaqpradhan/
 
+
+---
+
+## v3 Handoff (May 2026)
+
+This section captures the state of the dashboard as shipped in v3 — what's in,
+what's deferred, and how to demo it honestly.
+
+### What's complete in v3
+
+- **8 tabs**: Overview, Case Surveillance, Forecast, Weather, Hotspots, Signals,
+  Data Upload, Admin (admin-only). View Settings is available to admins.
+- **Role-based access**: State Officer, DHO (district), Block Worker,
+  Municipality Officer, Data Operator, Admin — each scoped to the right
+  geography with locked filters where applicable.
+- **Hierarchical drill-down**: State → District → Block / Municipality →
+  Village / Ward. All KPI tiles, tables, time-series charts, hotspots, and
+  forecast cards read from the deepest selected level.
+- **State-aware risk classification**: WHO bands for AP and Odisha,
+  ICMR strata for Karnataka. Risk labels and forecast classes flow from
+  `STATE_RISK_METHOD`.
+- **Mock data spans 21 districts × 36 weeks × 4 levels** (district, block,
+  municipality, ward / village) with realistic non-uniform trajectories.
+  Forecast risk is grounded in each geography's own trajectory vs its WHO
+  baseline (μ, σ) — wards in the same district can show different risk classes.
+- **Admin tab**: per-state section toggles (hide forecast / hotspots /
+  signals / data upload tabs from non-admin roles), user management mock,
+  and forecast accuracy panel.
+- **Cascading filter reset**: changing state resets district / block / ward;
+  changing district resets block / ward; changing block resets ward.
+- **Demo affordances**: amber "Demo" pill in the header, "(mock data)"
+  footer, persistent banner explaining demo data.
+
+### Deferred (not in v3)
+
+- **MapLibre migration**: blocked on real ward / village GeoJSONs from the
+  ARTPARK pipeline. Map currently renders schematic cells.
+- **Real backend integration**: separate roadmap, requires API team
+  sign-off on the ingestion contract.
+- **NVBDCP playbook sign-off**: external dependency; recommended action
+  copy is mock until then.
+- **ECI 2024 voter-roll population data**: district populations are placeholder
+  values from `DISTRICT_POPULATION`. Population-normalised metrics (rising
+  cluster detection) will become more accurate once these land.
+- **`mockData.ts` helpers → pure functions over `MOCK_DATASET`**: refactor
+  deferred; not blocking. Single source of truth via `canonical.ts` is
+  already met.
+
+### Demo guidance
+
+- All numbers are **mock**. The Demo pill in the header and the footer
+  caveat ("v0.3 (mock data)") are intentional and should stay until real
+  data lands.
+- The relationships between cases, trends, hotspots and forecasts are
+  internally consistent — that's the credibility story. The production
+  model will plug into the same logic.
+- When showing the demo:
+  1. Pick a state → role → district to anchor the scope
+  2. Walk Overview → Surveillance → Hotspots → Forecast in that order
+  3. Drill into a specific block / ward to show that the dashboard
+     reflects the real per-geography trajectory, not a scaled district view
+
+### Known limitations
+
+- **Signals** stops at district level by data design (news / social
+  signals are not currently geo-tagged below district). Sub-district
+  selections show an explanatory banner and empty state.
+- **Weather / Climate** data is at district level only. Sub-district
+  selections show an explanatory banner.
+- **Mobile**: dashboard is best viewed on desktop (≥1280px). Layout
+  remains usable on tablet; on phone screens, horizontal scroll is
+  expected for tables.

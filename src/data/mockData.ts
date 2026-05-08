@@ -10,6 +10,7 @@ import {
   stateLabelFromId,
   getDistrictMetrics,
   getCanonicalWeeklySeries,
+  weeksFromFilters,
   WEEK_ENDINGS,
 } from "./canonical";
 

@@ -221,20 +221,42 @@ export function getCanonicalWeeklySeries(
 
 // ──────────────── Per-screen converters ────────────────
 
-function metricToRegion(m: DistrictMetrics): RegionData {
+/** How many trailing weeks of MOCK_DATASET to aggregate over for "current" totals. */
+const DEFAULT_WINDOW_WEEKS = 4;
+
+function clampWindow(n: number, max: number): number {
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_WINDOW_WEEKS;
+  return Math.min(Math.max(1, Math.round(n)), max);
+}
+
+/** Derive window-in-weeks from a filters date range. Falls back to default when absent. */
+export function weeksFromFilters(filters: DashboardFiltersLike): number {
+  if (!filters.fromDate || !filters.toDate) return DEFAULT_WINDOW_WEEKS;
+  const from = new Date(filters.fromDate).getTime();
+  const to = new Date(filters.toDate).getTime();
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to < from) return DEFAULT_WINDOW_WEEKS;
+  const days = (to - from) / (1000 * 60 * 60 * 24) + 1;
+  return clampWindow(days / 7, 36);
+}
+
+function metricToRegion(m: DistrictMetrics, windowWeeks: number): RegionData {
+  const weekly = m.district.weekly_total;
+  const w = clampWindow(windowWeeks, weekly.length);
+  const cases = weekly.slice(-w).reduce((a, b) => a + b, 0);
   return {
     name: m.name,
-    suspected: Math.round(m.cases4w * 6.5),
-    tested: Math.round(m.cases4w * 5.5),
-    confirmed: m.cases4w,
+    suspected: Math.round(cases * 6.5),
+    tested: Math.round(cases * 5.5),
+    confirmed: cases,
     risk: m.legacyRisk,
     trend: trendToLegacy(m.trend),
     type: "district",
   };
 }
 
-function municipalityToRegion(parent: DistrictMetrics, mName: string, weekly: number[]): RegionData {
-  const cases = weekly.slice(-4).reduce((a, b) => a + b, 0);
+function municipalityToRegion(parent: DistrictMetrics, mName: string, weekly: number[], windowWeeks: number): RegionData {
+  const w = clampWindow(windowWeeks, weekly.length);
+  const cases = weekly.slice(-w).reduce((a, b) => a + b, 0);
   const trend = computeTrend(weekly.slice(-8));
   const f = getForecastForGeography(parent.name, mName);
   const risk = f?.level ? levelToLegacy(f.level as HForecastLevel) : parent.legacyRisk;
@@ -250,8 +272,9 @@ function municipalityToRegion(parent: DistrictMetrics, mName: string, weekly: nu
   };
 }
 
-function blockToRegion(parent: DistrictMetrics, bName: string, weekly: number[]): RegionData {
-  const cases = weekly.slice(-4).reduce((a, b) => a + b, 0);
+function blockToRegion(parent: DistrictMetrics, bName: string, weekly: number[], windowWeeks: number): RegionData {
+  const w = clampWindow(windowWeeks, weekly.length);
+  const cases = weekly.slice(-w).reduce((a, b) => a + b, 0);
   const trend = computeTrend(weekly.slice(-8));
   const f = getForecastForGeography(parent.name, bName);
   const risk = f?.level ? levelToLegacy(f.level as HForecastLevel) : parent.legacyRisk;
@@ -273,8 +296,10 @@ function leafToRegion(
   leafType: "ward" | "village",
   leafName: string,
   weekly: number[],
+  windowWeeks: number,
 ): RegionData {
-  const cases = weekly.slice(-4).reduce((a, b) => a + b, 0);
+  const w = clampWindow(windowWeeks, weekly.length);
+  const cases = weekly.slice(-w).reduce((a, b) => a + b, 0);
   const trend = computeTrend(weekly.slice(-8));
   const f = getForecastForGeography(parent.name, parentBlockName, leafName);
   const risk = f?.level ? levelToLegacy(f.level as HForecastLevel) : parent.legacyRisk;
@@ -291,8 +316,17 @@ function leafToRegion(
   };
 }
 
-/** Regions visible on Overview / Surveillance for the current scope. */
-export function canonicalRegions(stateLabel: string, filters: DashboardFiltersLike): RegionData[] {
+/**
+ * Regions visible on Overview / Surveillance for the current scope.
+ * `windowWeeks` controls how many trailing weeks are aggregated into confirmed cases.
+ * Pass `4` for "Last 4 Weeks" panels (Overview spec); for Surveillance, derive from
+ * the date filter via `weeksFromFilters(filters)`.
+ */
+export function canonicalRegions(
+  stateLabel: string,
+  filters: DashboardFiltersLike,
+  windowWeeks: number = DEFAULT_WINDOW_WEEKS,
+): RegionData[] {
   const metrics = getDistrictMetrics(stateLabel);
   if (!metrics.length) return [];
 
@@ -308,12 +342,12 @@ export function canonicalRegions(stateLabel: string, filters: DashboardFiltersLi
     const muni = parent.district.municipalities.find((m) => m.name === filters.block);
     if (muni) {
       const wards = wardFilter ? muni.wards.filter((w) => w.name === wardFilter) : muni.wards;
-      return wards.map((w) => leafToRegion(parent, muni.name, "ward", w.name, w.weekly));
+      return wards.map((w) => leafToRegion(parent, muni.name, "ward", w.name, w.weekly, windowWeeks));
     }
     const block = parent.district.blocks.find((b) => b.name === filters.block);
     if (block) {
       const villages = wardFilter ? block.villages.filter((v) => v.name === wardFilter) : block.villages;
-      return villages.map((v) => leafToRegion(parent, block.name, "village", v.name, v.weekly));
+      return villages.map((v) => leafToRegion(parent, block.name, "village", v.name, v.weekly, windowWeeks));
     }
     return [];
   }
@@ -322,13 +356,13 @@ export function canonicalRegions(stateLabel: string, filters: DashboardFiltersLi
   if (filters.district && filters.district !== "All Districts") {
     const parent = metrics.find((m) => m.name === filters.district);
     if (!parent) return [];
-    const munis = parent.district.municipalities.map((m) => municipalityToRegion(parent, m.name, m.weekly));
-    const blocks = parent.district.blocks.map((b) => blockToRegion(parent, b.name, b.weekly));
+    const munis = parent.district.municipalities.map((m) => municipalityToRegion(parent, m.name, m.weekly, windowWeeks));
+    const blocks = parent.district.blocks.map((b) => blockToRegion(parent, b.name, b.weekly, windowWeeks));
     return [...munis, ...blocks];
   }
 
   // State-wide → districts.
-  return metrics.map(metricToRegion);
+  return metrics.map((m) => metricToRegion(m, windowWeeks));
 }
 
 /** Hotspots for the current scope, computed via persistence rule. */

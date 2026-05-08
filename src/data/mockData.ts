@@ -10,6 +10,7 @@ import {
   stateLabelFromId,
   getDistrictMetrics,
   getCanonicalWeeklySeries,
+  weeksFromFilters,
   WEEK_ENDINGS,
 } from "./canonical";
 
@@ -2011,10 +2012,20 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
   return derived;
 }
 
-export function getFilteredRegions(input?: DashboardFiltersLike | string, legacyBlock?: string): RegionData[] {
+/**
+ * Regions for the current scope, aggregated over a trailing window of weeks.
+ * Default window = 4 weeks (matches the Overview "Last 4 Weeks" spec). Pass an
+ * explicit `windowWeeks` to honour a user date filter (Surveillance) or to lock
+ * to a different cadence.
+ */
+export function getFilteredRegions(
+  input?: DashboardFiltersLike | string,
+  windowWeeks: number = 4,
+  legacyBlock?: string,
+): RegionData[] {
   const filters = resolveFilters(input, legacyBlock);
   const stateLabel = stateLabelFromId(activeStateId);
-  const canon = canonicalRegions(stateLabel, filters);
+  const canon = canonicalRegions(stateLabel, filters, windowWeeks);
   return canon.length ? canon : buildDerivedDashboardData(filters).regions;
 }
 
@@ -2027,18 +2038,17 @@ export function getKpiFromRegions(regions: RegionData[]) {
 }
 
 /**
- * Returns the canonical seed KPIs for the active state when filters are state-wide
- * (no district selected). Falls back to summing the filtered regionData otherwise.
- * KpiCards uses this so the headline KPI tiles always match seed.ts at the top level.
+ * KPI tiles for the current scope. Aggregates over the same window as
+ * `getFilteredRegions`. Defaults to 4 weeks; Surveillance passes a window
+ * derived from the user's From/To filter.
  */
-export function getFilteredKpi(input?: DashboardFiltersLike | string, legacyBlock?: string) {
-  const filters = resolveFilters(input, legacyBlock);
-  const regions = getFilteredRegions(filters);
-  const isStateWide = (filters?.district ?? "All Districts") === "All Districts";
-  const seedKpis = S().seedKpis;
-  if (isStateWide && seedKpis) return { ...seedKpis };
+export function getFilteredKpi(input?: DashboardFiltersLike | string, windowWeeks: number = 4) {
+  const regions = getFilteredRegions(input, windowWeeks);
   return getKpiFromRegions(regions);
 }
+
+/** Helper re-export so screens can derive a window from filter dates. */
+export { weeksFromFilters };
 
 export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number): RegionData[] {
   if (multiplier === 1) return regions;
@@ -2151,16 +2161,18 @@ export const getWeeklyTimeSeries = (input?: DashboardFiltersLike | string, legac
   const filters = resolveFilters(input, legacyBlock);
   const stateLabel = stateLabelFromId(activeStateId);
   const weekly = getCanonicalWeeklySeries(stateLabel, filters);
-  return pointsFromWeekly(weekly, 10);
+  const take = Math.max(2, Math.min(weekly.length, weeksFromFilters(filters)));
+  return pointsFromWeekly(weekly, take);
 };
 export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
   const filters = resolveFilters(input, legacyBlock);
   const stateLabel = stateLabelFromId(activeStateId);
   const weekly = getCanonicalWeeklySeries(stateLabel, filters);
-  // Last 4 weeks → 28 daily points, distributed evenly within each week (deterministic).
-  const last4 = weekly.slice(-4);
+  // Trailing N weeks distributed evenly across days (deterministic).
+  const nWeeks = Math.max(1, Math.min(weekly.length, weeksFromFilters(filters)));
+  const tail = weekly.slice(-nWeeks);
   const out: TimeSeriesPoint[] = [];
-  last4.forEach((wkTotal, wi) => {
+  tail.forEach((wkTotal, wi) => {
     const base = Math.floor(wkTotal / 7);
     const rem = wkTotal - base * 7;
     for (let d = 0; d < 7; d++) {
@@ -2168,7 +2180,7 @@ export const getDailyTimeSeries = (input?: DashboardFiltersLike | string, legacy
       const samples = Math.max(positive, Math.round(positive * 4.2 + 2));
       const tpr = Number(((positive / Math.max(samples, 1)) * 100).toFixed(1));
       const dayIdx = wi * 7 + d;
-      const ending = WEEK_ENDINGS[WEEK_ENDINGS.length - 4 + wi];
+      const ending = WEEK_ENDINGS[WEEK_ENDINGS.length - nWeeks + wi];
       const date = ending ? format(addDays(parseISO(ending), -6 + d), "d MMM") : `D${dayIdx + 1}`;
       out.push({ date, positive, samples, tpr });
     }
@@ -2179,15 +2191,18 @@ export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, lega
   const filters = resolveFilters(input, legacyBlock);
   const stateLabel = stateLabelFromId(activeStateId);
   const weekly = getCanonicalWeeklySeries(stateLabel, filters);
-  // Group 36 weeks into 9 monthly buckets (4-week chunks)
+  // Group window into 4-week monthly buckets.
+  const nWeeks = Math.max(4, Math.min(weekly.length, weeksFromFilters(filters)));
+  const windowed = weekly.slice(-nWeeks);
   const out: TimeSeriesPoint[] = [];
   const chunkSize = 4;
-  for (let i = 0; i + chunkSize <= weekly.length; i += chunkSize) {
-    const chunk = weekly.slice(i, i + chunkSize);
+  const startIdx = weekly.length - windowed.length;
+  for (let i = 0; i + chunkSize <= windowed.length; i += chunkSize) {
+    const chunk = windowed.slice(i, i + chunkSize);
     const positive = chunk.reduce((a, b) => a + b, 0);
     const samples = Math.max(positive, Math.round(positive * 4.2 + 8));
     const tpr = Number(((positive / Math.max(samples, 1)) * 100).toFixed(1));
-    const ending = WEEK_ENDINGS[i + chunkSize - 1];
+    const ending = WEEK_ENDINGS[startIdx + i + chunkSize - 1];
     const month = ending ? format(parseISO(ending), "MMM yy") : `M${out.length + 1}`;
     out.push({ month, positive, samples, tpr });
   }

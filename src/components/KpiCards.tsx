@@ -3,12 +3,18 @@ import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { getFilteredRegions, getFilteredKpi, applyDiseaseMultiplier } from "@/data/mockData";
 
-export default function KpiCards() {
+interface Props {
+  /** Trailing weeks to aggregate. Defaults to 4 (Overview "Last 4 Weeks"). */
+  windowWeeks?: number;
+  /** Optional caption shown under the panel title context (e.g. "Last 7 days"). */
+}
+
+export default function KpiCards({ windowWeeks = 4 }: Props = {}) {
   const { appliedFilters } = useFilters();
   const { currentDisease, diseaseName } = useDisease();
-  const rawRegions = getFilteredRegions(appliedFilters);
+  const rawRegions = getFilteredRegions(appliedFilters, windowWeeks);
   const regions = applyDiseaseMultiplier(rawRegions, currentDisease.caseMultiplier);
-  const baseKpi = getFilteredKpi(appliedFilters);
+  const baseKpi = getFilteredKpi(appliedFilters, windowWeeks);
   const kpi = {
     suspected: Math.round(baseKpi.suspected * currentDisease.caseMultiplier),
     tested: Math.round(baseKpi.tested * currentDisease.caseMultiplier),

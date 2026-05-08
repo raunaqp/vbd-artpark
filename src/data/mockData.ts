@@ -2011,10 +2011,20 @@ function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacy
   return derived;
 }
 
-export function getFilteredRegions(input?: DashboardFiltersLike | string, legacyBlock?: string): RegionData[] {
+/**
+ * Regions for the current scope, aggregated over a trailing window of weeks.
+ * - Pass an explicit `windowWeeks` for panels with locked windows (Overview "Last 4 Weeks").
+ * - Omit it on Surveillance to derive the window from the user's From/To date filter.
+ */
+export function getFilteredRegions(
+  input?: DashboardFiltersLike | string,
+  windowWeeks?: number,
+  legacyBlock?: string,
+): RegionData[] {
   const filters = resolveFilters(input, legacyBlock);
   const stateLabel = stateLabelFromId(activeStateId);
-  const canon = canonicalRegions(stateLabel, filters);
+  const w = windowWeeks ?? weeksFromFilters(filters);
+  const canon = canonicalRegions(stateLabel, filters, w);
   return canon.length ? canon : buildDerivedDashboardData(filters).regions;
 }
 
@@ -2027,16 +2037,12 @@ export function getKpiFromRegions(regions: RegionData[]) {
 }
 
 /**
- * Returns the canonical seed KPIs for the active state when filters are state-wide
- * (no district selected). Falls back to summing the filtered regionData otherwise.
- * KpiCards uses this so the headline KPI tiles always match seed.ts at the top level.
+ * KPI tiles for the current scope. Aggregates over the same window as
+ * `getFilteredRegions` — date-filter aware on Surveillance, locked when the
+ * caller passes an explicit `windowWeeks`.
  */
-export function getFilteredKpi(input?: DashboardFiltersLike | string, legacyBlock?: string) {
-  const filters = resolveFilters(input, legacyBlock);
-  const regions = getFilteredRegions(filters);
-  const isStateWide = (filters?.district ?? "All Districts") === "All Districts";
-  const seedKpis = S().seedKpis;
-  if (isStateWide && seedKpis) return { ...seedKpis };
+export function getFilteredKpi(input?: DashboardFiltersLike | string, windowWeeks?: number) {
+  const regions = getFilteredRegions(input, windowWeeks);
   return getKpiFromRegions(regions);
 }
 

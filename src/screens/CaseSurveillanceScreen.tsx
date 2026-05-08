@@ -4,7 +4,7 @@ import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
 import TablePagination from "@/components/TablePagination";
-import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing } from "@/data/mockData";
+import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing, weeksFromFilters } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -41,7 +41,7 @@ export default function CaseSurveillanceScreen() {
   return (
     <div>
       <GlobalFilters showDates freshnessLabel="Data window: user-selected" />
-      {show("kpis") && <KpiCards />}
+      {show("kpis") && <KpiCards windowWeeks={weeksFromFilters(appliedFilters)} />}
 
       {show("cases_over_time") && (
       <div className="section-card p-5 mb-6">

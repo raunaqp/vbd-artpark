@@ -64,7 +64,20 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   }, [currentRole.id, stateId]);
 
   const setFilters = (partial: Partial<FilterState>) => {
-    setFiltersState((prev) => ({ ...prev, ...partial, district: partial.district ? normalizeDistrictName(partial.district) : prev.district }));
+    setFiltersState((prev) => {
+      const next: FilterState = { ...prev, ...partial };
+      if (partial.district !== undefined) {
+        next.district = normalizeDistrictName(partial.district);
+        // Cascade reset: changing district clears block+ward unless caller already provided them.
+        if (partial.block === undefined) next.block = "All Blocks";
+        if (partial.ward === undefined) next.ward = "All Wards";
+      }
+      if (partial.block !== undefined && partial.ward === undefined) {
+        // Cascade reset: changing block clears ward.
+        next.ward = "All Wards";
+      }
+      return next;
+    });
   };
 
   const applyFilters = () => setAppliedFilters({ ...filters, district: normalizeDistrictName(filters.district) });

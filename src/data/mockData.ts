@@ -2208,24 +2208,6 @@ export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, lega
   }
   return out;
 };
-export const getMonthlyTimeSeries = (input?: DashboardFiltersLike | string, legacyBlock?: string): TimeSeriesPoint[] => {
-  const filters = resolveFilters(input, legacyBlock);
-  const stateLabel = stateLabelFromId(activeStateId);
-  const weekly = getCanonicalWeeklySeries(stateLabel, filters);
-  // Group 36 weeks into 9 monthly buckets (4-week chunks)
-  const out: TimeSeriesPoint[] = [];
-  const chunkSize = 4;
-  for (let i = 0; i + chunkSize <= weekly.length; i += chunkSize) {
-    const chunk = weekly.slice(i, i + chunkSize);
-    const positive = chunk.reduce((a, b) => a + b, 0);
-    const samples = Math.max(positive, Math.round(positive * 4.2 + 8));
-    const tpr = Number(((positive / Math.max(samples, 1)) * 100).toFixed(1));
-    const ending = WEEK_ENDINGS[i + chunkSize - 1];
-    const month = ending ? format(parseISO(ending), "MMM yy") : `M${out.length + 1}`;
-    out.push({ month, positive, samples, tpr });
-  }
-  return out;
-};
 export const getForecastData = (input?: DashboardFiltersLike | string, legacyBlock?: string): ForecastChartPoint[] => buildDerivedDashboardData(input, legacyBlock).forecastData;
 export const getWeatherObserved = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherObserved;
 export const getWeatherForecast = (input?: DashboardFiltersLike | string, legacyBlock?: string): WeatherPoint[] => buildDerivedDashboardData(input, legacyBlock).weatherForecast;

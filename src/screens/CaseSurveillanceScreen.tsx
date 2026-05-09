@@ -43,7 +43,8 @@ export default function CaseSurveillanceScreen() {
   const visibleListing = filteredListing.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Weather × Cases overlay (last up to 12 weeks)
-  const stateLabel = stateLabelFromId(stateId);
+  void stateLabelFromId;
+  void stateLabel;
   const weatherObs = getWeatherData(appliedFilters).filter((w) => (w as any).type === "observed");
   const weeklyForGeo = getCanonicalWeeklySeries(stateLabel, appliedFilters);
   const overlayN = Math.min(12, weatherObs.length, weeklyForGeo.length);

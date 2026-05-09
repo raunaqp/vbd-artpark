@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { setActiveDisease } from "@/data/canonical";
+import type { DiseaseId } from "@/data/mock_dataset";
 
 export type DiseaseType = "dengue" | "malaria" | "chikungunya" | "other_vbd";
 

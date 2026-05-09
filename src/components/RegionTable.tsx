@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowUp, ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowRight, AlertTriangle } from "lucide-react";
 import { getFilteredRegions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { getRiskLabel } from "@/lib/forecast_labels";
 import TablePagination from "@/components/TablePagination";
+import { getFreshness } from "@/lib/freshness";
 
 const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;

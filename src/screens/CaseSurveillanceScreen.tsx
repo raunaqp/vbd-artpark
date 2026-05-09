@@ -42,9 +42,46 @@ export default function CaseSurveillanceScreen() {
   useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block, search]);
   const visibleListing = filteredListing.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // Weather × Cases overlay (last up to 12 weeks)
+  const stateLabel = stateLabelFromId(stateId);
+  const weatherObs = getWeatherData(appliedFilters).filter((w) => (w as any).type === "observed");
+  const weeklyForGeo = getCanonicalWeeklySeries(stateLabel, appliedFilters);
+  const overlayN = Math.min(12, weatherObs.length, weeklyForGeo.length);
+  const overlayData = Array.from({ length: overlayN }, (_, i) => {
+    const wIdx = weatherObs.length - overlayN + i;
+    const cIdx = weeklyForGeo.length - overlayN + i;
+    const dateIdx = WEEK_ENDINGS.length - overlayN + i;
+    const dateStr = WEEK_ENDINGS[dateIdx] ?? "";
+    return {
+      week: getEpiWeekForDate(dateStr) || `W${i + 1}`,
+      date: dateStr,
+      cases: weeklyForGeo[cIdx] ?? 0,
+      rainfall_mm: weatherObs[wIdx]?.rainfall ?? 0,
+    };
+  });
+  const wardOrVillageSelected = appliedFilters.ward !== "All Wards" || appliedFilters.block !== "All Blocks";
+
+  const buildSections = () => [
+    { title: "KPIs (current window)", type: "kv" as const, lines: [
+      `Window: ${weeksFromFilters(appliedFilters)} weeks`,
+      `Geography: ${[stateLabel, appliedFilters.district !== "All Districts" ? appliedFilters.district : null, appliedFilters.block !== "All Blocks" ? appliedFilters.block : null].filter(Boolean).join(" > ")}`,
+    ]},
+    { title: `${diseaseName} Cases Over Time (${timeRange})`, type: "table" as const,
+      headers: [xKey, "positive", "samples", "tpr"],
+      rows: timeData.slice(-12).map((d: any) => [d[xKey], d.positive, d.samples, d.tpr]),
+    },
+    { title: "Line Listing (sample)", type: "table" as const,
+      headers: ["Patient", "District", "Block", "Result", "Date"],
+      rows: filteredListing.slice(0, 30).map((r) => [r.patient, r.district, r.block, r.testResult, r.dateOfTesting]),
+    },
+  ];
+
   return (
     <div>
       <GlobalFilters showDates freshnessLabel="Data window: user-selected" />
+      <div className="flex justify-end -mt-2 mb-3">
+        <ExportPdfButton tabName="Case Surveillance" buildSections={buildSections} />
+      </div>
       {show("kpis") && <KpiCards windowWeeks={weeksFromFilters(appliedFilters)} />}
 
       {show("cases_over_time") && (

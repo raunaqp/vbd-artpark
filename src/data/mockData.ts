@@ -12,6 +12,7 @@ import {
   getCanonicalWeeklySeries,
   weeksFromFilters,
   WEEK_ENDINGS,
+  getActiveDisease,
 } from "./canonical";
 
 // Mock data for Vector-Borne Disease EWS Dashboard — Multi-State (AP / Odisha / Karnataka)

@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
-import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Legend } from "recharts";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
 import TablePagination from "@/components/TablePagination";
-import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing, weeksFromFilters } from "@/data/mockData";
+import ExportPdfButton from "@/components/ExportPdfButton";
+import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing, weeksFromFilters, getWeatherData } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import { exportLineListingCsv } from "@/lib/exportCsv";
 import { Download } from "lucide-react";
+import { getEpiWeekForDate } from "@/lib/epiWeek";
+import { getCanonicalWeeklySeries, stateLabelFromId } from "@/data/canonical";
+import { WEEK_ENDINGS } from "@/data/mock_dataset";
 
 type TimeRange = "daily" | "weekly" | "monthly";
 const PAGE_SIZE = 20;

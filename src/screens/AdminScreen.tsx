@@ -5,8 +5,9 @@ import {
 } from "recharts";
 import {
   Lock, Trash2, Pencil, UserPlus, Settings as SettingsIcon, Users, BarChart3,
-  Download, History, Power, X,
+  Download, History, Power, X, FileText,
 } from "lucide-react";
+import MonthlyReportsPanel from "@/components/admin/MonthlyReportsPanel";
 import { useRole } from "@/contexts/RoleContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { Switch } from "@/components/ui/switch";

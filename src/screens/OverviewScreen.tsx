@@ -5,6 +5,7 @@ import DashboardMap from "@/components/DashboardMap";
 import RegionTable from "@/components/RegionTable";
 import AreasOfConcern from "@/components/AreasOfConcern";
 import ActionFocusAreas from "@/components/ActionFocusAreas";
+import ExportPdfButton from "@/components/ExportPdfButton";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";

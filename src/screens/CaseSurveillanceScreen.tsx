@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
-import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Legend } from "recharts";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
 import TablePagination from "@/components/TablePagination";
-import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing, weeksFromFilters } from "@/data/mockData";
+import ExportPdfButton from "@/components/ExportPdfButton";
+import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing, weeksFromFilters, getWeatherData } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import { exportLineListingCsv } from "@/lib/exportCsv";
 import { Download } from "lucide-react";
+import { getEpiWeekForDate } from "@/lib/epiWeek";
+import { getCanonicalWeeklySeries, stateLabelFromId } from "@/data/canonical";
+import { WEEK_ENDINGS } from "@/data/mock_dataset";
 
 type TimeRange = "daily" | "weekly" | "monthly";
 const PAGE_SIZE = 20;
@@ -38,9 +42,47 @@ export default function CaseSurveillanceScreen() {
   useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block, search]);
   const visibleListing = filteredListing.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // Weather × Cases overlay (last up to 12 weeks)
+  void stateLabelFromId;
+  void stateLabel;
+  const weatherObs = getWeatherData(appliedFilters).filter((w) => (w as any).type === "observed");
+  const weeklyForGeo = getCanonicalWeeklySeries(stateLabel, appliedFilters);
+  const overlayN = Math.min(12, weatherObs.length, weeklyForGeo.length);
+  const overlayData = Array.from({ length: overlayN }, (_, i) => {
+    const wIdx = weatherObs.length - overlayN + i;
+    const cIdx = weeklyForGeo.length - overlayN + i;
+    const dateIdx = WEEK_ENDINGS.length - overlayN + i;
+    const dateStr = WEEK_ENDINGS[dateIdx] ?? "";
+    return {
+      week: getEpiWeekForDate(dateStr) || `W${i + 1}`,
+      date: dateStr,
+      cases: weeklyForGeo[cIdx] ?? 0,
+      rainfall_mm: weatherObs[wIdx]?.rainfall ?? 0,
+    };
+  });
+  const wardOrVillageSelected = appliedFilters.ward !== "All Wards" || appliedFilters.block !== "All Blocks";
+
+  const buildSections = () => [
+    { title: "KPIs (current window)", type: "kv" as const, lines: [
+      `Window: ${weeksFromFilters(appliedFilters)} weeks`,
+      `Geography: ${[stateLabel, appliedFilters.district !== "All Districts" ? appliedFilters.district : null, appliedFilters.block !== "All Blocks" ? appliedFilters.block : null].filter(Boolean).join(" > ")}`,
+    ]},
+    { title: `${diseaseName} Cases Over Time (${timeRange})`, type: "table" as const,
+      headers: [xKey, "positive", "samples", "tpr"],
+      rows: timeData.slice(-12).map((d: any) => [d[xKey], d.positive, d.samples, d.tpr]),
+    },
+    { title: "Line Listing (sample)", type: "table" as const,
+      headers: ["Patient", "District", "Block", "Result", "Date"],
+      rows: filteredListing.slice(0, 30).map((r) => [r.patient, r.district, r.block, r.testResult, r.dateOfTesting]),
+    },
+  ];
+
   return (
     <div>
       <GlobalFilters showDates freshnessLabel="Data window: user-selected" />
+      <div className="flex justify-end -mt-2 mb-3">
+        <ExportPdfButton tabName="Case Surveillance" buildSections={buildSections} />
+      </div>
       {show("kpis") && <KpiCards windowWeeks={weeksFromFilters(appliedFilters)} />}
 
       {show("cases_over_time") && (
@@ -70,6 +112,30 @@ export default function CaseSurveillanceScreen() {
             <Line yAxisId="right" type="monotone" dataKey="tpr" stroke="hsl(142, 50%, 45%)" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+      )}
+
+      {show("cases_over_time") && overlayData.length > 0 && (
+      <div className="section-card p-5 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="section-title">Cases vs. Rainfall — last {overlayN} weeks</h3>
+          {wardOrVillageSelected && (
+            <span className="text-[11px] text-muted-foreground">Rainfall shown at district level</span>
+          )}
+        </div>
+        <ResponsiveContainer width="100%" height={260}>
+          <ComposedChart data={overlayData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
+            <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="cases" orientation="left" tick={{ fontSize: 11 }} label={{ value: "Cases", angle: -90, position: "insideLeft", fontSize: 10 }} />
+            <YAxis yAxisId="rainfall" orientation="right" tick={{ fontSize: 11 }} label={{ value: "Rainfall (mm)", angle: 90, position: "insideRight", fontSize: 10 }} />
+            <Tooltip />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar yAxisId="rainfall" dataKey="rainfall_mm" fill="hsl(212, 90%, 75%)" fillOpacity={0.55} name="Rainfall (mm)" />
+            <Line yAxisId="cases" type="monotone" dataKey="cases" stroke="hsl(0, 70%, 50%)" strokeWidth={2} name="Cases" dot={{ r: 3 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+        <p className="text-[11px] text-muted-foreground mt-2">Aedes lag: rainfall typically precedes case rises by 2–3 weeks.</p>
       </div>
       )}
 

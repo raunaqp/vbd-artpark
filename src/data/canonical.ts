@@ -4,15 +4,47 @@
 // The legacy `mockData.ts` keeps its API surface; key functions delegate here.
 
 import {
-  MOCK_DATASET,
+  MULTI_DISEASE_DATASET,
   WEEK_ENDINGS,
   DISTRICT_POPULATION,
-  WHO_BASELINES,
-  FORECAST,
-  HIERARCHY_FORECAST,
+  BASELINES_BY_DISEASE,
+  FORECASTS_BY_DISEASE,
+  HIERARCHY_BY_DISEASE,
   type DistrictData,
   type ForecastEntry,
+  type DiseaseId,
 } from "./mock_dataset";
+
+// ──────────────── Active disease (module-level, mirrors active state) ────────────────
+let activeDisease: DiseaseId = "dengue";
+const diseaseChangeListeners = new Set<() => void>();
+export function setActiveDisease(d: DiseaseId) {
+  if (d === activeDisease) return;
+  activeDisease = d;
+  districtCache.clear();
+  diseaseChangeListeners.forEach((fn) => fn());
+}
+export function getActiveDisease(): DiseaseId { return activeDisease; }
+export function subscribeDiseaseChange(fn: () => void): () => void {
+  diseaseChangeListeners.add(fn);
+  return () => { diseaseChangeListeners.delete(fn); };
+}
+
+const MOCK_DATASET = new Proxy({} as Record<string, DistrictData>, {
+  get: (_t, prop) => MULTI_DISEASE_DATASET[activeDisease][prop as string],
+  has: (_t, prop) => prop in MULTI_DISEASE_DATASET[activeDisease],
+  ownKeys: () => Reflect.ownKeys(MULTI_DISEASE_DATASET[activeDisease]),
+  getOwnPropertyDescriptor: (_t, prop) => Object.getOwnPropertyDescriptor(MULTI_DISEASE_DATASET[activeDisease], prop),
+});
+const WHO_BASELINES = new Proxy({} as Record<string, { mu: number; sigma: number }>, {
+  get: (_t, prop) => BASELINES_BY_DISEASE[activeDisease][prop as string],
+});
+const FORECAST = new Proxy({} as Record<string, ForecastEntry>, {
+  get: (_t, prop) => FORECASTS_BY_DISEASE[activeDisease][prop as string],
+});
+const HIERARCHY_FORECAST = new Proxy({} as Record<string, any>, {
+  get: (_t, prop) => HIERARCHY_BY_DISEASE[activeDisease][prop as string],
+});
 import { STATE_RISK_METHOD } from "@/lib/definitions";
 import {
   computeTrend,

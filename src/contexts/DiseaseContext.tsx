@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { setActiveDisease } from "@/data/canonical";
+import type { DiseaseId } from "@/data/mock_dataset";
 
 export type DiseaseType = "dengue" | "malaria" | "chikungunya" | "other_vbd";
 
@@ -221,6 +223,12 @@ const DiseaseContext = createContext<DiseaseContextType | null>(null);
 export function DiseaseProvider({ children }: { children: ReactNode }) {
   const [diseaseId, setDiseaseId] = useState<DiseaseType>("dengue");
   const currentDisease = diseases.find((d) => d.id === diseaseId) || diseases[0];
+
+  // Sync to canonical layer (other_vbd → fall back to dengue data — no real bundle)
+  useEffect(() => {
+    const mapped: DiseaseId = (diseaseId === "malaria" || diseaseId === "chikungunya") ? diseaseId : "dengue";
+    setActiveDisease(mapped);
+  }, [diseaseId]);
 
   return (
     <DiseaseContext.Provider value={{ currentDisease, setDisease: setDiseaseId, diseaseName: currentDisease.label }}>

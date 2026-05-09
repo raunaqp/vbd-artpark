@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowUp, ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowRight, AlertTriangle } from "lucide-react";
 import { getFilteredRegions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { getRiskLabel } from "@/lib/forecast_labels";
 import TablePagination from "@/components/TablePagination";
+import { getFreshness } from "@/lib/freshness";
 
 const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
@@ -50,13 +51,31 @@ export default function RegionTable({ maxRows }: Props = {}) {
           <tbody>
             {visible.map((r) => {
               const TrendIcon = trendIcon[r.trend];
+              // Freshness badge only when this row is itself a district
+              const fresh = r.type === "district" ? getFreshness(r.name) : undefined;
+              const showFreshBadge = fresh && (fresh.status === "stale" || fresh.status === "concerning");
               return (
                 <tr key={r.name} className="border-b border-border/50 hover:bg-muted/30">
                   <td className="py-2 px-2 font-medium">
-                    {r.name}
-                    {r.type && r.type !== "district" && (
-                      <span className="text-[10px] text-muted-foreground ml-1.5 capitalize">({r.type})</span>
-                    )}
+                    <span className="inline-flex items-center gap-1.5">
+                      {r.name}
+                      {r.type && r.type !== "district" && (
+                        <span className="text-[10px] text-muted-foreground capitalize">({r.type})</span>
+                      )}
+                      {showFreshBadge && (
+                        <span
+                          title={`Last reported ${fresh!.days_ago} days ago — ${fresh!.message}`}
+                          className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] ${
+                            fresh!.status === "concerning"
+                              ? "bg-risk-high/10 text-risk-high border border-risk-high/30"
+                              : "bg-risk-moderate/10 text-risk-moderate border border-risk-moderate/30"
+                          }`}
+                        >
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          {fresh!.days_ago}d
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="py-2 px-2 text-right">{r.confirmed}</td>
                   <td className="py-2 px-2 text-center">

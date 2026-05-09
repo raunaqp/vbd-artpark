@@ -3,7 +3,8 @@ import { districts, getDateWindow } from "@/data/mockData";
 import { getBlockDropdown, getLeafDropdown } from "@/data/canonical";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { getFreshness, freshnessTone } from "@/lib/freshness";
 
 interface GlobalFiltersProps {
   showDates?: boolean;
@@ -100,9 +101,18 @@ export default function GlobalFilters({ showDates = false, freshnessLabel }: Glo
           </div>
         </div>
       )}
-      {freshnessLabel && (
-        <p className="text-xs text-muted-foreground mt-2">{freshnessLabel}</p>
-      )}
+      {(() => {
+        const fresh = getFreshness(filters.district);
+        if (!fresh) return freshnessLabel ? <p className="text-xs text-muted-foreground mt-2">{freshnessLabel}</p> : null;
+        const tone = freshnessTone(fresh.status);
+        const Icon = fresh.status === "fresh" || fresh.status === "good" ? CheckCircle2 : AlertTriangle;
+        return (
+          <div className={`mt-2 inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs ${tone.textClass} ${tone.bgClass} ${tone.borderClass}`}>
+            <Icon className="h-3.5 w-3.5" />
+            <span>Last reported: {fresh.days_ago} day{fresh.days_ago === 1 ? "" : "s"} ago · {fresh.message}</span>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowUp, ArrowDown, ArrowRight, Info } from "lucide-reac
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
 import TablePagination from "@/components/TablePagination";
+import ExportPdfButton from "@/components/ExportPdfButton";
 import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
@@ -61,9 +62,17 @@ export default function HotspotsScreen() {
             Hotspots are based on confirmed {diseaseName.toLowerCase()} cases in the last {timeRange === "4weeks" ? "4" : "2"} weeks · No forecast data shown here · Showing: {areaLabel.toLowerCase()}
           </p>
         </div>
-        <div className="tab-nav">
-          <button onClick={() => setTimeRange("2weeks")} className={`tab-nav-item ${timeRange === "2weeks" ? "tab-nav-item-active" : ""}`}>2 Weeks</button>
-          <button onClick={() => setTimeRange("4weeks")} className={`tab-nav-item ${timeRange === "4weeks" ? "tab-nav-item-active" : ""}`}>4 Weeks</button>
+        <div className="flex items-center gap-2">
+          <div className="tab-nav">
+            <button onClick={() => setTimeRange("2weeks")} className={`tab-nav-item ${timeRange === "2weeks" ? "tab-nav-item-active" : ""}`}>2 Weeks</button>
+            <button onClick={() => setTimeRange("4weeks")} className={`tab-nav-item ${timeRange === "4weeks" ? "tab-nav-item-active" : ""}`}>4 Weeks</button>
+          </div>
+          <ExportPdfButton tabName="Hotspots" buildSections={() => [
+            { title: `Hotspot Analysis (${timeRange === "2weeks" ? "2W" : "4W"})`, type: "table",
+              headers: ["Area", "Parent District", "Cases", "Prev", "Trend", "Class"],
+              rows: displayHotspots.map((r) => [r.area, r.parentDistrict ?? "—", r.currentCases, r.prevCases, r.trend, (r as any).hotspotClass ?? "—"])
+            },
+          ]} />
         </div>
       </div>
 

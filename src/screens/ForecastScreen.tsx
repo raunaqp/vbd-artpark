@@ -10,6 +10,8 @@ import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
+import ExportPdfButton from "@/components/ExportPdfButton";
+import { latestEpiWeek, epiWeekRange } from "@/lib/epiWeek";
 
 const PAGE_SIZE = 20;
 
@@ -43,6 +45,25 @@ export default function ForecastScreen() {
   };
   const forecastRange = `${fmtIso(dateWindow.forecastStartDate)} – ${fmtIso(dateWindow.forecastEndDate)}`;
   const todayLabel = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const epiToday = latestEpiWeek();
+  const epiRange = epiWeekRange(dateWindow.forecastStartDate, dateWindow.forecastEndDate);
+
+  const buildSections = () => {
+    const sections = [
+      {
+        title: "Forecast — Next 4 Weeks",
+        type: "kv" as const,
+        lines: riskForecast.map((f, i) => `${f.label}: ${f.cases} projected cases · ${f.riskLabel ?? f.risk}`),
+      },
+      {
+        title: "Outbreak Prediction Table",
+        type: "table" as const,
+        headers: [areaLabel, "Outbreak Prob", "Forecast Risk", "Window", "Drivers"],
+        rows: predictions.map((r) => [r.area, `${r.probability}%`, String(r.riskLabel ?? r.risk), r.expectedWeek, r.signal]),
+      },
+    ];
+    return sections;
+  };
 
   return (
     <div className="space-y-6">
@@ -50,9 +71,10 @@ export default function ForecastScreen() {
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Forecast — Predicted Risk ({forecastRange})</h2>
-          <p className="text-xs text-muted-foreground">Forecast last updated: {todayLabel}</p>
+          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Forecast — Predicted Risk ({forecastRange}{epiRange ? ` · ${epiRange}` : ""})</h2>
+          <p className="text-xs text-muted-foreground">Forecast last updated: {todayLabel}{epiToday ? ` (${epiToday})` : ""}</p>
         </div>
+        <ExportPdfButton tabName="Forecast" buildSections={buildSections} />
       </div>
 
       {predictions.length > 0 && predictions.every(p => p.risk === "high" || p.risk === "moderate") && (

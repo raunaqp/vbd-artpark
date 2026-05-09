@@ -5,8 +5,9 @@ import {
 } from "recharts";
 import {
   Lock, Trash2, Pencil, UserPlus, Settings as SettingsIcon, Users, BarChart3,
-  Download, History, Power, X,
+  Download, History, Power, X, FileText,
 } from "lucide-react";
+import MonthlyReportsPanel from "@/components/admin/MonthlyReportsPanel";
 import { useRole } from "@/contexts/RoleContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { Switch } from "@/components/ui/switch";
@@ -79,7 +80,7 @@ function appendAudit(state: string, by: string, action: string, details: string)
   try { localStorage.setItem(auditKey(state), JSON.stringify(log.slice(0, 50))); } catch { /* */ }
 }
 
-type AdminTab = "sections" | "users" | "accuracy";
+type AdminTab = "sections" | "users" | "accuracy" | "reports";
 
 export default function AdminScreen() {
   const { isAdmin, currentRole } = useRole();
@@ -103,6 +104,7 @@ export default function AdminScreen() {
     { id: "sections", label: "Section Visibility", icon: SettingsIcon },
     { id: "users", label: "User Management", icon: Users },
     { id: "accuracy", label: "Forecast Accuracy", icon: BarChart3 },
+    { id: "reports", label: "Monthly Reports", icon: FileText },
   ];
 
   return (
@@ -129,6 +131,7 @@ export default function AdminScreen() {
         {tab === "sections" && <SectionVisibilityPanel state={stateId} stateLabel={stateLabel} />}
         {tab === "users" && <UserManagementPanel state={stateId} adminName={currentRole.userName} />}
         {tab === "accuracy" && <ForecastAccuracyPanel />}
+        {tab === "reports" && <MonthlyReportsPanel stateId={stateId} stateLabel={stateLabel} />}
       </div>
     </div>
   );

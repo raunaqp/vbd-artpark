@@ -10,6 +10,8 @@ import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
+import ExportPdfButton from "@/components/ExportPdfButton";
+import { latestEpiWeek, getEpiWeekForDate, epiWeekRange } from "@/lib/epiWeek";
 
 const PAGE_SIZE = 20;
 

@@ -59,6 +59,20 @@ export default function OverviewScreen({ onNavigate }: Props) {
     <div>
       <GlobalFilters freshnessLabel="Data updated: this week" />
 
+      <div className="flex justify-end -mt-2 mb-3">
+        <ExportPdfButton tabName="Overview" buildSections={() => [
+          { title: `Situation Summary — ${diseaseName}`, type: "kv", lines: summary.slice(0, 6) },
+          { title: "High Risk Areas (Last 4 Weeks)", type: "table",
+            headers: ["Area", "Cases", "Trend", "Risk"],
+            rows: regions.slice(0, 20).map((r) => [r.name, r.confirmed, r.trend, r.risk]),
+          },
+          { title: "Forecast — Next 4 Weeks", type: "table",
+            headers: ["Week", "Projected Cases", "Risk"],
+            rows: riskForecast.map((f) => [f.label, f.cases, String(f.riskLabel ?? f.risk)]),
+          },
+        ]} />
+      </div>
+
       {/* 1. Situation Summary */}
       {show("situation_summary") && (
       <div className="section-card p-4 mb-6">

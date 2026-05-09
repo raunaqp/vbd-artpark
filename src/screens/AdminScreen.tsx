@@ -103,6 +103,7 @@ export default function AdminScreen() {
     { id: "sections", label: "Section Visibility", icon: SettingsIcon },
     { id: "users", label: "User Management", icon: Users },
     { id: "accuracy", label: "Forecast Accuracy", icon: BarChart3 },
+    { id: "reports", label: "Monthly Reports", icon: FileText },
   ];
 
   return (

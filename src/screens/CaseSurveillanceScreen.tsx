@@ -115,6 +115,30 @@ export default function CaseSurveillanceScreen() {
       </div>
       )}
 
+      {show("cases_over_time") && overlayData.length > 0 && (
+      <div className="section-card p-5 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="section-title">Cases vs. Rainfall — last {overlayN} weeks</h3>
+          {wardOrVillageSelected && (
+            <span className="text-[11px] text-muted-foreground">Rainfall shown at district level</span>
+          )}
+        </div>
+        <ResponsiveContainer width="100%" height={260}>
+          <ComposedChart data={overlayData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
+            <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="cases" orientation="left" tick={{ fontSize: 11 }} label={{ value: "Cases", angle: -90, position: "insideLeft", fontSize: 10 }} />
+            <YAxis yAxisId="rainfall" orientation="right" tick={{ fontSize: 11 }} label={{ value: "Rainfall (mm)", angle: 90, position: "insideRight", fontSize: 10 }} />
+            <Tooltip />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar yAxisId="rainfall" dataKey="rainfall_mm" fill="hsl(212, 90%, 75%)" fillOpacity={0.55} name="Rainfall (mm)" />
+            <Line yAxisId="cases" type="monotone" dataKey="cases" stroke="hsl(0, 70%, 50%)" strokeWidth={2} name="Cases" dot={{ r: 3 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+        <p className="text-[11px] text-muted-foreground mt-2">Aedes lag: rainfall typically precedes case rises by 2–3 weeks.</p>
+      </div>
+      )}
+
       {show("geospatial") && (
       <div className="mb-6">
         <h3 className="section-title mb-3">Geospatial Distribution</h3>

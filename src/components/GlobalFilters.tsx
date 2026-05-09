@@ -3,7 +3,8 @@ import { districts, getDateWindow } from "@/data/mockData";
 import { getBlockDropdown, getLeafDropdown } from "@/data/canonical";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { getFreshness, freshnessTone } from "@/lib/freshness";
 
 interface GlobalFiltersProps {
   showDates?: boolean;

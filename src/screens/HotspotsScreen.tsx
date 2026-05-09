@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowUp, ArrowDown, ArrowRight, Info } from "lucide-reac
 import DashboardMap from "@/components/DashboardMap";
 import GlobalFilters from "@/components/GlobalFilters";
 import TablePagination from "@/components/TablePagination";
+import ExportPdfButton from "@/components/ExportPdfButton";
 import { getHotspotAlerts, getFilteredHotspots, getOutbreakPredictions } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";

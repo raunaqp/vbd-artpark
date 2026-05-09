@@ -79,7 +79,7 @@ function appendAudit(state: string, by: string, action: string, details: string)
   try { localStorage.setItem(auditKey(state), JSON.stringify(log.slice(0, 50))); } catch { /* */ }
 }
 
-type AdminTab = "sections" | "users" | "accuracy";
+type AdminTab = "sections" | "users" | "accuracy" | "reports";
 
 export default function AdminScreen() {
   const { isAdmin, currentRole } = useRole();

@@ -1920,7 +1920,7 @@ function clampRiskForecastAgainstParent(
 
 function buildDerivedDashboardData(input?: DashboardFiltersLike | string, legacyBlock?: string): DerivedDashboardData {
   const filters = resolveFilters(input, legacyBlock);
-  const cacheKey = `${activeStateId}|${filters.district}|${filters.block}|${filters.ward}|${filters.areaType}|${filters.fromDate}|${filters.toDate}`;
+  const cacheKey = `${activeStateId}|${getActiveDisease()}|${filters.district}|${filters.block}|${filters.ward}|${filters.areaType}|${filters.fromDate}|${filters.toDate}`;
   const cached = derivedDashboardCache.get(cacheKey);
   if (cached) return cached;
 

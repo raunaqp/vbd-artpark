@@ -328,9 +328,12 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   const hasSelection = !isStateLevel;
-  // Forecast = risk choropleth. Hotspot = grey polygons + sized circles. Current = blue-intensity choropleth.
+  // Forecast = risk choropleth. Hotspot = grey polygons + sized circles.
+  // Current = blue-intensity choropleth, EXCEPT Karnataka where stakeholders
+  // asked for explicit risk shading (green/amber/red) on every district.
   const useNeutralPolygons = mode === "hotspot";
-  const useBlueChoropleth = mode === "current";
+  const useBlueChoropleth = mode === "current" && stateId !== "karnataka";
+
 
   // Max case count across districts → drives blue intensity scale at state level.
   const maxDistrictCases = useMemo(() => {

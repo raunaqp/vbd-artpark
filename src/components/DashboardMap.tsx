@@ -304,8 +304,13 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     if (mode === "forecast") {
       const pred = predByArea.get(name);
       if (pred) return { risk: pred.risk, cases: `${pred.probability}%`, week: pred.expectedWeek };
-      return { risk: null, cases: "—" };
+      // Fallback: synthesize a risk for districts without an explicit forecast
+      // entry so every polygon is shaded (mock-data parity across the state).
+      const fb = getDistrictRiskFallback(name, appliedFilters);
+      if (fb.synthesized && !stateCoversAllDistricts()) return { risk: null, cases: "—" };
+      return { risk: fb.risk, cases: `${fb.confirmed}` };
     }
+
 
     if (mode === "hotspot") {
       const norm = normalize(name);

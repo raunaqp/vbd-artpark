@@ -304,8 +304,13 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     if (mode === "forecast") {
       const pred = predByArea.get(name);
       if (pred) return { risk: pred.risk, cases: `${pred.probability}%`, week: pred.expectedWeek };
-      return { risk: null, cases: "—" };
+      // Fallback: synthesize a risk for districts without an explicit forecast
+      // entry so every polygon is shaded (mock-data parity across the state).
+      const fb = getDistrictRiskFallback(name, appliedFilters);
+      if (fb.synthesized && !stateCoversAllDistricts()) return { risk: null, cases: "—" };
+      return { risk: fb.risk, cases: `${fb.confirmed}` };
     }
+
 
     if (mode === "hotspot") {
       const norm = normalize(name);
@@ -328,11 +333,10 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   };
 
   const hasSelection = !isStateLevel;
-  // Forecast = risk choropleth. Hotspot = grey polygons + sized circles.
-  // Current = blue-intensity choropleth, EXCEPT Karnataka where stakeholders
-  // asked for explicit risk shading (green/amber/red) on every district.
+  // Forecast = risk choropleth. Hotspot = grey polygons + sized circles. Current = blue-intensity choropleth.
   const useNeutralPolygons = mode === "hotspot";
-  const useBlueChoropleth = mode === "current" && stateId !== "karnataka";
+  const useBlueChoropleth = mode === "current";
+
 
 
   // Max case count across districts → drives blue intensity scale at state level.

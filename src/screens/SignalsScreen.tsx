@@ -298,7 +298,7 @@ export default function SignalsScreen() {
         date: n.date,
       };
     });
-  }, [newsAlerts]);
+  }, [newsAlerts, stateLabel, diseaseName]);
 
   return (
     <TooltipProvider delayDuration={150}>

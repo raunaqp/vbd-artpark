@@ -294,7 +294,7 @@ export default function SignalsScreen() {
         bullets: e.bullets,
         implication: e.implication,
         alignment: e.alignment,
-        source: n.source,
+        source: pickSource(stateLabel, e.signalType, diseaseName, idx),
         date: n.date,
       };
     });

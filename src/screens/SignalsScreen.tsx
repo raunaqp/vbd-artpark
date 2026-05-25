@@ -33,14 +33,18 @@ interface DriverRow {
   updated: string;
 }
 
+type SignalType = "VECTOR" | "CLIMATE" | "FIELD" | "OPERATIONS" | "MEDIA" | "SURVEILLANCE";
+type Alignment = "STRONG" | "MODERATE" | "WEAK";
+
 interface FieldReport {
   id: string | number;
   severity: Severity;
+  signalType: SignalType;
   district: string;
   headline: string;
   bullets: string[];
   implication: string;
-  forecastLink: string;
+  alignment: Alignment;
   source: string;
   date: string;
 }
@@ -168,42 +172,64 @@ export default function SignalsScreen() {
   const newsAlerts = getNewsAlerts(appliedFilters);
   const fieldReports: FieldReport[] = useMemo(() => {
     if (!newsAlerts.length) return [];
-    const enrichment: { bullets: string[]; implication: string; forecastLink: string }[] = [
+    const enrichment: { signalType: SignalType; bullets: string[]; implication: string; alignment: Alignment }[] = [
       {
+        signalType: "VECTOR",
         bullets: [
-          "repeated larval positivity in construction corridors",
           "elevated BI across 3 wards",
+          "repeated larval positivity in construction corridors",
           "rainfall accumulation above seasonal trend",
           "emerging fever clusters detected",
         ],
-        implication: "Targeted fogging and repeat surveys recommended.",
-        forecastLink: "Signals strongly align with projected hotspot escalation.",
+        implication: "Targeted fogging and repeat surveillance recommended.",
+        alignment: "STRONG",
       },
       {
+        signalType: "CLIMATE",
         bullets: [
           "sustained increase in case growth",
           "vector activity rising in coastal blocks",
           "moderate rainfall anomaly detected",
         ],
-        implication: "Increase larval surveillance and source reduction activities.",
-        forecastLink: "Moderate overlap with forecasted 2-week risk escalation.",
+        implication: "Increase larval surveillance in coastal blocks.",
+        alignment: "MODERATE",
       },
       {
+        signalType: "FIELD",
         bullets: [
           "waterlogging reported in low-lying wards",
           "stagnant water near construction sites",
           "container breeding signal rising",
         ],
         implication: "Source reduction drive and ward-level inspection required.",
-        forecastLink: "Supports projected risk in adjacent wards.",
+        alignment: "STRONG",
       },
       {
+        signalType: "SURVEILLANCE",
         bullets: [
           "delayed line-list submissions from 2 PHCs",
           "low surveillance coverage in tribal blocks",
         ],
         implication: "Reinforce data discipline; assign supervisory visits.",
-        forecastLink: "Reduces confidence in low-risk classification for these blocks.",
+        alignment: "WEAK",
+      },
+      {
+        signalType: "OPERATIONS",
+        bullets: [
+          "fogging cycle gap in 2 urban wards",
+          "anti-larval staff shortage reported",
+        ],
+        implication: "Reallocate vector control teams to priority wards.",
+        alignment: "MODERATE",
+      },
+      {
+        signalType: "MEDIA",
+        bullets: [
+          "local media flags rising fever cases",
+          "community concern in 2 colonies",
+        ],
+        implication: "Issue advisory and verify with PHC line-list.",
+        alignment: "MODERATE",
       },
     ];
     return newsAlerts.slice(0, 6).map((n, idx) => {
@@ -211,11 +237,12 @@ export default function SignalsScreen() {
       return {
         id: n.id,
         severity: n.severity,
+        signalType: e.signalType,
         district: n.district,
         headline: n.headline,
         bullets: e.bullets,
         implication: e.implication,
-        forecastLink: e.forecastLink,
+        alignment: e.alignment,
         source: n.source,
         date: n.date,
       };
@@ -380,39 +407,49 @@ export default function SignalsScreen() {
                   : `No field intelligence reports for the selected geography.`}
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                {fieldReports.map((r) => (
-                  <article key={r.id} className={`rounded-md bg-card border border-border ${severityBar(r.severity)} p-4 flex flex-col gap-3`}>
-                    <header className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className={severityClass(r.severity)}>{r.severity === "high" ? "HIGH RISK" : r.severity === "moderate" ? "MODERATE RISK" : "LOW RISK"}</span>
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{r.district}</span>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
+                {fieldReports.map((r) => {
+                  const riskLabel = r.severity === "high" ? "HIGH RISK" : r.severity === "moderate" ? "MODERATE RISK" : "LOW RISK";
+                  const riskColor = r.severity === "high" ? "text-risk-high" : r.severity === "moderate" ? "text-risk-moderate" : "text-risk-low";
+                  const alignColor =
+                    r.alignment === "STRONG" ? "text-risk-high" :
+                    r.alignment === "MODERATE" ? "text-risk-moderate" :
+                    "text-muted-foreground";
+                  return (
+                    <article key={r.id} className={`rounded-md bg-card border border-border ${severityBar(r.severity)} px-3 py-2.5 flex flex-col gap-1.5`}>
+                      <header className="flex items-center justify-between gap-2 text-[11px]">
+                        <div className="flex items-center gap-1.5 font-semibold uppercase tracking-wide min-w-0">
+                          <span className={riskColor}>{riskLabel}</span>
+                          <span className="text-muted-foreground/60">·</span>
+                          <span className="text-foreground/70">{r.signalType}</span>
+                          <span className="text-muted-foreground/60">·</span>
+                          <span className="text-foreground/80 normal-case font-medium truncate flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />{r.district}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{r.date}</span>
+                      </header>
+
+                      <h4 className="text-[13px] font-semibold text-foreground leading-snug">{r.headline}</h4>
+
+                      <ul className="text-[11.5px] leading-tight text-foreground/85 pl-3.5 list-disc marker:text-muted-foreground/50 space-y-0">
+                        {r.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                      </ul>
+
+                      <div className="rounded-sm bg-muted/30 px-2 py-1.5 text-[11.5px] leading-snug">
+                        <span className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground mr-1.5">Operational interpretation</span>
+                        <span className="text-foreground/90">{r.implication}</span>
+                        <span className="ml-1.5 text-muted-foreground">·</span>
+                        <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Forecast alignment:</span>
+                        <span className={`ml-1 text-[10px] font-bold uppercase tracking-wide ${alignColor}`}>{r.alignment}</span>
                       </div>
-                      <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />{r.date}</span>
-                    </header>
 
-                    <h4 className="text-sm font-semibold text-foreground leading-snug">{r.headline}</h4>
-
-                    <ul className="space-y-0.5 text-xs text-foreground/85 list-disc list-inside marker:text-muted-foreground/60">
-                      {r.bullets.map((b, i) => <li key={i}>{b}</li>)}
-                    </ul>
-
-                    <div className="grid grid-cols-1 gap-2 text-xs">
-                      <div className="rounded bg-muted/30 px-3 py-2">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Operational implication</div>
-                        <div className="text-foreground/90">{r.implication}</div>
-                      </div>
-                      <div className="rounded bg-muted/30 px-3 py-2">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Forecast interpretation</div>
-                        <div className="text-foreground/90">{r.forecastLink}</div>
-                      </div>
-                    </div>
-
-                    <footer className="text-[11px] text-muted-foreground border-t border-border pt-2">
-                      Source: {r.source}
-                    </footer>
-                  </article>
-                ))}
+                      <footer className="text-[10px] text-muted-foreground/80 pt-0.5">
+                        Source: {r.source}
+                      </footer>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>

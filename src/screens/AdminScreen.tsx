@@ -130,7 +130,7 @@ export default function AdminScreen() {
       <div>
         {tab === "sections" && <SectionVisibilityPanel state={stateId} stateLabel={stateLabel} />}
         {tab === "users" && <UserManagementPanel state={stateId} adminName={currentRole.userName} />}
-        {tab === "accuracy" && <ForecastAccuracyPanel />}
+        {tab === "accuracy" && <ForecastAccuracyPanel stateId={stateId} stateLabel={stateLabel} />}
         {tab === "reports" && <MonthlyReportsPanel stateId={stateId} stateLabel={stateLabel} />}
       </div>
     </div>
@@ -379,9 +379,36 @@ function AuditDrawer({ entries, onClose }: { entries: AuditEntry[]; onClose: () 
 // ───────────────────────── Forecast Accuracy ─────────────────────────
 type AccTab = "chart" | "metrics" | "archive";
 
-function ForecastAccuracyPanel() {
+// District → state mapping for filtering the accuracy registry by the
+// currently-selected state. Districts not listed here are treated as
+// out-of-scope and hidden from the panel.
+const ACCURACY_DISTRICT_STATE: Record<string, string> = {
+  // Karnataka
+  "Bengaluru Urban": "karnataka", "Mysuru": "karnataka", "Udupi": "karnataka",
+  "Dakshina Kannada": "karnataka", "Belagavi": "karnataka", "Tumakuru": "karnataka",
+  // Odisha
+  "Khordha": "odisha", "Cuttack": "odisha", "Puri": "odisha", "Balasore": "odisha",
+  "Sundargarh": "odisha", "Angul": "odisha", "Mayurbhanj": "odisha", "Sambalpur": "odisha",
+  // Andhra Pradesh
+  "Visakhapatnam": "andhra_pradesh", "Vijayawada": "andhra_pradesh", "Guntur": "andhra_pradesh",
+  "Krishna": "andhra_pradesh", "Kurnool": "andhra_pradesh", "East Godavari": "andhra_pradesh",
+  "NTR": "andhra_pradesh",
+};
+
+function ForecastAccuracyPanel({ stateId, stateLabel }: { stateId: string; stateLabel: string }) {
   const [tab, setTab] = useState<AccTab>("chart");
-  const districts = useMemo(() => Object.keys(FORECAST_ACCURACY), []);
+  const districts = useMemo(
+    () => Object.keys(FORECAST_ACCURACY).filter((d) => ACCURACY_DISTRICT_STATE[d] === stateId),
+    [stateId],
+  );
+
+  if (districts.length === 0) {
+    return (
+      <div className="section-card p-5 text-sm text-muted-foreground">
+        No forecast accuracy data available yet for {stateLabel}.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -400,7 +427,7 @@ function ForecastAccuracyPanel() {
 
       {tab === "chart" && <ForecastVsActual districts={districts} />}
       {tab === "metrics" && <MetricsTable districts={districts} />}
-      {tab === "archive" && <ArchiveTable />}
+      {tab === "archive" && <ArchiveTable districts={districts} stateLabel={stateLabel} />}
     </div>
   );
 }
@@ -507,10 +534,12 @@ function MetricsTable({ districts }: { districts: string[] }) {
   );
 }
 
-function ArchiveTable() {
+function ArchiveTable({ districts, stateLabel }: { districts: string[]; stateLabel: string }) {
+  const districtSet = useMemo(() => new Set(districts), [districts]);
   const downloadRun = (runDate: string) => {
     const lines = ["district,week,predicted,actual"];
     Object.entries(FORECAST_ACCURACY).forEach(([d, info]) => {
+      if (!districtSet.has(d)) return;
       info.history.forEach((h) => {
         lines.push(`${d},${h.week_ending},${h.predicted},${h.actual}`);
       });
@@ -518,13 +547,13 @@ function ArchiveTable() {
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `prismh-forecast-${runDate}.csv`; a.click();
+    a.href = url; a.download = `prismh-forecast-${stateLabel}-${runDate}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
     <div className="section-card p-4">
-      <h3 className="section-title mb-3">Forecast Archive</h3>
+      <h3 className="section-title mb-3">Forecast Archive — {stateLabel}</h3>
       <div className="overflow-auto">
         <table className="w-full text-sm">
           <thead>
@@ -539,7 +568,7 @@ function ArchiveTable() {
               <tr key={r.run_date} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="py-2 px-3 font-medium">{r.run_date}</td>
                 <td className="py-2 px-3 text-muted-foreground">{r.window_start} → {r.window_end}</td>
-                <td className="py-2 px-3">{r.districts_covered}</td>
+                <td className="py-2 px-3">{districts.length}</td>
                 <td className="py-2 px-3">{r.model_version}</td>
                 <td className="py-2 px-3 text-right">
                   <button onClick={() => downloadRun(r.run_date)} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-input hover:bg-muted/50">

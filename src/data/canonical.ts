@@ -79,6 +79,39 @@ const STATE_LABEL_BY_ID: Record<StateId, string> = {
   odisha: "Odisha",
 };
 
+// Per-state case-count scaling. Karnataka's underlying mock series was tuned
+// higher than realistic for the demo; tone it down so KPI tiles + trends look
+// proportionate to the other states.
+const STATE_CASE_SCALE: Record<string, number> = {
+  Karnataka: 0.45,
+};
+
+function scaleArr(stateLabel: string, arr: number[]): number[] {
+  const s = STATE_CASE_SCALE[stateLabel] ?? 1;
+  if (s === 1) return arr;
+  return arr.map((v) => Math.round(v * s));
+}
+
+function scaleDistrictData(stateLabel: string, d: DistrictData): DistrictData {
+  const s = STATE_CASE_SCALE[stateLabel] ?? 1;
+  if (s === 1) return d;
+  const sc = (a: number[]) => a.map((v) => Math.round(v * s));
+  return {
+    ...d,
+    weekly_total: sc(d.weekly_total),
+    municipalities: d.municipalities.map((m) => ({
+      ...m,
+      weekly: sc(m.weekly),
+      wards: m.wards.map((w) => ({ ...w, weekly: sc(w.weekly) })),
+    })),
+    blocks: d.blocks.map((b) => ({
+      ...b,
+      weekly: sc(b.weekly),
+      villages: b.villages.map((v) => ({ ...v, weekly: sc(v.weekly) })),
+    })),
+  };
+}
+
 export interface DistrictMetrics {
   name: string;
   state: string;
@@ -101,7 +134,9 @@ export interface DistrictMetrics {
 const districtCache = new Map<string, DistrictMetrics[]>();
 
 function buildDistrictMetricsForState(stateLabel: string): DistrictMetrics[] {
-  const entries = Object.entries(MOCK_DATASET).filter(([, d]) => d.state === stateLabel);
+  const entries = Object.entries(MOCK_DATASET)
+    .filter(([, d]) => d.state === stateLabel)
+    .map(([name, d]) => [name, scaleDistrictData(stateLabel, d)] as const);
   const method = (STATE_RISK_METHOD as Record<string, string>)[stateLabel] ?? "WHO";
 
   // First pass — build everything except ICMR stratum + final risk label.
@@ -112,7 +147,7 @@ function buildDistrictMetricsForState(stateLabel: string): DistrictMetrics[] {
     const cases4w = weekly.slice(-4).reduce((a, b) => a + b, 0);
     const casesPrior4w = weekly.slice(-8, -4).reduce((a, b) => a + b, 0);
     const fc = FORECAST[name];
-    const forecast4w = fc?.weeks ?? [0, 0, 0, 0];
+    const forecast4w = scaleArr(stateLabel, fc?.weeks ?? [0, 0, 0, 0]);
     const forecastAvg = forecast4w.reduce((a, b) => a + b, 0) / Math.max(1, forecast4w.length);
     const outbreakProb = fc?.outbreak_prob ?? 0;
     const baseline = WHO_BASELINES[name] ?? { mu: 0, sigma: 0 };
@@ -233,22 +268,23 @@ export function getCanonicalWeeklySeries(
   if (!districtSel) {
     const districts = Object.values(MOCK_DATASET).filter((d) => d.state === stateLabel);
     const len = districts[0]?.weekly_total.length ?? 0;
-    return Array.from({ length: len }, (_, i) => districts.reduce((s, d) => s + (d.weekly_total[i] ?? 0), 0));
+    const arr = Array.from({ length: len }, (_, i) => districts.reduce((s, d) => s + (d.weekly_total[i] ?? 0), 0));
+    return scaleArr(stateLabel, arr);
   }
   const d = MOCK_DATASET[districtSel];
   if (!d) return [];
-  if (!blockSel) return d.weekly_total;
+  if (!blockSel) return scaleArr(stateLabel, d.weekly_total);
   const muni = d.municipalities.find((m) => m.name === blockSel);
   if (muni) {
-    if (!wardSel) return muni.weekly;
-    return muni.wards.find((w) => w.name === wardSel)?.weekly ?? muni.weekly;
+    if (!wardSel) return scaleArr(stateLabel, muni.weekly);
+    return scaleArr(stateLabel, muni.wards.find((w) => w.name === wardSel)?.weekly ?? muni.weekly);
   }
   const blk = d.blocks.find((b) => b.name === blockSel);
   if (blk) {
-    if (!wardSel) return blk.weekly;
-    return blk.villages.find((v) => v.name === wardSel)?.weekly ?? blk.weekly;
+    if (!wardSel) return scaleArr(stateLabel, blk.weekly);
+    return scaleArr(stateLabel, blk.villages.find((v) => v.name === wardSel)?.weekly ?? blk.weekly);
   }
-  return d.weekly_total;
+  return scaleArr(stateLabel, d.weekly_total);
 }
 
 // ──────────────── Per-screen converters ────────────────
@@ -577,7 +613,7 @@ export function canonicalRiskForecast(stateLabel: string, filters: DashboardFilt
       const wardSel = filters.ward && filters.ward !== "All Wards" ? filters.ward : undefined;
       const f = getForecastForGeography(parent.name, filters.block, wardSel);
       if (f) {
-        weeks = f.weeks.slice(0, 4);
+        weeks = scaleArr(stateLabel, f.weeks.slice(0, 4));
         summaryRisk = levelToLegacy(f.level as HForecastLevel);
       } else {
         weeks = parent.forecast4w;

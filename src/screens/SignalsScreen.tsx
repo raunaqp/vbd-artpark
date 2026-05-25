@@ -33,14 +33,18 @@ interface DriverRow {
   updated: string;
 }
 
+type SignalType = "VECTOR" | "CLIMATE" | "FIELD" | "OPERATIONS" | "MEDIA" | "SURVEILLANCE";
+type Alignment = "STRONG" | "MODERATE" | "WEAK";
+
 interface FieldReport {
   id: string | number;
   severity: Severity;
+  signalType: SignalType;
   district: string;
   headline: string;
   bullets: string[];
   implication: string;
-  forecastLink: string;
+  alignment: Alignment;
   source: string;
   date: string;
 }

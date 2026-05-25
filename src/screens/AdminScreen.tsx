@@ -547,13 +547,13 @@ function ArchiveTable({ districts, stateLabel }: { districts: string[]; stateLab
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `prismh-forecast-${runDate}.csv`; a.click();
+    a.href = url; a.download = `prismh-forecast-${stateLabel}-${runDate}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
     <div className="section-card p-4">
-      <h3 className="section-title mb-3">Forecast Archive</h3>
+      <h3 className="section-title mb-3">Forecast Archive — {stateLabel}</h3>
       <div className="overflow-auto">
         <table className="w-full text-sm">
           <thead>

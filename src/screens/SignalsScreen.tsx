@@ -196,7 +196,6 @@ function pickSource(state: string, type: SignalType, disease: string, seed: numb
   const topic = HEADLINE_SLUG[type];
   return `${outlet} — "${disease} ${topic}" report`;
 }
-}
 
 export default function SignalsScreen() {
   const { appliedFilters } = useFilters();

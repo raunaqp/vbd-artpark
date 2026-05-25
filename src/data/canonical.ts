@@ -613,7 +613,7 @@ export function canonicalRiskForecast(stateLabel: string, filters: DashboardFilt
       const wardSel = filters.ward && filters.ward !== "All Wards" ? filters.ward : undefined;
       const f = getForecastForGeography(parent.name, filters.block, wardSel);
       if (f) {
-        weeks = f.weeks.slice(0, 4);
+        weeks = scaleArr(stateLabel, f.weeks.slice(0, 4));
         summaryRisk = levelToLegacy(f.level as HForecastLevel);
       } else {
         weeks = parent.forecast4w;

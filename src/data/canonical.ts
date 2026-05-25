@@ -79,6 +79,39 @@ const STATE_LABEL_BY_ID: Record<StateId, string> = {
   odisha: "Odisha",
 };
 
+// Per-state case-count scaling. Karnataka's underlying mock series was tuned
+// higher than realistic for the demo; tone it down so KPI tiles + trends look
+// proportionate to the other states.
+const STATE_CASE_SCALE: Record<string, number> = {
+  Karnataka: 0.45,
+};
+
+function scaleArr(stateLabel: string, arr: number[]): number[] {
+  const s = STATE_CASE_SCALE[stateLabel] ?? 1;
+  if (s === 1) return arr;
+  return arr.map((v) => Math.round(v * s));
+}
+
+function scaleDistrictData(stateLabel: string, d: DistrictData): DistrictData {
+  const s = STATE_CASE_SCALE[stateLabel] ?? 1;
+  if (s === 1) return d;
+  const sc = (a: number[]) => a.map((v) => Math.round(v * s));
+  return {
+    ...d,
+    weekly_total: sc(d.weekly_total),
+    municipalities: d.municipalities.map((m) => ({
+      ...m,
+      weekly: sc(m.weekly),
+      wards: m.wards.map((w) => ({ ...w, weekly: sc(w.weekly) })),
+    })),
+    blocks: d.blocks.map((b) => ({
+      ...b,
+      weekly: sc(b.weekly),
+      villages: b.villages.map((v) => ({ ...v, weekly: sc(v.weekly) })),
+    })),
+  };
+}
+
 export interface DistrictMetrics {
   name: string;
   state: string;

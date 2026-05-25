@@ -38,8 +38,9 @@ export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings" | "admin">, BlockD
     { id: "hotspot_table", label: "Hotspot Analysis Table" },
   ],
   signals: [
-    { id: "news_alerts", label: "News / Media Alerts" },
-    { id: "geo_signal_map", label: "Geo-tagged Signal Map" },
+    { id: "signal_summary", label: "Signal Summary — Early Warning Indicators" },
+    { id: "forecast_drivers", label: "Forecast Drivers & Explainability" },
+    { id: "field_intelligence", label: "Field Intelligence Feed" },
   ],
   upload: [
     { id: "upload_format", label: "Select Upload Format" },

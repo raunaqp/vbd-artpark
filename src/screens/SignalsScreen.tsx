@@ -1,136 +1,423 @@
-import { Newspaper, MapPin, AlertTriangle } from "lucide-react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import { getNewsAlerts, getGeoTaggedAlerts, getMapCenter } from "@/data/mockData";
+import { useMemo } from "react";
+import { Info, TrendingUp, TrendingDown, Minus, Radar, ClipboardList, AlertTriangle, Activity, MapPin, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { getNewsAlerts } from "@/data/mockData";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import GlobalFilters from "@/components/GlobalFilters";
+import Sparkline, { synthSparkSeries } from "@/components/Sparkline";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-const severityColor: Record<string, string> = {
-  high: "#ef4444",
-  moderate: "#eab308",
-  low: "#22c55e",
+type Severity = "high" | "moderate" | "low";
+type Direction = "up" | "down" | "stable";
+
+interface IndicatorCard {
+  key: string;
+  label: string;
+  value: string;
+  direction: Direction;
+  trendNote: string;
+  interpretation: string;
+  severity: Severity;
+  series: number[];
+  formula?: string;
+}
+
+interface DriverRow {
+  signal: string;
+  status: { label: string; severity: Severity };
+  impact: string;
+  confidence: { label: string; tone: "strengthen" | "weaken" | "neutral" };
+  geographies: string;
+  updated: string;
+}
+
+interface FieldReport {
+  id: string | number;
+  severity: Severity;
+  district: string;
+  headline: string;
+  bullets: string[];
+  implication: string;
+  forecastLink: string;
+  source: string;
+  date: string;
+}
+
+// ──────────────────────────── Deterministic per-state mock ────────────────────────────
+const STATE_SIGNAL_PROFILE: Record<string, {
+  indicators: Omit<IndicatorCard, "series">[];
+  drivers: DriverRow[];
+  confidence: { strengthen: string[]; weaken: string[]; level: "High" | "Moderate" | "Low" };
+}> = {
+  Karnataka: {
+    indicators: [
+      { key: "hi",  label: "House Index (HI)",       value: "8.2%",  direction: "up",    trendNote: "↑ increasing",    interpretation: "Elevated vector activity", severity: "moderate", formula: "Positive houses ÷ houses inspected × 100" },
+      { key: "ci",  label: "Container Index (CI)",   value: "5.6%",  direction: "up",    trendNote: "↑ rising",        interpretation: "Container breeding rising", severity: "moderate", formula: "Positive containers ÷ containers inspected × 100" },
+      { key: "bi",  label: "Breteau Index (BI)",     value: "21.4",  direction: "up",    trendNote: "↑↑ sharp rise",   interpretation: "Potential outbreak conditions", severity: "high", formula: "Positive containers ÷ houses inspected × 100" },
+      { key: "fc",  label: "Fever Cluster Alerts",   value: "4 wards", direction: "up",  trendNote: "+2 this week",    interpretation: "Emerging transmission",     severity: "high" },
+      { key: "rf",  label: "Rainfall Anomaly",       value: "+38%",  direction: "up",    trendNote: "Above seasonal",  interpretation: "Vector suitability elevated", severity: "moderate" },
+      { key: "lc",  label: "Larval Survey Coverage", value: "68%",   direction: "down",  trendNote: "↓ below target",  interpretation: "Incomplete surveillance",   severity: "moderate" },
+      { key: "uw",  label: "High-Risk Unsurveyed Wards", value: "12", direction: "up",   trendNote: "+3 vs last week", interpretation: "Surveillance gap widening", severity: "high" },
+    ],
+    drivers: [
+      { signal: "BI Increasing",       status: { label: "High", severity: "high" },           impact: "Strengthening outbreak probability",       confidence: { label: "High confidence",      tone: "strengthen" }, geographies: "Bengaluru Urban, Mysuru",   updated: "24 May 2026" },
+      { signal: "Rainfall Anomaly",    status: { label: "Moderate", severity: "moderate" },   impact: "Elevated vector suitability",              confidence: { label: "Moderate confidence",  tone: "strengthen" }, geographies: "Coastal Karnataka",         updated: "24 May 2026" },
+      { signal: "Fever Clusters Emerging", status: { label: "High", severity: "high" },       impact: "Possible transmission onset",              confidence: { label: "High confidence",      tone: "strengthen" }, geographies: "Dakshina Kannada",          updated: "23 May 2026" },
+      { signal: "Low Survey Coverage", status: { label: "High concern", severity: "high" },   impact: "Reduced visibility into low-risk zones",   confidence: { label: "Weakens confidence",   tone: "weaken" },     geographies: "Belagavi rural blocks",     updated: "24 May 2026" },
+      { signal: "Construction Activity", status: { label: "Moderate", severity: "moderate" }, impact: "Potential breeding amplification",         confidence: { label: "Moderate confidence",  tone: "neutral" },    geographies: "Urban wards",               updated: "22 May 2026" },
+    ],
+    confidence: {
+      level: "High",
+      strengthen: ["↑ BI across urban wards", "↑ rainfall accumulation", "↑ fever clusters in 4 wards"],
+      weaken: ["↓ larval survey coverage (68%)", "12 high-risk wards unsurveyed"],
+    },
+  },
+  Odisha: {
+    indicators: [
+      { key: "hi", label: "House Index (HI)",       value: "6.4%",  direction: "up",    trendNote: "↑ rising",       interpretation: "Vector activity climbing",    severity: "moderate", formula: "Positive houses ÷ houses inspected × 100" },
+      { key: "ci", label: "Container Index (CI)",   value: "4.2%",  direction: "stable", trendNote: "→ stable",      interpretation: "Container breeding contained", severity: "low", formula: "Positive containers ÷ containers inspected × 100" },
+      { key: "bi", label: "Breteau Index (BI)",     value: "14.8",  direction: "up",    trendNote: "↑ moderate rise", interpretation: "Watch threshold approached", severity: "moderate", formula: "Positive containers ÷ houses inspected × 100" },
+      { key: "fc", label: "Fever Cluster Alerts",   value: "2 blocks", direction: "up", trendNote: "+1 this week",   interpretation: "Localised signal",            severity: "moderate" },
+      { key: "rf", label: "Rainfall Anomaly",       value: "+22%",  direction: "up",    trendNote: "Above seasonal", interpretation: "Breeding window extended",    severity: "moderate" },
+      { key: "lc", label: "Larval Survey Coverage", value: "74%",   direction: "stable", trendNote: "→ near target", interpretation: "Adequate coverage",           severity: "low" },
+      { key: "uw", label: "High-Risk Unsurveyed Wards", value: "6", direction: "down",  trendNote: "−2 vs last week", interpretation: "Gap narrowing",              severity: "moderate" },
+    ],
+    drivers: [
+      { signal: "BI Approaching Threshold", status: { label: "Moderate", severity: "moderate" }, impact: "Early warning indicator",            confidence: { label: "Moderate confidence", tone: "strengthen" }, geographies: "Khordha, Cuttack",   updated: "24 May 2026" },
+      { signal: "Rainfall Anomaly",         status: { label: "Moderate", severity: "moderate" }, impact: "Extended breeding window",           confidence: { label: "Moderate confidence", tone: "strengthen" }, geographies: "Coastal Odisha",      updated: "24 May 2026" },
+      { signal: "Fever Clusters",           status: { label: "Moderate", severity: "moderate" }, impact: "Localised transmission likely",      confidence: { label: "Moderate confidence", tone: "strengthen" }, geographies: "Ganjam",              updated: "23 May 2026" },
+      { signal: "Survey Coverage Improving", status: { label: "Adequate", severity: "low" },     impact: "Improved visibility",                confidence: { label: "Strengthens confidence", tone: "strengthen" }, geographies: "Statewide",          updated: "24 May 2026" },
+    ],
+    confidence: {
+      level: "Moderate",
+      strengthen: ["↑ BI in coastal districts", "↑ rainfall accumulation", "↑ survey coverage statewide"],
+      weaken: ["Sparse signals from tribal blocks", "Delay in lab confirmation in 2 districts"],
+    },
+  },
+  "Andhra Pradesh": {
+    indicators: [
+      { key: "hi", label: "House Index (HI)",       value: "7.1%",  direction: "up",     trendNote: "↑ rising",       interpretation: "Vector activity elevated",   severity: "moderate", formula: "Positive houses ÷ houses inspected × 100" },
+      { key: "ci", label: "Container Index (CI)",   value: "4.9%",  direction: "up",     trendNote: "↑ slight rise",  interpretation: "Container breeding watch",   severity: "moderate", formula: "Positive containers ÷ containers inspected × 100" },
+      { key: "bi", label: "Breteau Index (BI)",     value: "17.6",  direction: "up",     trendNote: "↑ rising",       interpretation: "Watch threshold crossed",    severity: "high", formula: "Positive containers ÷ houses inspected × 100" },
+      { key: "fc", label: "Fever Cluster Alerts",   value: "3 mandals", direction: "up", trendNote: "+1 this week",   interpretation: "Emerging transmission",      severity: "high" },
+      { key: "rf", label: "Rainfall Anomaly",       value: "+14%",  direction: "stable", trendNote: "Near seasonal",  interpretation: "Marginal influence",         severity: "low" },
+      { key: "lc", label: "Larval Survey Coverage", value: "71%",   direction: "down",   trendNote: "↓ slipping",     interpretation: "Coverage gap emerging",      severity: "moderate" },
+      { key: "uw", label: "High-Risk Unsurveyed Wards", value: "9", direction: "up",     trendNote: "+2 vs last week", interpretation: "Surveillance gap growing",  severity: "high" },
+    ],
+    drivers: [
+      { signal: "BI Crossed Watch Threshold", status: { label: "High", severity: "high" },        impact: "Outbreak probability rising",         confidence: { label: "High confidence",     tone: "strengthen" }, geographies: "Vizag, Krishna",      updated: "24 May 2026" },
+      { signal: "Fever Clusters Emerging",   status: { label: "High", severity: "high" },         impact: "Possible transmission onset",         confidence: { label: "High confidence",     tone: "strengthen" }, geographies: "East Godavari",       updated: "23 May 2026" },
+      { signal: "Coverage Slipping",         status: { label: "Concern", severity: "moderate" },  impact: "Reduced ward-level visibility",       confidence: { label: "Weakens confidence",  tone: "weaken" },     geographies: "Rayalaseema blocks",  updated: "24 May 2026" },
+      { signal: "Construction Activity",     status: { label: "Moderate", severity: "moderate" }, impact: "Potential breeding amplification",    confidence: { label: "Moderate confidence", tone: "neutral" },    geographies: "Urban mandals",       updated: "22 May 2026" },
+    ],
+    confidence: {
+      level: "High",
+      strengthen: ["↑ BI in coastal districts", "↑ fever clusters in 3 mandals", "Stable rainfall conditions"],
+      weaken: ["↓ survey coverage in Rayalaseema", "9 high-risk wards unsurveyed"],
+    },
+  },
 };
+
+function getProfile(stateLabel: string) {
+  return STATE_SIGNAL_PROFILE[stateLabel] ?? STATE_SIGNAL_PROFILE.Karnataka;
+}
+
+function severityClass(s: Severity) {
+  return s === "high" ? "risk-badge-high" : s === "moderate" ? "risk-badge-moderate" : "risk-badge-low";
+}
+function severityBar(s: Severity) {
+  if (s === "high") return "border-l-4 border-risk-high";
+  if (s === "moderate") return "border-l-4 border-risk-moderate";
+  return "border-l-4 border-risk-low";
+}
+function DirIcon({ d, severity }: { d: Direction; severity: Severity }) {
+  const color =
+    d === "up" ? (severity === "high" ? "text-risk-high" : "text-risk-moderate") :
+    d === "down" ? "text-risk-low" :
+    "text-muted-foreground";
+  const Icon = d === "up" ? TrendingUp : d === "down" ? TrendingDown : Minus;
+  return <Icon className={`h-3.5 w-3.5 ${color}`} />;
+}
 
 export default function SignalsScreen() {
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
-  const { stateId } = useStateSelection();
+  const { stateId, options } = useStateSelection();
   const { isVisible } = useBlockVisibility();
   const show = (id: string) => isVisible("signals", id);
-  void stateId;
+
+  const stateLabel = options.find((o) => o.id === stateId)?.label ?? "Karnataka";
+  const profile = useMemo(() => getProfile(stateLabel), [stateLabel]);
+
+  const indicators: IndicatorCard[] = useMemo(
+    () =>
+      profile.indicators.map((i) => ({
+        ...i,
+        series: synthSparkSeries(`${stateLabel}-${i.key}`, 60, i.direction === "down" ? 80 : 40, i.direction),
+      })),
+    [profile, stateLabel],
+  );
+
   const isSubDistrict =
     (appliedFilters.block && appliedFilters.block !== "All Blocks") ||
     (appliedFilters.ward && appliedFilters.ward !== "All Wards");
-  const filteredNews = getNewsAlerts(appliedFilters);
-  const filteredGeo = getGeoTaggedAlerts(appliedFilters);
-  const mapCenter = getMapCenter();
-  const emptyMessage = isSubDistrict
-    ? `No field signals or news alerts available below district level for ${appliedFilters.block || appliedFilters.ward}.`
-    : `No ${diseaseName.toLowerCase()} alerts for selected district.`;
+
+  // Build field reports from existing news alerts but enriched into operational cards.
+  const newsAlerts = getNewsAlerts(appliedFilters);
+  const fieldReports: FieldReport[] = useMemo(() => {
+    if (!newsAlerts.length) return [];
+    const enrichment: { bullets: string[]; implication: string; forecastLink: string }[] = [
+      {
+        bullets: [
+          "repeated larval positivity in construction corridors",
+          "elevated BI across 3 wards",
+          "rainfall accumulation above seasonal trend",
+          "emerging fever clusters detected",
+        ],
+        implication: "Targeted fogging and repeat surveys recommended.",
+        forecastLink: "Signals strongly align with projected hotspot escalation.",
+      },
+      {
+        bullets: [
+          "sustained increase in case growth",
+          "vector activity rising in coastal blocks",
+          "moderate rainfall anomaly detected",
+        ],
+        implication: "Increase larval surveillance and source reduction activities.",
+        forecastLink: "Moderate overlap with forecasted 2-week risk escalation.",
+      },
+      {
+        bullets: [
+          "waterlogging reported in low-lying wards",
+          "stagnant water near construction sites",
+          "container breeding signal rising",
+        ],
+        implication: "Source reduction drive and ward-level inspection required.",
+        forecastLink: "Supports projected risk in adjacent wards.",
+      },
+      {
+        bullets: [
+          "delayed line-list submissions from 2 PHCs",
+          "low surveillance coverage in tribal blocks",
+        ],
+        implication: "Reinforce data discipline; assign supervisory visits.",
+        forecastLink: "Reduces confidence in low-risk classification for these blocks.",
+      },
+    ];
+    return newsAlerts.slice(0, 6).map((n, idx) => {
+      const e = enrichment[idx % enrichment.length];
+      return {
+        id: n.id,
+        severity: n.severity,
+        district: n.district,
+        headline: n.headline,
+        bullets: e.bullets,
+        implication: e.implication,
+        forecastLink: e.forecastLink,
+        source: n.source,
+        date: n.date,
+      };
+    });
+  }, [newsAlerts]);
 
   return (
-    <div className="space-y-6">
-      <GlobalFilters freshnessLabel="Signals — last 4 weeks (locked)" />
+    <TooltipProvider delayDuration={150}>
+      <div className="space-y-6">
+        <GlobalFilters freshnessLabel="Signals — last 4 weeks (locked)" />
 
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">{diseaseName} Signals / Field Intelligence</h2>
-        <p className="text-xs text-muted-foreground">External signals to complement model predictions and ground reality</p>
-      </div>
-
-      {isSubDistrict && (
-        <div className="rounded-md border border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-          Signals data is currently available at <strong>district level only</strong>. Sub-district signals (block / ward / village) are not yet ingested.
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Epidemiological Intelligence & Forecast Explainability</h2>
+          <p className="text-xs text-muted-foreground">
+            Surveillance evidence and reasoning behind {diseaseName.toLowerCase()} early warning — why risk is changing and how confident the forecast is.
+          </p>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {show("news_alerts") && (
-        <div className="section-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Newspaper className="h-4 w-4 text-muted-foreground" />
-            <h3 className="section-title">News / Media Alerts</h3>
+        {isSubDistrict && (
+          <div className="rounded-md border border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+            Signal indicators are aggregated at <strong>district level</strong>. Sub-district intelligence (block / ward) is being progressively ingested.
           </div>
-          {filteredNews.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">{emptyMessage}</p>
-          ) : (
-            <div className="space-y-3">
-              {filteredNews.map((alert) => (
-                <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
-                  <div className="mt-0.5">
-                    <span className="w-2.5 h-2.5 rounded-full block" style={{ backgroundColor: severityColor[alert.severity] }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground leading-snug">{alert.headline}</p>
-                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{alert.district}</span>
-                      <span>{alert.source}</span>
-                      <span>{alert.date}</span>
+        )}
+
+        {/* ─────────────── SECTION 1 — SIGNAL SUMMARY ─────────────── */}
+        {show("signal_summary") && (
+          <section className="section-card p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Radar className="h-4 w-4 text-muted-foreground" />
+              <h3 className="section-title">Surveillance & Early Warning Signals</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Field indicators contributing to {diseaseName.toLowerCase()} risk assessment</p>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+              {indicators.map((ind) => (
+                <div key={ind.key} className={`rounded-md bg-card border border-border ${severityBar(ind.severity)} p-3 flex flex-col gap-2`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <span className="text-[11px] font-medium text-muted-foreground truncate">{ind.label}</span>
+                      {ind.formula && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" aria-label={`${ind.label} formula`} className="text-muted-foreground/70 hover:text-foreground">
+                              <Info className="h-3 w-3" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px] text-xs">
+                            {ind.formula}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
+                    <span className={`${severityClass(ind.severity)} !px-2 !py-0.5 !text-[10px]`}>{ind.severity}</span>
                   </div>
-                  <span className={`risk-badge-${alert.severity} flex-shrink-0`}>{alert.severity}</span>
+
+                  <div className="flex items-end justify-between gap-2">
+                    <div className="text-xl font-semibold text-foreground leading-none">{ind.value}</div>
+                    <Sparkline values={ind.series} width={70} height={22} trend={ind.direction} />
+                  </div>
+
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <DirIcon d={ind.direction} severity={ind.severity} />
+                    <span>{ind.trendNote}</span>
+                  </div>
+                  <div className="text-[11px] text-foreground/80">{ind.interpretation}</div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </section>
         )}
 
-        {show("geo_signal_map") && (
-        <div className="section-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <h3 className="section-title">Geo-tagged Signal Map</h3>
-          </div>
-          {filteredGeo.length === 0 ? (
-            <div className="rounded-lg border border-border bg-muted/20 flex items-center justify-center text-sm text-muted-foreground" style={{ height: "400px" }}>
-              {emptyMessage}
+        {/* ─────────────── SECTION 2 — FORECAST DRIVERS ─────────────── */}
+        {show("forecast_drivers") && (
+          <section className="section-card p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <h3 className="section-title">Forecast Drivers & Surveillance Interpretation</h3>
             </div>
-          ) : (
-            <div className="rounded-lg overflow-hidden border border-border" style={{ height: "400px" }}>
-              <MapContainer center={mapCenter} zoom={7} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                />
-                {filteredGeo.map((a) => (
-                  <CircleMarker
-                    key={a.id}
-                    center={[a.lat, a.lng]}
-                    radius={10}
-                    pathOptions={{ fillColor: severityColor[a.severity], fillOpacity: 0.7, color: severityColor[a.severity], weight: 2 }}
-                  >
-                    <Tooltip>
-                      <div className="text-xs">
-                        <strong>{a.district}</strong><br />
-                        {a.message}<br />
-                        Severity: {a.severity}
-                      </div>
-                    </Tooltip>
-                  </CircleMarker>
-                ))}
-              </MapContainer>
-            </div>
-          )}
-          <div className="flex gap-4 mt-3">
-            {(["high", "moderate", "low"] as const).map((level) => (
-              <div key={level} className="flex items-center gap-1.5 text-xs">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: severityColor[level] }} />
-                <span className="capitalize">{level}</span>
+            <p className="text-xs text-muted-foreground mb-4">Signals strengthening or weakening outbreak confidence</p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 text-muted-foreground">
+                    <tr className="text-left">
+                      <th className="px-3 py-2 font-medium">Signal</th>
+                      <th className="px-3 py-2 font-medium">Status</th>
+                      <th className="px-3 py-2 font-medium">Impact on Risk</th>
+                      <th className="px-3 py-2 font-medium">Confidence Effect</th>
+                      <th className="px-3 py-2 font-medium">Geographies</th>
+                      <th className="px-3 py-2 font-medium whitespace-nowrap">Last Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {profile.drivers.map((d, i) => (
+                      <tr key={i} className="hover:bg-muted/30">
+                        <td className="px-3 py-2 font-medium text-foreground">{d.signal}</td>
+                        <td className="px-3 py-2"><span className={severityClass(d.status.severity)}>{d.status.label}</span></td>
+                        <td className="px-3 py-2 text-foreground/80">{d.impact}</td>
+                        <td className="px-3 py-2">
+                          <span className={
+                            d.confidence.tone === "strengthen" ? "text-risk-low font-medium" :
+                            d.confidence.tone === "weaken" ? "text-risk-high font-medium" :
+                            "text-muted-foreground"
+                          }>
+                            {d.confidence.label}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-foreground/80">{d.geographies}</td>
+                        <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{d.updated}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
-        </div>
+
+              {/* Confidence panel */}
+              <aside className="rounded-md border border-border bg-muted/20 p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Forecast confidence</span>
+                  <span className={severityClass(profile.confidence.level === "High" ? "low" : profile.confidence.level === "Moderate" ? "moderate" : "high")}>
+                    {profile.confidence.level}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-1 text-[11px] font-medium text-risk-low mb-1">
+                    <ArrowUpRight className="h-3 w-3" /> Strengthened by
+                  </div>
+                  <ul className="space-y-1 text-xs text-foreground/85 list-disc list-inside marker:text-risk-low">
+                    {profile.confidence.strengthen.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-1 text-[11px] font-medium text-risk-high mb-1">
+                    <ArrowDownRight className="h-3 w-3" /> Weakened by
+                  </div>
+                  <ul className="space-y-1 text-xs text-foreground/85 list-disc list-inside marker:text-risk-high">
+                    {profile.confidence.weaken.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+              </aside>
+            </div>
+          </section>
+        )}
+
+        {/* ─────────────── SECTION 3 — FIELD INTELLIGENCE ─────────────── */}
+        {show("field_intelligence") && (
+          <section className="section-card p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+              <h3 className="section-title">Field Intelligence — Ground Surveillance Reports</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Operational observations and environmental signals supporting the forecast</p>
+
+            {fieldReports.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                {isSubDistrict
+                  ? `No field intelligence available below district level for ${appliedFilters.block || appliedFilters.ward}.`
+                  : `No field intelligence reports for the selected geography.`}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {fieldReports.map((r) => (
+                  <article key={r.id} className={`rounded-md bg-card border border-border ${severityBar(r.severity)} p-4 flex flex-col gap-3`}>
+                    <header className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className={severityClass(r.severity)}>{r.severity === "high" ? "HIGH RISK" : r.severity === "moderate" ? "MODERATE RISK" : "LOW RISK"}</span>
+                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{r.district}</span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" />{r.date}</span>
+                    </header>
+
+                    <h4 className="text-sm font-semibold text-foreground leading-snug">{r.headline}</h4>
+
+                    <ul className="space-y-0.5 text-xs text-foreground/85 list-disc list-inside marker:text-muted-foreground/60">
+                      {r.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                    </ul>
+
+                    <div className="grid grid-cols-1 gap-2 text-xs">
+                      <div className="rounded bg-muted/30 px-3 py-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Operational implication</div>
+                        <div className="text-foreground/90">{r.implication}</div>
+                      </div>
+                      <div className="rounded bg-muted/30 px-3 py-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Forecast interpretation</div>
+                        <div className="text-foreground/90">{r.forecastLink}</div>
+                      </div>
+                    </div>
+
+                    <footer className="text-[11px] text-muted-foreground border-t border-border pt-2">
+                      Source: {r.source}
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         )}
       </div>
-
-      <div className="section-card p-4 border-dashed">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm">Community / social signals — planned for future integration</span>
-        </div>
-      </div>
-    </div>
+    </TooltipProvider>
   );
 }

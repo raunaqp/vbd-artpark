@@ -134,7 +134,9 @@ export interface DistrictMetrics {
 const districtCache = new Map<string, DistrictMetrics[]>();
 
 function buildDistrictMetricsForState(stateLabel: string): DistrictMetrics[] {
-  const entries = Object.entries(MOCK_DATASET).filter(([, d]) => d.state === stateLabel);
+  const entries = Object.entries(MOCK_DATASET)
+    .filter(([, d]) => d.state === stateLabel)
+    .map(([name, d]) => [name, scaleDistrictData(stateLabel, d)] as const);
   const method = (STATE_RISK_METHOD as Record<string, string>)[stateLabel] ?? "WHO";
 
   // First pass — build everything except ICMR stratum + final risk label.
@@ -145,7 +147,7 @@ function buildDistrictMetricsForState(stateLabel: string): DistrictMetrics[] {
     const cases4w = weekly.slice(-4).reduce((a, b) => a + b, 0);
     const casesPrior4w = weekly.slice(-8, -4).reduce((a, b) => a + b, 0);
     const fc = FORECAST[name];
-    const forecast4w = fc?.weeks ?? [0, 0, 0, 0];
+    const forecast4w = scaleArr(stateLabel, fc?.weeks ?? [0, 0, 0, 0]);
     const forecastAvg = forecast4w.reduce((a, b) => a + b, 0) / Math.max(1, forecast4w.length);
     const outbreakProb = fc?.outbreak_prob ?? 0;
     const baseline = WHO_BASELINES[name] ?? { mu: 0, sigma: 0 };

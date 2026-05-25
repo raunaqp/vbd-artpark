@@ -10,7 +10,7 @@ function fmtDate(iso: string) { try { return format(parseISO(iso), "dd MMM yyyy"
 
 function WeatherTable({ data, label }: { data: WeatherPoint[]; label: string }) {
   return (
-    <div className="section-card p-5">
+    <div className="section-card p-3">
       <h3 className="section-title mb-3">{label}</h3>
       <div className="overflow-auto">
         <table className="w-full text-sm">
@@ -79,7 +79,7 @@ export default function WeatherScreen() {
         <p className="text-xs text-muted-foreground mb-4">Recorded meteorological data from IMD stations</p>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="section-card p-5">
+          <div className="section-card p-3">
             <h3 className="section-title mb-4">Rainfall (mm)</h3>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={weatherObserved}>
@@ -91,7 +91,7 @@ export default function WeatherScreen() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="section-card p-5">
+          <div className="section-card p-3">
             <h3 className="section-title mb-4">Temperature (°C)</h3>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={weatherObserved}>
@@ -104,7 +104,7 @@ export default function WeatherScreen() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="section-card p-5">
+          <div className="section-card p-3">
             <h3 className="section-title mb-4">Humidity (%)</h3>
             <ResponsiveContainer width="100%" height={160}>
               <AreaChart data={weatherObserved}>
@@ -130,7 +130,7 @@ export default function WeatherScreen() {
         <p className="text-xs text-muted-foreground mb-4">Projected meteorological data — source: IMD extended range forecast</p>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="section-card p-5">
+          <div className="section-card p-3">
             <h3 className="section-title mb-4">Forecast Rainfall (mm)</h3>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={weatherForecast}>
@@ -143,7 +143,7 @@ export default function WeatherScreen() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="section-card p-5">
+          <div className="section-card p-3">
             <h3 className="section-title mb-4">Forecast Temperature (°C)</h3>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={weatherForecast}>
@@ -156,7 +156,7 @@ export default function WeatherScreen() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="section-card p-5">
+          <div className="section-card p-3">
             <h3 className="section-title mb-4">Forecast Humidity (%)</h3>
             <ResponsiveContainer width="100%" height={160}>
               <AreaChart data={weatherForecast}>

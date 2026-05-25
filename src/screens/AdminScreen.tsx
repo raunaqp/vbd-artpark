@@ -568,7 +568,7 @@ function ArchiveTable({ districts, stateLabel }: { districts: string[]; stateLab
               <tr key={r.run_date} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="py-2 px-3 font-medium">{r.run_date}</td>
                 <td className="py-2 px-3 text-muted-foreground">{r.window_start} → {r.window_end}</td>
-                <td className="py-2 px-3">{r.districts_covered}</td>
+                <td className="py-2 px-3">{districts.length}</td>
                 <td className="py-2 px-3">{r.model_version}</td>
                 <td className="py-2 px-3 text-right">
                   <button onClick={() => downloadRun(r.run_date)} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-input hover:bg-muted/50">

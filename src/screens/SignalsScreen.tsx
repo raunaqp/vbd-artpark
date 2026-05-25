@@ -145,55 +145,56 @@ function DirIcon({ d, severity }: { d: Direction; severity: Severity }) {
   return <Icon className={`h-3.5 w-3.5 ${color}`} />;
 }
 
-// ──────────────────────────── Real-world source attribution ────────────────────────────
-// Indian VBD surveillance ecosystem: municipal entomology wings, state DVBDCP/IDSP cells,
-// IMD regional met centres, ICMR institutes, urban local bodies. Mapped per state + signal type.
-const SOURCE_MAP: Record<string, Record<SignalType, string[]>> = {
-  Karnataka: {
-    VECTOR:       ["BBMP Vector Control Wing", "DVBDCP Karnataka — Entomology Cell", "BBMP Health Dept, Domestic Breeding Checkers"],
-    CLIMATE:      ["IMD Regional Meteorological Centre, Bengaluru", "Karnataka State Natural Disaster Monitoring Centre (KSNDMC)"],
-    FIELD:        ["BBMP Zonal Health Officer report", "District Vector Borne Disease Control Officer (DVBDCO), Mysuru", "BBMP field surveillance team"],
-    OPERATIONS:   ["BBMP Anti-Larval Operations Unit", "Karnataka Health & Family Welfare Dept — Vector Control"],
-    MEDIA:        ["The Hindu — Bengaluru bureau", "Deccan Herald health desk", "Times of India — Karnataka"],
-    SURVEILLANCE: ["IDSP Karnataka State Surveillance Unit", "NCDC IHIP — Karnataka feed", "PHC line-list, Dakshina Kannada DHO"],
-  },
-  Odisha: {
-    VECTOR:       ["BMC Vector Control Wing, Bhubaneswar", "DVBDCP Odisha — Entomology Cell", "RMRC Bhubaneswar (ICMR) — vector unit"],
-    CLIMATE:      ["IMD Regional Meteorological Centre, Bhubaneswar", "Odisha State Disaster Management Authority (OSDMA)"],
-    FIELD:        ["District Vector Borne Disease Control Officer, Khordha", "BMC field surveillance team", "CDMO Cuttack — field report"],
-    OPERATIONS:   ["BMC Anti-Larval Operations Unit", "Odisha Health & Family Welfare Dept — Vector Control"],
-    MEDIA:        ["The New Indian Express — Bhubaneswar", "Sambad health bureau", "OdishaTV news desk"],
-    SURVEILLANCE: ["IDSP Odisha State Surveillance Unit", "NCDC IHIP — Odisha feed", "RMRC Bhubaneswar surveillance report"],
-  },
-  "Andhra Pradesh": {
-    VECTOR:       ["GVMC Vector Control Wing, Visakhapatnam", "DVBDCP Andhra Pradesh — Entomology Cell", "VMC Vector Control Wing, Vijayawada"],
-    CLIMATE:      ["IMD Regional Meteorological Centre, Amaravati", "AP State Disaster Management Authority (APSDMA)"],
-    FIELD:        ["District Vector Borne Disease Control Officer, Krishna", "GVMC field surveillance team", "DM&HO East Godavari — field report"],
-    OPERATIONS:   ["GVMC Anti-Larval Operations Unit", "AP Health, Medical & Family Welfare Dept — Vector Control"],
-    MEDIA:        ["The Hindu — Vijayawada bureau", "Eenadu health desk", "Deccan Chronicle — AP"],
-    SURVEILLANCE: ["IDSP Andhra Pradesh State Surveillance Unit", "NCDC IHIP — AP feed", "PHC line-list, Vizag DMHO"],
-  },
+// ──────────────────────────── News-media source attribution ────────────────────────────
+// All field-intelligence cards are surfaced via news reports. Real Indian news outlets
+// (national, regional and city desks) mapped per state. Disease appended for realism.
+const NEWS_OUTLETS: Record<string, string[]> = {
+  Karnataka: [
+    "The Hindu — Bengaluru",
+    "Deccan Herald — Health",
+    "The Times of India — Bengaluru",
+    "The Indian Express — Karnataka",
+    "Bangalore Mirror",
+    "The New Indian Express — Bengaluru",
+    "Hindustan Times — Karnataka",
+    "News18 Kannada",
+  ],
+  Odisha: [
+    "The New Indian Express — Bhubaneswar",
+    "The Times of India — Bhubaneswar",
+    "The Hindu — Odisha",
+    "OdishaTV",
+    "Sambad English",
+    "Pragativadi",
+    "Hindustan Times — Odisha",
+    "The Indian Express — Odisha",
+  ],
+  "Andhra Pradesh": [
+    "The Hindu — Vijayawada",
+    "Deccan Chronicle — AP",
+    "The Times of India — Amaravati",
+    "The New Indian Express — Vijayawada",
+    "Eenadu English",
+    "The Hans India",
+    "Sakshi Post",
+    "News18 Andhra Pradesh",
+  ],
 };
 
-// Disease-specific source qualifier — appended where it adds meaning (e.g. malaria → NVBDCP malaria cell).
-function diseaseQualifier(disease: string): string | null {
-  const d = disease.toLowerCase();
-  if (d.includes("malaria")) return "NCVBDC Malaria Cell";
-  if (d.includes("chikungunya")) return "NCVBDC Chikungunya Cell";
-  if (d.includes("dengue")) return "NCVBDC Dengue Cell";
-  return null;
-}
+const HEADLINE_SLUG: Record<SignalType, string> = {
+  VECTOR:       "rising vector activity",
+  CLIMATE:      "weather-driven outbreak risk",
+  FIELD:        "ground surveillance report",
+  OPERATIONS:   "vector control operations",
+  MEDIA:        "community health concern",
+  SURVEILLANCE: "surveillance coverage gaps",
+};
 
 function pickSource(state: string, type: SignalType, disease: string, seed: number): string {
-  const stateMap = SOURCE_MAP[state] ?? SOURCE_MAP.Karnataka;
-  const list = stateMap[type] ?? stateMap.SURVEILLANCE;
-  const base = list[seed % list.length];
-  const q = diseaseQualifier(disease);
-  // Only attach disease qualifier on surveillance/vector signals — feels natural there.
-  if (q && (type === "SURVEILLANCE" || type === "VECTOR") && seed % 2 === 0) {
-    return `${base} · ${q}`;
-  }
-  return base;
+  const list = NEWS_OUTLETS[state] ?? NEWS_OUTLETS.Karnataka;
+  const outlet = list[seed % list.length];
+  const topic = HEADLINE_SLUG[type];
+  return `${outlet} — "${disease} ${topic}" report`;
 }
 
 export default function SignalsScreen() {

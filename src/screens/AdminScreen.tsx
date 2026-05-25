@@ -130,7 +130,7 @@ export default function AdminScreen() {
       <div>
         {tab === "sections" && <SectionVisibilityPanel state={stateId} stateLabel={stateLabel} />}
         {tab === "users" && <UserManagementPanel state={stateId} adminName={currentRole.userName} />}
-        {tab === "accuracy" && <ForecastAccuracyPanel />}
+        {tab === "accuracy" && <ForecastAccuracyPanel stateId={stateId} stateLabel={stateLabel} />}
         {tab === "reports" && <MonthlyReportsPanel stateId={stateId} stateLabel={stateLabel} />}
       </div>
     </div>

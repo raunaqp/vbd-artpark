@@ -379,9 +379,36 @@ function AuditDrawer({ entries, onClose }: { entries: AuditEntry[]; onClose: () 
 // ───────────────────────── Forecast Accuracy ─────────────────────────
 type AccTab = "chart" | "metrics" | "archive";
 
-function ForecastAccuracyPanel() {
+// District → state mapping for filtering the accuracy registry by the
+// currently-selected state. Districts not listed here are treated as
+// out-of-scope and hidden from the panel.
+const ACCURACY_DISTRICT_STATE: Record<string, string> = {
+  // Karnataka
+  "Bengaluru Urban": "karnataka", "Mysuru": "karnataka", "Udupi": "karnataka",
+  "Dakshina Kannada": "karnataka", "Belagavi": "karnataka", "Tumakuru": "karnataka",
+  // Odisha
+  "Khordha": "odisha", "Cuttack": "odisha", "Puri": "odisha", "Balasore": "odisha",
+  "Sundargarh": "odisha", "Angul": "odisha", "Mayurbhanj": "odisha", "Sambalpur": "odisha",
+  // Andhra Pradesh
+  "Visakhapatnam": "andhra_pradesh", "Vijayawada": "andhra_pradesh", "Guntur": "andhra_pradesh",
+  "Krishna": "andhra_pradesh", "Kurnool": "andhra_pradesh", "East Godavari": "andhra_pradesh",
+  "NTR": "andhra_pradesh",
+};
+
+function ForecastAccuracyPanel({ stateId, stateLabel }: { stateId: string; stateLabel: string }) {
   const [tab, setTab] = useState<AccTab>("chart");
-  const districts = useMemo(() => Object.keys(FORECAST_ACCURACY), []);
+  const districts = useMemo(
+    () => Object.keys(FORECAST_ACCURACY).filter((d) => ACCURACY_DISTRICT_STATE[d] === stateId),
+    [stateId],
+  );
+
+  if (districts.length === 0) {
+    return (
+      <div className="section-card p-5 text-sm text-muted-foreground">
+        No forecast accuracy data available yet for {stateLabel}.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -400,7 +427,7 @@ function ForecastAccuracyPanel() {
 
       {tab === "chart" && <ForecastVsActual districts={districts} />}
       {tab === "metrics" && <MetricsTable districts={districts} />}
-      {tab === "archive" && <ArchiveTable />}
+      {tab === "archive" && <ArchiveTable districts={districts} stateLabel={stateLabel} />}
     </div>
   );
 }

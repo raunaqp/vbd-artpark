@@ -268,22 +268,23 @@ export function getCanonicalWeeklySeries(
   if (!districtSel) {
     const districts = Object.values(MOCK_DATASET).filter((d) => d.state === stateLabel);
     const len = districts[0]?.weekly_total.length ?? 0;
-    return Array.from({ length: len }, (_, i) => districts.reduce((s, d) => s + (d.weekly_total[i] ?? 0), 0));
+    const arr = Array.from({ length: len }, (_, i) => districts.reduce((s, d) => s + (d.weekly_total[i] ?? 0), 0));
+    return scaleArr(stateLabel, arr);
   }
   const d = MOCK_DATASET[districtSel];
   if (!d) return [];
-  if (!blockSel) return d.weekly_total;
+  if (!blockSel) return scaleArr(stateLabel, d.weekly_total);
   const muni = d.municipalities.find((m) => m.name === blockSel);
   if (muni) {
-    if (!wardSel) return muni.weekly;
-    return muni.wards.find((w) => w.name === wardSel)?.weekly ?? muni.weekly;
+    if (!wardSel) return scaleArr(stateLabel, muni.weekly);
+    return scaleArr(stateLabel, muni.wards.find((w) => w.name === wardSel)?.weekly ?? muni.weekly);
   }
   const blk = d.blocks.find((b) => b.name === blockSel);
   if (blk) {
-    if (!wardSel) return blk.weekly;
-    return blk.villages.find((v) => v.name === wardSel)?.weekly ?? blk.weekly;
+    if (!wardSel) return scaleArr(stateLabel, blk.weekly);
+    return scaleArr(stateLabel, blk.villages.find((v) => v.name === wardSel)?.weekly ?? blk.weekly);
   }
-  return d.weekly_total;
+  return scaleArr(stateLabel, d.weekly_total);
 }
 
 // ──────────────── Per-screen converters ────────────────

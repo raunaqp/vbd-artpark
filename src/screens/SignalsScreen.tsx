@@ -172,42 +172,64 @@ export default function SignalsScreen() {
   const newsAlerts = getNewsAlerts(appliedFilters);
   const fieldReports: FieldReport[] = useMemo(() => {
     if (!newsAlerts.length) return [];
-    const enrichment: { bullets: string[]; implication: string; forecastLink: string }[] = [
+    const enrichment: { signalType: SignalType; bullets: string[]; implication: string; alignment: Alignment }[] = [
       {
+        signalType: "VECTOR",
         bullets: [
-          "repeated larval positivity in construction corridors",
           "elevated BI across 3 wards",
+          "repeated larval positivity in construction corridors",
           "rainfall accumulation above seasonal trend",
           "emerging fever clusters detected",
         ],
-        implication: "Targeted fogging and repeat surveys recommended.",
-        forecastLink: "Signals strongly align with projected hotspot escalation.",
+        implication: "Targeted fogging and repeat surveillance recommended.",
+        alignment: "STRONG",
       },
       {
+        signalType: "CLIMATE",
         bullets: [
           "sustained increase in case growth",
           "vector activity rising in coastal blocks",
           "moderate rainfall anomaly detected",
         ],
-        implication: "Increase larval surveillance and source reduction activities.",
-        forecastLink: "Moderate overlap with forecasted 2-week risk escalation.",
+        implication: "Increase larval surveillance in coastal blocks.",
+        alignment: "MODERATE",
       },
       {
+        signalType: "FIELD",
         bullets: [
           "waterlogging reported in low-lying wards",
           "stagnant water near construction sites",
           "container breeding signal rising",
         ],
         implication: "Source reduction drive and ward-level inspection required.",
-        forecastLink: "Supports projected risk in adjacent wards.",
+        alignment: "STRONG",
       },
       {
+        signalType: "SURVEILLANCE",
         bullets: [
           "delayed line-list submissions from 2 PHCs",
           "low surveillance coverage in tribal blocks",
         ],
         implication: "Reinforce data discipline; assign supervisory visits.",
-        forecastLink: "Reduces confidence in low-risk classification for these blocks.",
+        alignment: "WEAK",
+      },
+      {
+        signalType: "OPERATIONS",
+        bullets: [
+          "fogging cycle gap in 2 urban wards",
+          "anti-larval staff shortage reported",
+        ],
+        implication: "Reallocate vector control teams to priority wards.",
+        alignment: "MODERATE",
+      },
+      {
+        signalType: "MEDIA",
+        bullets: [
+          "local media flags rising fever cases",
+          "community concern in 2 colonies",
+        ],
+        implication: "Issue advisory and verify with PHC line-list.",
+        alignment: "MODERATE",
       },
     ];
     return newsAlerts.slice(0, 6).map((n, idx) => {
@@ -215,11 +237,12 @@ export default function SignalsScreen() {
       return {
         id: n.id,
         severity: n.severity,
+        signalType: e.signalType,
         district: n.district,
         headline: n.headline,
         bullets: e.bullets,
         implication: e.implication,
-        forecastLink: e.forecastLink,
+        alignment: e.alignment,
         source: n.source,
         date: n.date,
       };

@@ -534,10 +534,12 @@ function MetricsTable({ districts }: { districts: string[] }) {
   );
 }
 
-function ArchiveTable() {
+function ArchiveTable({ districts, stateLabel }: { districts: string[]; stateLabel: string }) {
+  const districtSet = useMemo(() => new Set(districts), [districts]);
   const downloadRun = (runDate: string) => {
     const lines = ["district,week,predicted,actual"];
     Object.entries(FORECAST_ACCURACY).forEach(([d, info]) => {
+      if (!districtSet.has(d)) return;
       info.history.forEach((h) => {
         lines.push(`${d},${h.week_ending},${h.predicted},${h.actual}`);
       });

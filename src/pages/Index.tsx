@@ -16,6 +16,7 @@ import { DiseaseProvider } from "@/contexts/DiseaseContext";
 import { StateProvider } from "@/contexts/StateContext";
 import { BlockVisibilityProvider } from "@/contexts/BlockVisibilityContext";
 import QADebugPanel from "@/components/QADebugPanel";
+import AiCopilot from "@/components/AiCopilot";
 
 const screens: Record<TabId, React.ComponentType<{ onNavigate?: (tab: TabId) => void }>> = {
   overview: OverviewScreen,
@@ -41,9 +42,12 @@ function Router() {
 
   const Screen = screens[activeTab];
   return (
-    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
-      <Screen onNavigate={setActiveTab} />
-    </DashboardLayout>
+    <>
+      <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+        <Screen onNavigate={setActiveTab} />
+      </DashboardLayout>
+      <AiCopilot activeTab={activeTab} />
+    </>
   );
 }
 

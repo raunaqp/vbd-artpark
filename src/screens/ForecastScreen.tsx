@@ -189,6 +189,8 @@ export default function ForecastScreen() {
         <TablePagination page={page} pageSize={PAGE_SIZE} total={predictions.length} onPageChange={setPage} />
       </div>
       )}
+
+      <WeeklyFieldResponseSection />
     </div>
   );
 }

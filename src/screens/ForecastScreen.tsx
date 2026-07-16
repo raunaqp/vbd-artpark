@@ -12,6 +12,7 @@ import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import { latestEpiWeek, epiWeekRange } from "@/lib/epiWeek";
+import WeeklyFieldResponseSection from "@/features/weeklyResponse/WeeklyFieldResponseSection";
 
 const PAGE_SIZE = 20;
 

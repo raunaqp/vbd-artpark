@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ACTION_TYPES, NO_ACTIVITY_REASONS, makeRecordId } from "./types";
+import { ACTION_TYPES, NO_ACTIVITY_REASONS, makeRecordId, reportingStatusFor } from "./types";
 import type { AreaAggregate } from "./aggregation";
 import type { ActionType, FieldActivityStatus, NoActivityReason, WeeklyResponseRecord } from "./types";
 import { useRole } from "@/contexts/RoleContext";
@@ -17,20 +17,23 @@ interface Props {
   stateId: string;
   epiWeek: string;
   weekEnding: string;
+  forecastGeneratedAt: string;
   onSave: (rec: WeeklyResponseRecord) => void;
   historyRecords: WeeklyResponseRecord[]; // records for this row across recent weeks
 }
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId, epiWeek, weekEnding, onSave, historyRecords }: Props) {
+const riskLabel = (r: string) => r === "no_data" ? "No forecast" : r.charAt(0).toUpperCase() + r.slice(1);
+
+export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId, epiWeek, weekEnding, forecastGeneratedAt, onSave, historyRecords }: Props) {
   const { currentRole } = useRole();
   const existing = agg?.primary;
 
   const [status, setStatus] = useState<FieldActivityStatus>("yes");
   const [activityDate, setActivityDate] = useState<string>(todayIso());
   const [personnel, setPersonnel] = useState<string>("");
-  const [localities, setLocalities] = useState<string>("");
+  const [areasCovered, setAreasCovered] = useState<string>("");
   const [actions, setActions] = useState<ActionType[]>([]);
   const [sourceRed, setSourceRed] = useState<string>("");
   const [larvalCount, setLarvalCount] = useState<string>("");
@@ -48,7 +51,7 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
       setStatus(existing.field_activity_status);
       setActivityDate(existing.activity_date || todayIso());
       setPersonnel(existing.personnel_deployed?.toString() || "");
-      setLocalities(existing.localities_visited || "");
+      setAreasCovered(existing.areas_covered?.toString() || "");
       setActions(existing.actions_taken || []);
       setSourceRed(existing.source_reduction_count?.toString() || "");
       setLarvalCount(existing.larval_surveys_count?.toString() || "");
@@ -59,7 +62,7 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
       setNoReason(existing.no_activity_reason || "No action required this week");
       setNoReasonOther(existing.no_activity_reason_other || "");
     } else {
-      setStatus("yes"); setActivityDate(todayIso()); setPersonnel(""); setLocalities("");
+      setStatus("yes"); setActivityDate(todayIso()); setPersonnel(""); setAreasCovered("");
       setActions([]); setSourceRed(""); setLarvalCount(""); setFoggingCount("");
       setConstrCount(""); setIecCount(""); setNotes(""); setNoReason("No action required this week"); setNoReasonOther("");
     }
@@ -82,20 +85,24 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
 
   if (!agg) return null;
   const row = agg.row;
+  const forecastRef = `FR-${epiWeek}`;
+  const forecastGen = existing?.forecast_generated_at || forecastGeneratedAt;
 
   const handleSave = () => {
     if (status === "yes" && !activityDate) { setError("Activity date is required."); return; }
-    if (status === "yes" && requiresSourceReductionCount && !sourceRed) { setError("Source reduction count is required."); return; }
+    if (status === "yes" && requiresSourceReductionCount && !sourceRed) { setError("Source reduction count is required when Source reduction is selected."); return; }
     if (status === "no" && noReason === "Other" && !noReasonOther.trim()) { setError("Please specify the reason."); return; }
 
     const now = new Date().toISOString();
     const geographyId = row.key;
     const id = makeRecordId(geographyId, epiWeek);
+    const isYes = status === "yes";
+    const isNo = status === "no";
     const rec: WeeklyResponseRecord = {
       id,
       epidemiological_week: epiWeek,
-      forecast_ref: `FR-${epiWeek}`,
-      forecast_generated_at: existing?.forecast_generated_at || weekEnding,
+      forecast_ref: forecastRef,
+      forecast_generated_at: forecastGen,
       risk_level_at_capture: row.risk,
       state: stateId,
       district: row.district || "",
@@ -105,24 +112,24 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
       geography_id: geographyId,
       geography_name: row.name,
       field_activity_status: status,
-      activity_date: status === "yes" ? activityDate : undefined,
-      personnel_deployed: status === "yes" && personnel ? Number(personnel) : undefined,
-      localities_visited: status === "yes" ? localities || undefined : undefined,
-      actions_taken: status === "yes" ? actions : undefined,
-      source_reduction_count: status === "yes" && requiresSourceReductionCount ? Number(sourceRed) : undefined,
-      larval_surveys_count: status === "yes" && actions.includes("Larval surveillance") && larvalCount ? Number(larvalCount) : undefined,
-      fogging_operations_count: status === "yes" && actions.includes("Fogging / space spraying") && foggingCount ? Number(foggingCount) : undefined,
-      construction_sites_inspected_count: status === "yes" && actions.includes("Construction-site inspection") && constrCount ? Number(constrCount) : undefined,
-      iec_activities_count: status === "yes" && actions.includes("Community awareness / IEC") && iecCount ? Number(iecCount) : undefined,
-      no_activity_reason: status === "no" ? noReason : undefined,
-      no_activity_reason_other: status === "no" && noReason === "Other" ? noReasonOther : undefined,
+      reporting_status: reportingStatusFor(status),
+      activity_date: isYes ? activityDate : undefined,
+      personnel_deployed: isYes && personnel ? Number(personnel) : undefined,
+      areas_covered: isYes && areasCovered ? Number(areasCovered) : undefined,
+      actions_taken: isYes ? actions : undefined,
+      source_reduction_count: isYes && requiresSourceReductionCount ? Number(sourceRed) : undefined,
+      larval_surveys_count: isYes && actions.includes("Larval surveillance") && larvalCount ? Number(larvalCount) : undefined,
+      fogging_operations_count: isYes && actions.includes("Fogging / space spraying") && foggingCount ? Number(foggingCount) : undefined,
+      construction_sites_inspected_count: isYes && actions.includes("Construction-site inspection") && constrCount ? Number(constrCount) : undefined,
+      iec_activities_count: isYes && actions.includes("Community awareness / IEC") && iecCount ? Number(iecCount) : undefined,
+      no_activity_reason: isNo ? noReason : undefined,
+      no_activity_reason_other: isNo && noReason === "Other" ? noReasonOther : undefined,
       notes: notes || undefined,
       logged_by_user_id: existing?.logged_by_user_id || currentRole.id,
       logged_by_name: existing?.logged_by_name || currentRole.userName,
       logged_by_role: existing?.logged_by_role || currentRole.roleName,
       recorded_at: existing?.recorded_at || now,
       updated_at: now,
-      reporting_status: status === "pending" ? "draft" : "reported",
     };
     onSave(rec);
     onOpenChange(false);
@@ -132,15 +139,18 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{existing ? "Edit weekly response" : "Record weekly response"}</SheetTitle>
+          <SheetTitle>{existing ? "Edit weekly response" : "Log weekly response"}</SheetTitle>
         </SheetHeader>
 
+        {/* Read-only prefill (auto-filled from scope + forecast + user) */}
         <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs space-y-0.5">
           <div><span className="text-muted-foreground">Area:</span> <span className="font-medium">{row.name}</span></div>
           <div><span className="text-muted-foreground">Geography:</span> {[row.district, row.block, row.ward].filter(Boolean).join(" › ")}</div>
-          <div><span className="text-muted-foreground">Epi week:</span> {epiWeek}</div>
-          <div><span className="text-muted-foreground">Forecast risk:</span> {row.risk === "unknown" ? "No forecast" : row.risk}</div>
-          <div><span className="text-muted-foreground">Reporting officer:</span> {currentRole.userName} · {currentRole.roleName}</div>
+          <div><span className="text-muted-foreground">Epidemiological week:</span> {epiWeek}</div>
+          <div><span className="text-muted-foreground">Forecast reference:</span> {forecastRef}</div>
+          <div><span className="text-muted-foreground">Forecast generated:</span> {forecastGen}</div>
+          <div><span className="text-muted-foreground">Forecast risk at capture:</span> {riskLabel(row.risk)}</div>
+          <div><span className="text-muted-foreground">Logged by:</span> {currentRole.userName} · {currentRole.roleName}</div>
           {existing && <div><span className="text-muted-foreground">Recorded:</span> {existing.recorded_at?.slice(0,10)} · Updated: {existing.updated_at?.slice(0,10)}</div>}
         </div>
 
@@ -148,7 +158,7 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
           <div>
             <Label className="text-sm">Was any field activity conducted in this area this week? <span className="text-risk-high">*</span></Label>
             <div className="mt-2 flex gap-2">
-              {(["yes", "no", "pending"] as const).map((s) => (
+              {(["yes", "no", "report_pending"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatus(s)}
@@ -163,17 +173,18 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
           {status === "yes" && (
             <>
               <div>
-                <Label htmlFor="activityDate" className="text-sm">When was the field activity conducted? <span className="text-risk-high">*</span></Label>
+                <Label htmlFor="activityDate" className="text-sm">Activity date <span className="text-risk-high">*</span></Label>
                 <Input id="activityDate" type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} className="mt-1" />
               </div>
-              <div>
-                <Label htmlFor="personnel" className="text-sm">How many field personnel visited?</Label>
-                <Input id="personnel" type="number" min={0} value={personnel} onChange={(e) => setPersonnel(e.target.value)} className="mt-1" />
-              </div>
-              <div>
-                <Label htmlFor="localities" className="text-sm">Which localities or areas were visited?</Label>
-                <Input id="localities" value={localities} onChange={(e) => setLocalities(e.target.value)}
-                  placeholder="Example: Whitefield Main Road, Ward 84 construction sites" className="mt-1" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="personnel" className="text-sm">Personnel deployed</Label>
+                  <Input id="personnel" type="number" min={0} value={personnel} onChange={(e) => setPersonnel(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="areasCovered" className="text-sm">Areas covered</Label>
+                  <Input id="areasCovered" type="number" min={0} value={areasCovered} onChange={(e) => setAreasCovered(e.target.value)} className="mt-1" />
+                </div>
               </div>
               <div>
                 <Label className="text-sm">Actions taken</Label>
@@ -188,7 +199,7 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
               </div>
               {requiresSourceReductionCount && (
                 <div>
-                  <Label htmlFor="src" className="text-sm">Number of source reduction activities completed <span className="text-risk-high">*</span></Label>
+                  <Label htmlFor="src" className="text-sm">Source reduction activities completed <span className="text-risk-high">*</span></Label>
                   <Input id="src" type="number" min={0} value={sourceRed} onChange={(e) => setSourceRed(e.target.value)} className="mt-1" />
                 </div>
               )}
@@ -233,14 +244,14 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
           )}
 
           <div>
-            <Label htmlFor="notes" className="text-sm">Additional notes</Label>
+            <Label htmlFor="notes" className="text-sm">Notes (optional)</Label>
             <Textarea id="notes" maxLength={300} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1" />
             <div className="text-[10px] text-muted-foreground text-right">{notes.length}/300</div>
           </div>
 
           {history.length > 0 && (
             <div>
-              <div className="text-sm font-medium mb-1.5">Previous Weekly Responses</div>
+              <div className="text-sm font-medium mb-1.5">Previous weekly responses</div>
               <div className="space-y-1.5">
                 {history.map((h) => (
                   <div key={h.id} className="rounded-md border border-border p-2 text-xs">
@@ -250,7 +261,7 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
                     </div>
                     <div className="text-muted-foreground mt-0.5">
                       {h.field_activity_status === "yes"
-                        ? `Yes · ${h.personnel_deployed || 0} personnel · ${h.actions_taken?.length || 0} actions · SR ${h.source_reduction_count || 0}`
+                        ? `Yes · ${h.personnel_deployed || 0} personnel · ${h.areas_covered || 0} areas · ${h.actions_taken?.length || 0} actions`
                         : h.field_activity_status === "no"
                           ? `No · ${h.no_activity_reason || ""}`
                           : "Report pending"}

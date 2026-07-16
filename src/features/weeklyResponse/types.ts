@@ -1,6 +1,16 @@
-export type FieldActivityStatus = "yes" | "no" | "pending";
-export type ReportingStatus = "reported" | "not_reported" | "draft";
-export type RiskLevel = "high" | "moderate" | "low" | "unknown";
+// Field activity answer to "Was any field activity conducted this week?"
+export type FieldActivityStatus = "yes" | "no" | "report_pending";
+
+// Derived reporting status persisted with each record.
+//   completed      → field activity = yes (with data)
+//   no_activity    → field activity = no (with a reason)
+//   report_pending → officer marked the week as report pending
+//   draft          → reserved for future partial saves (not produced by the drawer today)
+export type ReportingStatus = "completed" | "no_activity" | "report_pending" | "draft";
+
+// Forecast risk captured at the moment the response was logged.
+// "no_data" = the area had no forecast (kept out of the priority worklist).
+export type RiskLevel = "high" | "moderate" | "low" | "no_data";
 
 export const ACTION_TYPES = [
   "Source reduction",
@@ -30,9 +40,11 @@ export type GeographyLevel = "district" | "block" | "municipality" | "ward" | "v
 export interface WeeklyResponseRecord {
   id: string;
   epidemiological_week: string;
+
   forecast_ref: string;
   forecast_generated_at: string;
   risk_level_at_capture: RiskLevel;
+
   state: string;
   district: string;
   block_or_municipality: string | null;
@@ -40,25 +52,39 @@ export interface WeeklyResponseRecord {
   geography_level: GeographyLevel;
   geography_id: string;
   geography_name: string;
+
   field_activity_status: FieldActivityStatus;
+  reporting_status: ReportingStatus;
+
   activity_date?: string;
   personnel_deployed?: number;
+  areas_covered?: number;
+  /** Optional free-text locality notes — never a primary metric or table column. */
   localities_visited?: string;
+
   actions_taken?: ActionType[];
+
   source_reduction_count?: number;
   larval_surveys_count?: number;
   fogging_operations_count?: number;
   construction_sites_inspected_count?: number;
   iec_activities_count?: number;
+
   no_activity_reason?: NoActivityReason;
   no_activity_reason_other?: string;
   notes?: string;
+
   logged_by_user_id: string;
   logged_by_name: string;
   logged_by_role: string;
+
   recorded_at: string;
   updated_at: string;
-  reporting_status: ReportingStatus;
+}
+
+/** Map a field-activity answer to the persisted reporting status. */
+export function reportingStatusFor(status: FieldActivityStatus): ReportingStatus {
+  return status === "yes" ? "completed" : status === "no" ? "no_activity" : "report_pending";
 }
 
 export function makeGeographyId(

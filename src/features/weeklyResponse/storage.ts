@@ -1,7 +1,7 @@
 // LocalStorage abstraction — swap for API later without UI rewrites.
 import type { WeeklyResponseRecord } from "./types";
 
-const KEY = "prism_weekly_response_v1";
+const KEY = "prism_weekly_response_v2";
 
 export interface WeeklyResponseStore {
   getAll(): WeeklyResponseRecord[];

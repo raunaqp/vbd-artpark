@@ -12,7 +12,9 @@ import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import { latestEpiWeek, epiWeekRange } from "@/lib/epiWeek";
-import WeeklyFieldResponseSection from "@/features/weeklyResponse/WeeklyFieldResponseSection";
+import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
+import PriorityAreasSection from "@/features/weeklyResponse/PriorityAreasSection";
+import WeeklyOperationalResponseSection from "@/features/weeklyResponse/WeeklyOperationalResponseSection";
 
 const PAGE_SIZE = 20;
 
@@ -57,7 +59,7 @@ export default function ForecastScreen() {
         lines: riskForecast.map((f, i) => `${f.label}: ${f.cases} projected cases · ${f.riskLabel ?? f.risk}`),
       },
       {
-        title: "Outbreak Prediction Table",
+        title: "Forecast Details",
         type: "table" as const,
         headers: [areaLabel, "Outbreak Prob", "Forecast Risk", "Window", "Drivers"],
         rows: predictions.map((r) => [r.area, `${r.probability}%`, String(r.riskLabel ?? r.risk), r.expectedWeek, r.signal]),
@@ -107,16 +109,25 @@ export default function ForecastScreen() {
         <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
       )}
 
-      {show("forecast_map") && (
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="section-title">Forecasted Risk Map — {forecastRange}</h3>
-          <span className="text-[11px] text-muted-foreground">Colors reflect <strong>predicted</strong> outbreak risk · Click areas to drill down</span>
-        </div>
-        <DashboardMap height="380px" mode="forecast" />
-      </div>
-      )}
+      {/* 2–4. Operational layer: Priority Areas → Forecast Risk Map → Weekly Operational Response.
+          Wrapped in a provider so both operational sections share one reporting week + drawer. */}
+      <WeeklyResponseProvider>
+        <PriorityAreasSection />
 
+        {show("forecast_map") && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="section-title">Forecast Risk Map — {forecastRange}</h3>
+            <span className="text-[11px] text-muted-foreground">Colors reflect <strong>predicted</strong> outbreak risk · Click areas to drill down</span>
+          </div>
+          <DashboardMap height="380px" mode="forecast" />
+        </div>
+        )}
+
+        <WeeklyOperationalResponseSection />
+      </WeeklyResponseProvider>
+
+      {/* 5. Forecast Details — technical outputs supporting the operational recommendations above. */}
       {show("actual_vs_predicted") && isAnalyst && (
         <div className="section-card p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -145,8 +156,8 @@ export default function ForecastScreen() {
 
       {show("outbreak_table") && (
       <div className="section-card p-5">
-        <h3 className="section-title mb-1">{diseaseName} Outbreak Prediction Table</h3>
-        <p className="text-xs text-muted-foreground mb-4">Sorted by probability of outbreak · highest first · Showing: {areaLabel} level</p>
+        <h3 className="section-title mb-1">Forecast Details</h3>
+        <p className="text-xs text-muted-foreground mb-4">Technical forecast outputs supporting the operational recommendations above · Sorted by probability of outbreak · Showing: {areaLabel} level</p>
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
@@ -189,8 +200,6 @@ export default function ForecastScreen() {
         <TablePagination page={page} pageSize={PAGE_SIZE} total={predictions.length} onPageChange={setPage} />
       </div>
       )}
-
-      <WeeklyFieldResponseSection />
     </div>
   );
 }

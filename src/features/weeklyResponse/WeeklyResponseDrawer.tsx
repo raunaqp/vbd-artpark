@@ -5,9 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ACTION_TYPES, NO_ACTIVITY_REASONS, makeRecordId, reportingStatusFor } from "./types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { X, Search } from "lucide-react";
+import { ACTIVITY_TAXONOMY } from "@/data/mock_dataset";
+import { getWardsUnderSelection, getActiveDisease } from "@/data/canonical";
+import { makeRecordId } from "./types";
 import type { AreaAggregate } from "./aggregation";
-import type { ActionType, FieldActivityStatus, NoActivityReason, WeeklyResponseRecord } from "./types";
+import type { WeeklyResponseRecord } from "./types";
 import { useRole } from "@/contexts/RoleContext";
 
 interface Props {
@@ -23,81 +27,82 @@ interface Props {
 }
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const riskLabel = (r: string) => (r === "no_data" ? "No forecast" : r.charAt(0).toUpperCase() + r.slice(1));
 
-const riskLabel = (r: string) => r === "no_data" ? "No forecast" : r.charAt(0).toUpperCase() + r.slice(1);
-
-export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId, epiWeek, weekEnding, forecastGeneratedAt, onSave, historyRecords }: Props) {
+export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId, epiWeek, forecastGeneratedAt, onSave }: Props) {
   const { currentRole } = useRole();
   const existing = agg?.primary;
 
-  const [status, setStatus] = useState<FieldActivityStatus>("yes");
   const [activityDate, setActivityDate] = useState<string>(todayIso());
+  const [activities, setActivities] = useState<string[]>([]);
+  const [wards, setWards] = useState<string[]>([]);
+  const [wardSearch, setWardSearch] = useState<string>("");
   const [personnel, setPersonnel] = useState<string>("");
-  const [areasCovered, setAreasCovered] = useState<string>("");
-  const [actions, setActions] = useState<ActionType[]>([]);
-  const [sourceRed, setSourceRed] = useState<string>("");
-  const [larvalCount, setLarvalCount] = useState<string>("");
-  const [foggingCount, setFoggingCount] = useState<string>("");
-  const [constrCount, setConstrCount] = useState<string>("");
-  const [iecCount, setIecCount] = useState<string>("");
+  const [designation, setDesignation] = useState<string>("");
+  const [households, setHouseholds] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
-  const [noReason, setNoReason] = useState<NoActivityReason>("No action required this week");
-  const [noReasonOther, setNoReasonOther] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
+  const row = agg?.row;
+
+  // Wards/villages available for this geography. `parent` is shown as muted context.
+  const wardOptions = useMemo(() => {
+    if (!row) return [];
+    return getWardsUnderSelection(getActiveDisease(), stateId, row.district || undefined, row.block || undefined, row.ward || undefined);
+  }, [row, stateId]);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open || !row) return;
     if (existing) {
-      setStatus(existing.field_activity_status);
       setActivityDate(existing.activity_date || todayIso());
+      setActivities(existing.activities_performed || []);
+      setWards(existing.wards_affected || (row.ward ? [row.ward] : []));
       setPersonnel(existing.personnel_deployed?.toString() || "");
-      setAreasCovered(existing.areas_covered?.toString() || "");
-      setActions(existing.actions_taken || []);
-      setSourceRed(existing.source_reduction_count?.toString() || "");
-      setLarvalCount(existing.larval_surveys_count?.toString() || "");
-      setFoggingCount(existing.fogging_operations_count?.toString() || "");
-      setConstrCount(existing.construction_sites_inspected_count?.toString() || "");
-      setIecCount(existing.iec_activities_count?.toString() || "");
+      setDesignation(existing.personnel_designation || "");
+      setHouseholds(existing.households_covered?.toString() || "");
       setNotes(existing.notes || "");
-      setNoReason(existing.no_activity_reason || "No action required this week");
-      setNoReasonOther(existing.no_activity_reason_other || "");
     } else {
-      setStatus("yes"); setActivityDate(todayIso()); setPersonnel(""); setAreasCovered("");
-      setActions([]); setSourceRed(""); setLarvalCount(""); setFoggingCount("");
-      setConstrCount(""); setIecCount(""); setNotes(""); setNoReason("No action required this week"); setNoReasonOther("");
+      setActivityDate(todayIso());
+      setActivities([]);
+      // At ward level, preselect that ward; the officer can add more siblings.
+      setWards(row.ward ? [row.ward] : []);
+      setPersonnel("");
+      setDesignation("");
+      setHouseholds("");
+      setNotes("");
     }
+    setWardSearch("");
     setError(null);
-  }, [open, existing]);
+  }, [open, existing, row]);
 
-  const toggleAction = (a: ActionType) => {
-    setActions((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
-  };
+  const toggleActivity = (a: string) =>
+    setActivities((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]));
+  const toggleWard = (w: string) =>
+    setWards((prev) => (prev.includes(w) ? prev.filter((x) => x !== w) : [...prev, w]));
 
-  const requiresSourceReductionCount = actions.includes("Source reduction");
+  const filteredWardOptions = useMemo(() => {
+    const q = wardSearch.trim().toLowerCase();
+    if (!q) return wardOptions;
+    return wardOptions.filter((o) => o.ward.toLowerCase().includes(q) || o.parent.toLowerCase().includes(q));
+  }, [wardOptions, wardSearch]);
 
-  const history = useMemo(() => {
-    if (!agg) return [];
-    return historyRecords
-      .filter((r) => r.geography_id === agg.row.key && r.epidemiological_week !== epiWeek)
-      .sort((a, b) => b.epidemiological_week.localeCompare(a.epidemiological_week))
-      .slice(0, 4);
-  }, [historyRecords, agg, epiWeek]);
+  const parentOf = (ward: string) => wardOptions.find((o) => o.ward === ward)?.parent;
 
-  if (!agg) return null;
-  const row = agg.row;
+  if (!agg || !row) return null;
   const forecastRef = `FR-${epiWeek}`;
   const forecastGen = existing?.forecast_generated_at || forecastGeneratedAt;
 
   const handleSave = () => {
-    if (status === "yes" && !activityDate) { setError("Activity date is required."); return; }
-    if (status === "yes" && requiresSourceReductionCount && !sourceRed) { setError("Source reduction count is required when Source reduction is selected."); return; }
-    if (status === "no" && noReason === "Other" && !noReasonOther.trim()) { setError("Please specify the reason."); return; }
+    if (activities.length === 0) { setError("Select at least one activity performed."); return; }
+    if (wards.length === 0) { setError("Select at least one ward where activities were performed."); return; }
+    const personnelNum = Number(personnel);
+    if (!personnel || !Number.isFinite(personnelNum) || personnelNum <= 0) { setError("Personnel deployed must be greater than 0."); return; }
+    const householdsNum = Number(households);
+    if (households === "" || !Number.isFinite(householdsNum) || householdsNum < 0) { setError("Households covered must be 0 or more."); return; }
 
     const now = new Date().toISOString();
     const geographyId = row.key;
     const id = makeRecordId(geographyId, epiWeek);
-    const isYes = status === "yes";
-    const isNo = status === "no";
     const rec: WeeklyResponseRecord = {
       id,
       epidemiological_week: epiWeek,
@@ -108,22 +113,17 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
       district: row.district || "",
       block_or_municipality: row.block,
       ward_or_village: row.ward,
-      geography_level: row.ward ? "ward" : (row.block ? "block" : "district"),
+      geography_level: row.ward ? "ward" : row.block ? "block" : "district",
       geography_id: geographyId,
       geography_name: row.name,
-      field_activity_status: status,
-      reporting_status: reportingStatusFor(status),
-      activity_date: isYes ? activityDate : undefined,
-      personnel_deployed: isYes && personnel ? Number(personnel) : undefined,
-      areas_covered: isYes && areasCovered ? Number(areasCovered) : undefined,
-      actions_taken: isYes ? actions : undefined,
-      source_reduction_count: isYes && requiresSourceReductionCount ? Number(sourceRed) : undefined,
-      larval_surveys_count: isYes && actions.includes("Larval surveillance") && larvalCount ? Number(larvalCount) : undefined,
-      fogging_operations_count: isYes && actions.includes("Fogging / space spraying") && foggingCount ? Number(foggingCount) : undefined,
-      construction_sites_inspected_count: isYes && actions.includes("Construction-site inspection") && constrCount ? Number(constrCount) : undefined,
-      iec_activities_count: isYes && actions.includes("Community awareness / IEC") && iecCount ? Number(iecCount) : undefined,
-      no_activity_reason: isNo ? noReason : undefined,
-      no_activity_reason_other: isNo && noReason === "Other" ? noReasonOther : undefined,
+      field_activity_status: "yes",
+      reporting_status: "completed",
+      activity_date: activityDate,
+      activities_performed: activities,
+      wards_affected: wards,
+      personnel_deployed: personnelNum,
+      personnel_designation: designation || undefined,
+      households_covered: householdsNum,
       notes: notes || undefined,
       logged_by_user_id: existing?.logged_by_user_id || currentRole.id,
       logged_by_name: existing?.logged_by_name || currentRole.userName,
@@ -148,129 +148,94 @@ export default function WeeklyResponseDrawer({ open, onOpenChange, agg, stateId,
           <div><span className="text-muted-foreground">Geography:</span> {[row.district, row.block, row.ward].filter(Boolean).join(" › ")}</div>
           <div><span className="text-muted-foreground">Epidemiological week:</span> {epiWeek}</div>
           <div><span className="text-muted-foreground">Forecast reference:</span> {forecastRef}</div>
-          <div><span className="text-muted-foreground">Forecast generated:</span> {forecastGen}</div>
           <div><span className="text-muted-foreground">Forecast risk at capture:</span> {riskLabel(row.risk)}</div>
           <div><span className="text-muted-foreground">Logged by:</span> {currentRole.userName} · {currentRole.roleName}</div>
-          {existing && <div><span className="text-muted-foreground">Recorded:</span> {existing.recorded_at?.slice(0,10)} · Updated: {existing.updated_at?.slice(0,10)}</div>}
         </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-5">
+          {/* 1 — Activity Date */}
           <div>
-            <Label className="text-sm">Was any field activity conducted in this area this week? <span className="text-risk-high">*</span></Label>
-            <div className="mt-2 flex gap-2">
-              {(["yes", "no", "report_pending"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatus(s)}
-                  className={`text-xs px-3 py-1.5 rounded-md border ${status === s ? "bg-primary text-primary-foreground border-primary" : "border-border bg-background"}`}
-                >
-                  {s === "yes" ? "Yes" : s === "no" ? "No" : "Report pending"}
-                </button>
+            <Label htmlFor="activityDate" className="text-sm">Activity date <span className="text-risk-high">*</span></Label>
+            <Input id="activityDate" type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} className="mt-1" />
+          </div>
+
+          {/* 2 — Activities Performed (multi-select, ordered ACTIVITY_TAXONOMY) */}
+          <div>
+            <Label className="text-sm">Activities performed <span className="text-risk-high">*</span></Label>
+            <div className="mt-2 grid grid-cols-1 gap-1.5 rounded-md border border-border p-2">
+              {ACTIVITY_TAXONOMY.map((a) => (
+                <label key={a} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox checked={activities.includes(a)} onCheckedChange={() => toggleActivity(a)} />
+                  <span>{a}</span>
+                </label>
               ))}
             </div>
+            {activities.length > 0 && <div className="text-[10px] text-muted-foreground mt-1">{activities.length} selected</div>}
           </div>
 
-          {status === "yes" && (
-            <>
-              <div>
-                <Label htmlFor="activityDate" className="text-sm">Activity date <span className="text-risk-high">*</span></Label>
-                <Input id="activityDate" type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} className="mt-1" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="personnel" className="text-sm">Personnel deployed</Label>
-                  <Input id="personnel" type="number" min={0} value={personnel} onChange={(e) => setPersonnel(e.target.value)} className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="areasCovered" className="text-sm">Areas covered</Label>
-                  <Input id="areasCovered" type="number" min={0} value={areasCovered} onChange={(e) => setAreasCovered(e.target.value)} className="mt-1" />
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm">Actions taken</Label>
-                <div className="mt-2 grid grid-cols-1 gap-1.5">
-                  {ACTION_TYPES.map((a) => (
-                    <label key={a} className="flex items-center gap-2 text-sm">
-                      <Checkbox checked={actions.includes(a)} onCheckedChange={() => toggleAction(a)} />
-                      <span>{a}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {requiresSourceReductionCount && (
-                <div>
-                  <Label htmlFor="src" className="text-sm">Source reduction activities completed <span className="text-risk-high">*</span></Label>
-                  <Input id="src" type="number" min={0} value={sourceRed} onChange={(e) => setSourceRed(e.target.value)} className="mt-1" />
-                </div>
-              )}
-              {actions.includes("Larval surveillance") && (
-                <div><Label className="text-sm">Larval surveys completed</Label>
-                  <Input type="number" min={0} value={larvalCount} onChange={(e) => setLarvalCount(e.target.value)} className="mt-1" /></div>
-              )}
-              {actions.includes("Fogging / space spraying") && (
-                <div><Label className="text-sm">Fogging operations completed</Label>
-                  <Input type="number" min={0} value={foggingCount} onChange={(e) => setFoggingCount(e.target.value)} className="mt-1" /></div>
-              )}
-              {actions.includes("Construction-site inspection") && (
-                <div><Label className="text-sm">Construction sites inspected</Label>
-                  <Input type="number" min={0} value={constrCount} onChange={(e) => setConstrCount(e.target.value)} className="mt-1" /></div>
-              )}
-              {actions.includes("Community awareness / IEC") && (
-                <div><Label className="text-sm">IEC or awareness activities completed</Label>
-                  <Input type="number" min={0} value={iecCount} onChange={(e) => setIecCount(e.target.value)} className="mt-1" /></div>
-              )}
-            </>
-          )}
-
-          {status === "no" && (
-            <>
-              <div>
-                <Label className="text-sm">Reason no field activity was conducted</Label>
-                <select
-                  value={noReason}
-                  onChange={(e) => setNoReason(e.target.value as NoActivityReason)}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {NO_ACTIVITY_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              {noReason === "Other" && (
-                <div>
-                  <Label className="text-sm">Please specify <span className="text-risk-high">*</span></Label>
-                  <Input value={noReasonOther} onChange={(e) => setNoReasonOther(e.target.value)} className="mt-1" />
-                </div>
-              )}
-            </>
-          )}
-
+          {/* 3 — Wards where activities performed (mandatory, hierarchy-aware, searchable) */}
           <div>
-            <Label htmlFor="notes" className="text-sm">Notes (optional)</Label>
-            <Textarea id="notes" maxLength={300} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1" />
-            <div className="text-[10px] text-muted-foreground text-right">{notes.length}/300</div>
-          </div>
-
-          {history.length > 0 && (
-            <div>
-              <div className="text-sm font-medium mb-1.5">Previous weekly responses</div>
-              <div className="space-y-1.5">
-                {history.map((h) => (
-                  <div key={h.id} className="rounded-md border border-border p-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{h.epidemiological_week}</span>
-                      <span className="text-muted-foreground">{h.activity_date || "—"}</span>
-                    </div>
-                    <div className="text-muted-foreground mt-0.5">
-                      {h.field_activity_status === "yes"
-                        ? `Yes · ${h.personnel_deployed || 0} personnel · ${h.areas_covered || 0} areas · ${h.actions_taken?.length || 0} actions`
-                        : h.field_activity_status === "no"
-                          ? `No · ${h.no_activity_reason || ""}`
-                          : "Report pending"}
-                    </div>
-                  </div>
+            <Label className="text-sm">Wards where activities performed <span className="text-risk-high">*</span></Label>
+            {wards.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {wards.map((w) => (
+                  <span key={w} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5">
+                    {w}
+                    {parentOf(w) && <span className="text-primary/60">· {parentOf(w)}</span>}
+                    <button type="button" onClick={() => toggleWard(w)} className="hover:text-risk-high"><X className="h-3 w-3" /></button>
+                  </span>
                 ))}
               </div>
+            )}
+            <div className="mt-2 relative">
+              <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={wardSearch}
+                onChange={(e) => setWardSearch(e.target.value)}
+                placeholder={`Search ${wardOptions.length} wards to add…`}
+                className="pl-7 h-8 text-sm"
+              />
             </div>
-          )}
+            <ScrollArea className="mt-1 h-40 rounded-md border border-border">
+              <div className="p-1">
+                {filteredWardOptions.length === 0 && (
+                  <div className="text-xs text-muted-foreground px-2 py-3 text-center">No wards match "{wardSearch}"</div>
+                )}
+                {filteredWardOptions.map((o) => (
+                  <label key={`${o.parent}/${o.ward}`} className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-muted/50 cursor-pointer">
+                    <Checkbox checked={wards.includes(o.ward)} onCheckedChange={() => toggleWard(o.ward)} />
+                    <span className="flex-1">{o.ward}</span>
+                    <span className="text-[11px] text-muted-foreground">· {o.parent}</span>
+                  </label>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* 4 & 5 — Personnel Deployed + Designation */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="personnel" className="text-sm">Personnel deployed <span className="text-risk-high">*</span></Label>
+              <Input id="personnel" type="number" min={1} value={personnel} onChange={(e) => setPersonnel(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="designation" className="text-sm">Personnel designation</Label>
+              <Input id="designation" value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="e.g. ASHA + PHC Nurse" className="mt-1" />
+            </div>
+          </div>
+
+          {/* 6 — Households Covered */}
+          <div>
+            <Label htmlFor="households" className="text-sm">Households covered <span className="text-risk-high">*</span></Label>
+            <Input id="households" type="number" min={0} value={households} onChange={(e) => setHouseholds(e.target.value)} className="mt-1" />
+          </div>
+
+          {/* 7 — Notes (optional, 500 max) */}
+          <div>
+            <Label htmlFor="notes" className="text-sm">Notes (optional)</Label>
+            <Textarea id="notes" maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="mt-1" />
+            <div className="text-[10px] text-muted-foreground text-right">{notes.length}/500</div>
+          </div>
 
           {error && <div className="text-xs text-risk-high">{error}</div>}
 

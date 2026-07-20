@@ -105,7 +105,7 @@ export function summarizeRow(row: AreaRow, records: WeeklyResponseRecord[]): Are
   const householdsCovered = scoped.reduce((s, r) => s + (r.households_covered || 0), 0);
   const personnelDesignation = primary?.personnel_designation || scoped.find((r) => r.personnel_designation)?.personnel_designation;
   const sourceReduction = scoped.reduce((s, r) => s + (r.source_reduction_count || 0), 0);
-  const actionsCount = scoped.reduce((s, r) => s + (r.actions_taken?.length || 0), 0);
+  const actionsCount = scoped.reduce((s, r) => s + (r.activities_performed?.length || r.actions_taken?.length || 0), 0);
   const activityDate = primary?.activity_date || scoped.find((r) => r.activity_date)?.activity_date;
 
   return {

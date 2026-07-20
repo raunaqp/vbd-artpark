@@ -67,6 +67,10 @@ export interface WeeklyResponseRecord {
   localities_visited?: string;
 
   actions_taken?: ActionType[];
+  /** Activities from ACTIVITY_TAXONOMY (P2 Weekly Operational Response Log Response modal). */
+  activities_performed?: string[];
+  /** Wards/villages where the activities were performed (P2 — mandatory in the modal). */
+  wards_affected?: string[];
 
   source_reduction_count?: number;
   larval_surveys_count?: number;

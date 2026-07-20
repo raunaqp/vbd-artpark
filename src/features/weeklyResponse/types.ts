@@ -58,7 +58,11 @@ export interface WeeklyResponseRecord {
 
   activity_date?: string;
   personnel_deployed?: number;
+  /** Role/designation of personnel, e.g. "ASHA + PHC Nurse" (P2 Weekly Operational Response). */
+  personnel_designation?: string;
   areas_covered?: number;
+  /** Households covered by the field activity (P2 — replaces the old free-text "areas covered"). */
+  households_covered?: number;
   /** Optional free-text locality notes — never a primary metric or table column. */
   localities_visited?: string;
 

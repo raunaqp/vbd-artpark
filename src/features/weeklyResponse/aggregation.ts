@@ -30,6 +30,9 @@ export interface AreaAggregate {
   reporting: ReportingStatus | "not_reported";
   personnel: number;
   areasCovered: number;
+  householdsCovered: number;
+  /** Designation text from the record at this grain, if logged (not summed — it's free text). */
+  personnelDesignation?: string;
   sourceReduction: number;
   actionsCount: number;
   activityDate?: string;
@@ -99,6 +102,8 @@ export function summarizeRow(row: AreaRow, records: WeeklyResponseRecord[]): Are
 
   const personnel = scoped.reduce((s, r) => s + (r.personnel_deployed || 0), 0);
   const areasCovered = scoped.reduce((s, r) => s + (r.areas_covered || 0), 0);
+  const householdsCovered = scoped.reduce((s, r) => s + (r.households_covered || 0), 0);
+  const personnelDesignation = primary?.personnel_designation || scoped.find((r) => r.personnel_designation)?.personnel_designation;
   const sourceReduction = scoped.reduce((s, r) => s + (r.source_reduction_count || 0), 0);
   const actionsCount = scoped.reduce((s, r) => s + (r.actions_taken?.length || 0), 0);
   const activityDate = primary?.activity_date || scoped.find((r) => r.activity_date)?.activity_date;
@@ -113,6 +118,8 @@ export function summarizeRow(row: AreaRow, records: WeeklyResponseRecord[]): Are
     reporting,
     personnel,
     areasCovered,
+    householdsCovered,
+    personnelDesignation,
     sourceReduction,
     actionsCount,
     activityDate,

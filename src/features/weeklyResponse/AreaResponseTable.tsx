@@ -82,7 +82,8 @@ export default function AreaResponseTable({ aggregates, areaLabel, onRecord }: P
               <th className="text-center py-2 px-2 font-medium">Forecast Risk</th>
               <th className="text-center py-2 px-2 font-medium">Field Activity</th>
               <th className="text-right py-2 px-2 font-medium">Personnel Deployed</th>
-              <th className="text-right py-2 px-2 font-medium">Areas Covered</th>
+              <th className="text-left py-2 px-2 font-medium">Personnel Designation</th>
+              <th className="text-right py-2 px-2 font-medium">Households Covered</th>
               <th className="text-right py-2 px-2 font-medium">Source Reduction</th>
               <th className="text-right py-2 px-2 font-medium">Other Actions</th>
               <th className="text-left py-2 px-2 font-medium">Activity Date</th>
@@ -107,7 +108,8 @@ export default function AreaResponseTable({ aggregates, areaLabel, onRecord }: P
                   </td>
                   <td className={`py-2 px-2 text-center text-xs ${fieldActivityCls(a)}`}>{fieldActivityLabel(a)}</td>
                   <td className="py-2 px-2 text-right">{a.personnel || "—"}</td>
-                  <td className="py-2 px-2 text-right">{a.areasCovered || "—"}</td>
+                  <td className="py-2 px-2 text-left text-xs">{a.personnelDesignation || "—"}</td>
+                  <td className="py-2 px-2 text-right">{a.householdsCovered || a.areasCovered || "—"}</td>
                   <td className="py-2 px-2 text-right">{a.sourceReduction || "—"}</td>
                   <td className="py-2 px-2 text-right">{a.actionsCount || "—"}</td>
                   <td className="py-2 px-2 text-xs text-muted-foreground">{a.activityDate || "—"}</td>
@@ -124,7 +126,7 @@ export default function AreaResponseTable({ aggregates, areaLabel, onRecord }: P
               );
             })}
             {visible.length === 0 && (
-              <tr><td colSpan={10} className="py-6 text-center text-sm text-muted-foreground">No areas match this filter</td></tr>
+              <tr><td colSpan={11} className="py-6 text-center text-sm text-muted-foreground">No areas match this filter</td></tr>
             )}
           </tbody>
         </table>

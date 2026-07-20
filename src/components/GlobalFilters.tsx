@@ -25,6 +25,13 @@ export default function GlobalFilters({ showDates = false, freshnessLabel }: Glo
     return ["All Wards", ...getLeafDropdown(filters.district, filters.block)];
   }, [filters.district, filters.block]);
 
+  // State-aware "All <level>" placeholder text. Keeps the sentinel option VALUE
+  // ("All Districts" / "All Blocks" / "All Wards") — only the displayed label changes.
+  const allLabel = (level: string) => {
+    const w = level.split("/")[0].trim();
+    return `All ${w.endsWith("y") ? `${w.slice(0, -1)}ies` : `${w}s`}`;
+  };
+
   return (
     <div className="mb-6">
       <button
@@ -44,7 +51,7 @@ export default function GlobalFilters({ showDates = false, freshnessLabel }: Glo
               disabled={isLocked("district")}
               className="h-9 rounded-md border border-input bg-card px-3 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {districts.map((d) => <option key={d}>{d}</option>)}
+              {districts.map((d) => <option key={d} value={d}>{d === "All Districts" ? allLabel(levelLabels.level_1) : d}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -55,7 +62,7 @@ export default function GlobalFilters({ showDates = false, freshnessLabel }: Glo
               disabled={isLocked("block")}
               className="h-9 rounded-md border border-input bg-card px-3 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {availableBlocks.map((b) => <option key={b}>{b}</option>)}
+              {availableBlocks.map((b) => <option key={b} value={b}>{b === "All Blocks" ? allLabel(levelLabels.level_2) : b}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -65,7 +72,7 @@ export default function GlobalFilters({ showDates = false, freshnessLabel }: Glo
               onChange={(e) => setFilters({ ward: e.target.value })}
               className="h-9 rounded-md border border-input bg-card px-3 text-sm"
             >
-              {availableWards.map((w) => <option key={w}>{w}</option>)}
+              {availableWards.map((w) => <option key={w} value={w}>{w === "All Wards" ? allLabel(levelLabels.level_3) : w}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">

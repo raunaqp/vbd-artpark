@@ -1,5 +1,6 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
 import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions, walkSeedNodes, type SeedConcernNode } from "./seed";
+import { STATE_HIERARCHY_LABELS } from "./mock_dataset";
 import {
   canonicalRegions,
   canonicalHotspots,
@@ -2081,8 +2082,18 @@ export function applyDiseaseMultiplier(regions: RegionData[], multiplier: number
   }));
 }
 
+/** Lowercase plural of a hierarchy label, e.g. "Block / Municipality" → "blocks/municipalities", "Corporation" → "corporations". */
+function pluralizeLevelLower(label: string): string {
+  return label
+    .split("/")
+    .map((t) => t.trim().toLowerCase())
+    .map((w) => (w.endsWith("y") ? `${w.slice(0, -1)}ies` : `${w}s`))
+    .join("/");
+}
+
 export function getSituationSummary(regions: RegionData[], diseaseName: string, filters?: DashboardFiltersLike | string, legacyBlock?: string): string[] {
   const resolved = resolveFilters(filters, legacyBlock);
+  const hierarchy = STATE_HIERARCHY_LABELS[stateLabelFromId(activeStateId)] ?? STATE_HIERARCHY_LABELS["Karnataka"];
   const window = getDateWindow(resolved);
   if (regions.length === 0) {
     return [`No ${diseaseName.toLowerCase()} data available for ${format(window.from, "d MMM yyyy")} to ${format(window.to, "d MMM yyyy")}.`];
@@ -2092,7 +2103,11 @@ export function getSituationSummary(regions: RegionData[], diseaseName: string, 
   const highRisk = regions.filter((region) => region.risk === "high");
   const rising = regions.filter((region) => region.trend === "up");
   const declining = regions.filter((region) => region.trend === "down");
-  const areaLabel = resolved.block !== "All Blocks" ? "villages/wards" : resolved.district !== "All Districts" ? "blocks/municipalities" : "districts";
+  const areaLabel = resolved.block !== "All Blocks"
+    ? pluralizeLevelLower(hierarchy.level_3)
+    : resolved.district !== "All Districts"
+    ? pluralizeLevelLower(hierarchy.level_2)
+    : pluralizeLevelLower(hierarchy.level_1);
 
   if (regions.length === 1) {
     const region = regions[0];

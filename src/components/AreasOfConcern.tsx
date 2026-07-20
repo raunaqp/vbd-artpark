@@ -2,9 +2,10 @@ import { Sparkles, TrendingUp } from "lucide-react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { getNewEmergenceAreas, getRisingClusters, type ConcernArea } from "@/data/mockData";
+import type { StateHierarchyLabels } from "@/data/mock_dataset";
 
-function levelLabel(level: ConcernArea["level"]) {
-  return level === "ward" ? "Ward / Village" : level === "block" ? "Block / Municipality" : "District";
+function levelLabel(level: ConcernArea["level"], labels: StateHierarchyLabels) {
+  return level === "ward" ? labels.level_3 : level === "block" ? labels.level_2 : labels.level_1;
 }
 
 function ConcernList({
@@ -14,6 +15,7 @@ function ConcernList({
   emptyText,
   accent,
   showDelta,
+  labels,
 }: {
   title: string;
   icon: typeof Sparkles;
@@ -21,6 +23,7 @@ function ConcernList({
   emptyText: string;
   accent: "primary" | "high";
   showDelta: boolean;
+  labels: StateHierarchyLabels;
 }) {
   const accentText = accent === "high" ? "text-risk-high" : "text-primary";
   const accentBg = accent === "high" ? "bg-risk-high/10" : "bg-primary/10";
@@ -55,7 +58,7 @@ function ConcernList({
                 <span className="min-w-0 truncate">
                   <span className="font-semibold text-foreground">{it.name}</span>
                   <span className="text-[11px] text-muted-foreground ml-1.5">
-                    · {levelLabel(it.level)}
+                    · {levelLabel(it.level, labels)}
                     {it.parent ? ` · ${it.parent}` : ""}
                   </span>
                 </span>
@@ -72,7 +75,7 @@ function ConcernList({
 }
 
 export default function AreasOfConcern() {
-  const { appliedFilters } = useFilters();
+  const { appliedFilters, levelLabels } = useFilters();
   const { diseaseName } = useDisease();
   const newEmergence = getNewEmergenceAreas(appliedFilters);
   const rising = getRisingClusters(appliedFilters);
@@ -95,6 +98,7 @@ export default function AreasOfConcern() {
           emptyText="No new sporadic case emergence detected in the selected scope."
           accent="primary"
           showDelta={false}
+          labels={levelLabels}
         />
         <ConcernList
           title="Rising Clusters (Trend-Based)"
@@ -103,6 +107,7 @@ export default function AreasOfConcern() {
           emptyText="No areas show meaningful 2-week-over-2-week growth."
           accent="high"
           showDelta
+          labels={levelLabels}
         />
       </div>
     </div>

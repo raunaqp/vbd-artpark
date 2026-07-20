@@ -70,7 +70,21 @@ const karnatakaRoles: RoleInfo[] = [
   { id: "ka_dataop", stateId: "karnataka", label: "Data Operator", scope: "state", location: "Karnataka", roleName: "Data Operator", userName: "Data Operator" },
 ];
 
-export const allRoles: RoleInfo[] = [...apRoles, ...odishaRoles, ...karnatakaRoles];
+// GBA Central: level_1 = Corporation (the 5 BBMP corporations), level_2 = Zone, level_3 = Ward.
+// "district" scope maps to a corporation here (scope is structural; the visible label comes
+// from STATE_HIERARCHY_LABELS via FilterContext.levelLabels).
+const gbaRoles: RoleInfo[] = [
+  { id: "gba_state", stateId: "gba_central", label: "City Surveillance Officer", scope: "state", location: "GBA Central", roleName: "State Officer", userName: "Dr Anjali Rao" },
+  { id: "gba_c_east", stateId: "gba_central", label: "Corporation — BBMP East", scope: "district", location: "BBMP East", roleName: "Corporation Officer", userName: "S. Kumar", district: "BBMP East", areaType: "urban" },
+  { id: "gba_c_south", stateId: "gba_central", label: "Corporation — BBMP South", scope: "district", location: "BBMP South", roleName: "Corporation Officer", userName: "R. Iyer", district: "BBMP South", areaType: "urban" },
+  { id: "gba_c_west", stateId: "gba_central", label: "Corporation — BBMP West", scope: "district", location: "BBMP West", roleName: "Corporation Officer", userName: "M. Reddy", district: "BBMP West", areaType: "urban" },
+  { id: "gba_c_north", stateId: "gba_central", label: "Corporation — BBMP North", scope: "district", location: "BBMP North", roleName: "Corporation Officer", userName: "P. Shetty", district: "BBMP North", areaType: "urban" },
+  { id: "gba_c_central", stateId: "gba_central", label: "Corporation — BBMP Central", scope: "district", location: "BBMP Central", roleName: "Corporation Officer", userName: "N. Gowda", district: "BBMP Central", areaType: "urban" },
+  { id: "gba_admin", stateId: "gba_central", label: "Admin (Full Access)", scope: "state", location: "GBA Central", roleName: "Admin", userName: "Admin" },
+  { id: "gba_dataop", stateId: "gba_central", label: "Data Operator", scope: "state", location: "GBA Central", roleName: "Data Operator", userName: "Data Operator" },
+];
+
+export const allRoles: RoleInfo[] = [...gbaRoles, ...apRoles, ...odishaRoles, ...karnatakaRoles];
 
 export function getRolesForState(stateId: StateId): RoleInfo[] {
   return allRoles.filter((r) => r.stateId === stateId);

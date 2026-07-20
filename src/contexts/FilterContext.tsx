@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { useRole } from "./RoleContext";
 import { useStateSelection } from "./StateContext";
 import { getDefaultHistoricalDateRange, getDateWindow, normalizeDistrictName } from "@/data/mockData";
+import { STATE_HIERARCHY_LABELS, type StateHierarchyLabels } from "@/data/mock_dataset";
 
 interface FilterState {
   district: string;
@@ -20,6 +21,8 @@ interface FilterContextType {
   appliedFilters: FilterState;
   isLocked: (field: "district" | "block" | "ward") => boolean;
   getLabel: (field: "district" | "block") => string;
+  /** State-aware hierarchy labels (level_1/2/3) for the currently selected state. */
+  levelLabels: StateHierarchyLabels;
   drillDown: (area: string, level: "district" | "block") => void;
   breadcrumb: string[];
   dateWindow: ReturnType<typeof getDateWindow>;
@@ -40,6 +43,7 @@ function buildDefaultFilters(): FilterState {
 const FilterContext = createContext<FilterContextType | null>(null);
 
 const stateLabels: Record<string, string> = {
+  gba_central: "GBA Central",
   andhra_pradesh: "Andhra Pradesh",
   odisha: "Odisha",
   karnataka: "Karnataka",
@@ -100,12 +104,15 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  const levelLabels: StateHierarchyLabels =
+    STATE_HIERARCHY_LABELS[stateLabels[stateId]] ?? STATE_HIERARCHY_LABELS["Karnataka"];
+
   const getLabel = (field: "district" | "block") => {
-    if (field === "district" && isLocked("district")) return "Your District";
+    if (field === "district" && isLocked("district")) return `Your ${levelLabels.level_1}`;
     if (field === "block" && isLocked("block")) {
       return currentRole.scope === "municipality" ? "Your Municipality" : "Your Block";
     }
-    return field === "district" ? "District" : "Block / Municipality";
+    return field === "district" ? levelLabels.level_1 : levelLabels.level_2;
   };
 
   const drillDown = (area: string, level: "district" | "block") => {
@@ -127,7 +134,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const dateWindow = getDateWindow(appliedFilters);
 
   return (
-    <FilterContext.Provider value={{ filters, setFilters, applyFilters, resetFilters, appliedFilters, isLocked, getLabel, drillDown, breadcrumb, dateWindow }}>
+    <FilterContext.Provider value={{ filters, setFilters, applyFilters, resetFilters, appliedFilters, isLocked, getLabel, levelLabels, drillDown, breadcrumb, dateWindow }}>
       {children}
     </FilterContext.Provider>
   );

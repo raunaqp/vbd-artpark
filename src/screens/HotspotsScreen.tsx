@@ -22,7 +22,7 @@ const hotspotClassBadge: Record<string, string> = {
 export default function HotspotsScreen() {
   const [timeRange, setTimeRange] = useState<"2weeks" | "4weeks">("4weeks");
   const [page, setPage] = useState(1);
-  const { appliedFilters } = useFilters();
+  const { appliedFilters, levelLabels } = useFilters();
   const { diseaseName, currentDisease } = useDisease();
   const { isVisible } = useBlockVisibility();
   const show = (id: string) => isVisible("hotspots", id);
@@ -41,10 +41,10 @@ export default function HotspotsScreen() {
   const visibleHotspots = displayHotspots.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
-    ? "Villages / Wards"
+    ? levelLabels.level_3
     : appliedFilters.district !== "All Districts"
-    ? "Blocks / Municipalities"
-    : "Districts";
+    ? levelLabels.level_2
+    : levelLabels.level_1;
 
   const totalCases = displayHotspots.reduce((sum, h) => sum + h.currentCases, 0);
   const predictions = getOutbreakPredictions(appliedFilters);
@@ -120,7 +120,7 @@ export default function HotspotsScreen() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  {["District", "Block / Municipality", "Village / Ward", "Cases", "Trend", "Hotspot Class", "Basis"].map((h) => (
+                  {[levelLabels.level_1, levelLabels.level_2, levelLabels.level_3, "Cases", "Trend", "Hotspot Class", "Basis"].map((h) => (
                     <th key={h} className="text-left py-2 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                   ))}
                 </tr>

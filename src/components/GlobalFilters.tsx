@@ -1,7 +1,6 @@
 import { useFilters } from "@/contexts/FilterContext";
 import { districts, getDateWindow } from "@/data/mockData";
 import { getBlockDropdown, getLeafDropdown } from "@/data/canonical";
-import { useStateSelection } from "@/contexts/StateContext";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getFreshness, freshnessTone } from "@/lib/freshness";
@@ -12,9 +11,7 @@ interface GlobalFiltersProps {
 }
 
 export default function GlobalFilters({ showDates = false, freshnessLabel }: GlobalFiltersProps = {}) {
-  const { filters, setFilters, applyFilters, resetFilters, isLocked, getLabel } = useFilters();
-  const { stateId } = useStateSelection();
-  void stateId;
+  const { filters, setFilters, applyFilters, resetFilters, isLocked, getLabel, levelLabels } = useFilters();
   const [collapsed, setCollapsed] = useState(false);
   const window = getDateWindow(filters);
 
@@ -62,7 +59,7 @@ export default function GlobalFilters({ showDates = false, freshnessLabel }: Glo
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Ward / Village</label>
+            <label className="text-xs font-medium text-muted-foreground">{levelLabels.level_3}</label>
             <select
               value={filters.ward}
               onChange={(e) => setFilters({ ward: e.target.value })}

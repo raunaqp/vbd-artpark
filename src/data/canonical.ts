@@ -74,6 +74,7 @@ import type {
 } from "./mockData_types";
 
 const STATE_LABEL_BY_ID: Record<StateId, string> = {
+  gba_central: "GBA Central",
   andhra_pradesh: "Andhra Pradesh",
   karnataka: "Karnataka",
   odisha: "Odisha",

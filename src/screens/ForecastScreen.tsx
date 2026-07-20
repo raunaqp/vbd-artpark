@@ -20,7 +20,7 @@ const PAGE_SIZE = 20;
 
 export default function ForecastScreen() {
   const { isAnalyst } = useRole();
-  const { appliedFilters, dateWindow } = useFilters();
+  const { appliedFilters, dateWindow, levelLabels } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId } = useStateSelection();
   const { isVisible } = useBlockVisibility();
@@ -37,10 +37,10 @@ export default function ForecastScreen() {
   const visiblePredictions = predictions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
-    ? "Village / Ward"
+    ? levelLabels.level_3
     : appliedFilters.district !== "All Districts"
-    ? "Block / Municipality"
-    : "District";
+    ? levelLabels.level_2
+    : levelLabels.level_1;
 
   const fmtIso = (iso: string) => {
     const [y, m, d] = iso.split("-");

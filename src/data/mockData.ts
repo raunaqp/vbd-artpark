@@ -19,7 +19,7 @@ import {
 // Active state is set via setActiveState(); all getters/proxies read from the active bundle.
 
 // ──────────────── Types ────────────────
-export type StateId = "andhra_pradesh" | "odisha" | "karnataka";
+export type StateId = "gba_central" | "andhra_pradesh" | "odisha" | "karnataka";
 
 export interface RegionData {
   name: string;
@@ -964,7 +964,13 @@ const KARNATAKA: StateBundle = {
 };
 
 // ──────────────── State registry & active state ────────────────
-export const stateBundles: Record<StateId, StateBundle> = { andhra_pradesh: AP, odisha: ODISHA, karnataka: KARNATAKA };
+// GBA Central (flagship demo): live region/hotspot/prediction data flows through
+// the canonical adapters (MULTI_DISEASE_DATASET filtered by state "GBA Central").
+// The legacy bundle only backs weather/time-series/map fallbacks, so it reuses
+// KARNATAKA's shape as a stub; districts/blocks are injected from canonical below.
+const GBA: StateBundle = { ...KARNATAKA, id: "gba_central", label: "GBA Central" };
+
+export const stateBundles: Record<StateId, StateBundle> = { gba_central: GBA, andhra_pradesh: AP, odisha: ODISHA, karnataka: KARNATAKA };
 
 // Apply canonical seed.ts overlay onto each bundle (cases, risk, coordinates,
 // hotspots, predictions, alerts). Non-seeded districts keep synthesized baselines.
@@ -973,7 +979,7 @@ applySeedOverlayAll(stateBundles);
 
 // Inject canonical district lists from MOCK_DATASET so dropdowns include all 21 districts.
 {
-  const labels: Record<StateId, string> = { andhra_pradesh: "Andhra Pradesh", karnataka: "Karnataka", odisha: "Odisha" };
+  const labels: Record<StateId, string> = { gba_central: "GBA Central", andhra_pradesh: "Andhra Pradesh", karnataka: "Karnataka", odisha: "Odisha" };
   for (const sid of Object.keys(labels) as StateId[]) {
     const canon = getDistrictMetrics(labels[sid]);
     if (canon.length) {
@@ -991,9 +997,10 @@ applySeedOverlayAll(stateBundles);
 }
 
 export const stateOptions: { id: StateId; label: string }[] = [
-  { id: "andhra_pradesh", label: "Andhra Pradesh" },
-  { id: "odisha", label: "Odisha" },
+  { id: "gba_central", label: "GBA Central" },
   { id: "karnataka", label: "Karnataka" },
+  { id: "odisha", label: "Odisha" },
+  { id: "andhra_pradesh", label: "Andhra Pradesh" },
 ];
 
 let activeStateId: StateId = "karnataka";
@@ -1116,6 +1123,19 @@ const LAST_NAMES = ["Behera", "Das", "Gowda", "Kamat", "Kumari", "Mahapatra", "M
 const REFERRAL_SOURCES = ["ASHA", "ANM", "HW", "MO", "PHC", "CHC"];
 
 const temporalProfiles: Record<StateId, TemporalProfile> = {
+  // GBA Central reuses Karnataka's climate/seasonality profile (same geography).
+  gba_central: {
+    caseSeasonality: [0.54, 0.58, 0.72, 0.88, 1.0, 1.18, 1.36, 1.42, 1.18, 0.94, 0.72, 0.58],
+    rainfall: [4, 6, 12, 28, 56, 104, 162, 184, 124, 72, 26, 10],
+    humidity: [56, 58, 61, 66, 71, 78, 84, 86, 80, 72, 64, 58],
+    temperature: [24.6, 26.1, 28.4, 30.2, 31.1, 29.6, 27.9, 27.8, 28.2, 27.5, 25.9, 24.8],
+    weeklyPositiveBase: 32,
+    sampleMultiplier: 3.18,
+    forecastBoost: [1.19, 1.72, 2.56, 3.28],
+    riskCardThresholds: { moderate: 20, high: 58 },
+    yearBase: 0.78,
+    yearlyGrowth: 0.04,
+  },
   andhra_pradesh: {
     caseSeasonality: [0.58, 0.62, 0.78, 1.0, 1.12, 1.28, 1.36, 1.3, 1.12, 0.9, 0.72, 0.62],
     rainfall: [6, 8, 12, 22, 38, 92, 128, 118, 96, 62, 22, 10],

@@ -172,7 +172,7 @@ export const seed: SeedRoot = {
       { name: "Dr Shubhashis Mohanty", role: "State Surveillance Officer", scope_level: "state", scope_name: "Odisha" },
       { name: "P. Mohanty", role: "District Officer", scope_level: "district", scope_name: "Khurda" },
       { name: "R. Das", role: "District Officer", scope_level: "district", scope_name: "Puri" },
-      { name: "A. Sahu", role: "District Officer", scope_level: "district", scope_name: "Balasore" },
+      { name: "A. Sahu", role: "District Officer", scope_level: "district", scope_name: "Baleshwar" },
       { name: "N. Pradhan", role: "District Officer", scope_level: "district", scope_name: "Angul" },
       { name: "T. Behera", role: "District Officer", scope_level: "district", scope_name: "Cuttack" },
       { name: "S. Pattnaik", role: "District Officer", scope_level: "district", scope_name: "Sambalpur" },
@@ -331,7 +331,7 @@ export const seed: SeedRoot = {
       signals: [
         { title: "Tourist influx contributing to risk in Puri", geography: "Puri", type: "mobility" },
         { title: "Industrial worker clustering in Sundargarh", geography: "Sundargarh", type: "industrial" },
-        { title: "High case load observed in Balasore", geography: "Balasore", type: "high_caseload" },
+        { title: "High case load observed in Baleshwar", geography: "Baleshwar", type: "high_caseload" },
       ],
       districts: [
         {
@@ -407,7 +407,7 @@ export const seed: SeedRoot = {
           ],
         },
         {
-          name: "Balasore", lat: 21.4942, lng: 86.9312, cases_2w: 64, cases_4w: 115, signal: "rising_cluster", context: "high_caseload", risk: "high",
+          name: "Baleshwar", lat: 21.4942, lng: 86.9312, cases_2w: 64, cases_4w: 115, signal: "rising_cluster", context: "high_caseload", risk: "high",
           forecast: { w1_probability: 0.69, w2_probability: 0.82, w3_probability: 0.85, w4_probability: 0.71, expected_peak_week: "W+3", signal_text: "High risk due to sustained case load + trend" },
           daily_14d: [8, 10, 12, 13, 14, 16, 18, 19, 21, 23, 25, 27, 29, 31],
           actions: [

@@ -1202,7 +1202,7 @@ export const FORECAST_ACCURACY: Record<string, {
       "n_weeks": 12
     }
   },
-  "Balasore": {
+  "Baleshwar": {
     "history": [
       {
         "week_ending": "2026-01-11",
@@ -1589,136 +1589,6 @@ export const FORECAST_ACCURACY: Record<string, {
       "mae": 13.2,
       "mape_pct": 100.4,
       "hit_rate_pct": 66.7,
-      "n_weeks": 12
-    }
-  },
-  "Mayurbhanj": {
-    "history": [
-      {
-        "week_ending": "2026-01-11",
-        "predicted": 17,
-        "actual": 19,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 2,
-        "pct_error": 10.5
-      },
-      {
-        "week_ending": "2026-01-18",
-        "predicted": 16,
-        "actual": 16,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 0,
-        "pct_error": 0.0
-      },
-      {
-        "week_ending": "2026-01-25",
-        "predicted": 14,
-        "actual": 12,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 2,
-        "pct_error": 16.7
-      },
-      {
-        "week_ending": "2026-02-01",
-        "predicted": 13,
-        "actual": 11,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 2,
-        "pct_error": 18.2
-      },
-      {
-        "week_ending": "2026-02-08",
-        "predicted": 42,
-        "actual": 11,
-        "predicted_class": "High",
-        "actual_class": "Low",
-        "class_hit": false,
-        "abs_error": 31,
-        "pct_error": 281.8
-      },
-      {
-        "week_ending": "2026-02-15",
-        "predicted": 7,
-        "actual": 9,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 2,
-        "pct_error": 22.2
-      },
-      {
-        "week_ending": "2026-02-22",
-        "predicted": 11,
-        "actual": 9,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 2,
-        "pct_error": 22.2
-      },
-      {
-        "week_ending": "2026-03-01",
-        "predicted": 8,
-        "actual": 9,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 1,
-        "pct_error": 11.1
-      },
-      {
-        "week_ending": "2026-03-08",
-        "predicted": 8,
-        "actual": 8,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 0,
-        "pct_error": 0.0
-      },
-      {
-        "week_ending": "2026-03-15",
-        "predicted": 9,
-        "actual": 8,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 1,
-        "pct_error": 12.5
-      },
-      {
-        "week_ending": "2026-03-22",
-        "predicted": 1,
-        "actual": 1,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 0,
-        "pct_error": 0.0
-      },
-      {
-        "week_ending": "2026-03-29",
-        "predicted": 0,
-        "actual": 0,
-        "predicted_class": "Low",
-        "actual_class": "Low",
-        "class_hit": true,
-        "abs_error": 0,
-        "pct_error": 0.0
-      }
-    ],
-    "metrics": {
-      "mae": 3.6,
-      "mape_pct": 32.9,
-      "hit_rate_pct": 91.7,
       "n_weeks": 12
     }
   },

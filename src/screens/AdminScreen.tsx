@@ -387,8 +387,8 @@ const ACCURACY_DISTRICT_STATE: Record<string, string> = {
   "Bengaluru Urban": "karnataka", "Mysuru": "karnataka", "Udupi": "karnataka",
   "Dakshina Kannada": "karnataka", "Belagavi": "karnataka", "Tumakuru": "karnataka",
   // Odisha
-  "Khordha": "odisha", "Cuttack": "odisha", "Puri": "odisha", "Balasore": "odisha",
-  "Sundargarh": "odisha", "Angul": "odisha", "Mayurbhanj": "odisha", "Sambalpur": "odisha",
+  "Khordha": "odisha", "Cuttack": "odisha", "Puri": "odisha", "Baleshwar": "odisha",
+  "Sundargarh": "odisha", "Angul": "odisha", "Sambalpur": "odisha",
   // Andhra Pradesh
   "Visakhapatnam": "andhra_pradesh", "Vijayawada": "andhra_pradesh", "Guntur": "andhra_pradesh",
   "Krishna": "andhra_pradesh", "Kurnool": "andhra_pradesh", "East Godavari": "andhra_pradesh",

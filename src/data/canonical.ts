@@ -743,3 +743,54 @@ export function getLeafDropdown(district: string, midLevel: string): string[] {
   if (block) return block.villages.map((v) => v.name);
   return [];
 }
+
+/**
+ * Wards/villages available for the current geography selection, for the Weekly
+ * Operational Response ward multi-select. Reads directly from
+ * MULTI_DISEASE_DATASET (disease-explicit — not the active-disease proxy) so a
+ * logged response is scoped to the disease it was captured under.
+ *
+ * Depth behaviour:
+ *   - no district              → [] (must drill to district/corporation or deeper)
+ *   - district only            → every ward + village across the district
+ *   - district + block/mun     → wards under that municipality, or villages under that block
+ *   - district + block + leaf  → same list as block/mun level; `wardOrVillage` is
+ *                                only a hint the UI uses to preselect that leaf.
+ *
+ * Each entry is `{ ward, parent }` where `parent` is the containing municipality
+ * or block (shown as muted context in the picker, e.g. "Whitefield · Mahadevapura Zone").
+ */
+export function getWardsUnderSelection(
+  disease: DiseaseId,
+  state: string,
+  district?: string,
+  blockOrMun?: string,
+  wardOrVillage?: string,
+): Array<{ ward: string; parent: string }> {
+  const bundle = MULTI_DISEASE_DATASET[disease];
+  if (!district) return [];
+
+  const d = bundle[district];
+  if (!d) return [];
+
+  // Block/municipality (or leaf) selected → return the parent's full sibling list.
+  // When a specific ward/village is selected we still return the full sibling set so
+  // the "add more" flow has options; the UI preselects `wardOrVillage`.
+  if (blockOrMun) {
+    const mun = d.municipalities.find((m) => m.name === blockOrMun);
+    if (mun) return mun.wards.map((w) => ({ ward: w.name, parent: mun.name }));
+    const blk = d.blocks.find((b) => b.name === blockOrMun);
+    if (blk) return blk.villages.map((v) => ({ ward: v.name, parent: blk.name }));
+    return [];
+  }
+
+  // District-level: all wards across municipalities + all villages across blocks.
+  const all: Array<{ ward: string; parent: string }> = [];
+  for (const m of d.municipalities) {
+    for (const w of m.wards) all.push({ ward: w.name, parent: m.name });
+  }
+  for (const b of d.blocks) {
+    for (const v of b.villages) all.push({ ward: v.name, parent: b.name });
+  }
+  return all;
+}

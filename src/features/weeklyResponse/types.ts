@@ -27,10 +27,10 @@ export const ACTION_TYPES = [
 export type ActionType = typeof ACTION_TYPES[number];
 
 export const NO_ACTIVITY_REASONS = [
-  "No action required this week",
-  "Covered in previous cycle",
-  "Team or resource constraint",
-  "Activity planned but not yet completed",
+  "Staff unavailable",
+  "Access issue",
+  "Data delay",
+  "Public holiday",
   "Other",
 ] as const;
 export type NoActivityReason = typeof NO_ACTIVITY_REASONS[number];

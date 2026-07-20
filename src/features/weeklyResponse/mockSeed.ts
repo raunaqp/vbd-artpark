@@ -67,7 +67,7 @@ const OFFICERS = [
   { id: "u_mo01", name: "Medical Officer", role: "Medical Officer" },
 ];
 
-const NO_REASONS = ["No action required this week", "Covered in previous cycle", "Team or resource constraint"] as const;
+const NO_REASONS = ["Staff unavailable", "Access issue", "Data delay", "Public holiday"] as const;
 
 /** Add/subtract whole days from an ISO yyyy-mm-dd date, returning ISO. */
 function shiftIso(iso: string, days: number): string {
@@ -198,9 +198,7 @@ export function buildSeedRecords(state?: string): WeeklyResponseRecord[] {
         personnel_designation: designation,
         households_covered: households,
         ...counts,
-        no_activity_reason: status === "no"
-          ? (leaf.scenario === "no_action" && isCurrentWeek ? "No action required this week" : NO_REASONS[seed % NO_REASONS.length])
-          : undefined,
+        no_activity_reason: status === "no" ? NO_REASONS[seed % NO_REASONS.length] : undefined,
         notes: undefined,
         logged_by_user_id: officer.id,
         logged_by_name: officer.name,

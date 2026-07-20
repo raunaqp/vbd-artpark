@@ -10,6 +10,7 @@ import { summarizeRow, buildSummary, sortAreaAggregates, type AreaRow, type Area
 import { makeGeographyId, type RiskLevel } from "./types";
 import { WeeklyResponseContext, type WeeklyResponseCtx, type PriorityRow } from "./weeklyResponseContext";
 import WeeklyResponseDrawer from "./WeeklyResponseDrawer";
+import NoActivityDialog from "./NoActivityDialog";
 
 export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
   const { appliedFilters } = useFilters();
@@ -20,6 +21,8 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
   const [epiWeek, setEpiWeek] = useState<string>(latestEpiWeek());
   const [selected, setSelected] = useState<AreaAggregate | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [noActivitySelected, setNoActivitySelected] = useState<AreaAggregate | null>(null);
+  const [noActivityOpen, setNoActivityOpen] = useState(false);
 
   const weekEnding = WEEK_ENDINGS[EPI_WEEKS.indexOf(epiWeek)] || WEEK_ENDINGS[WEEK_ENDINGS.length - 1];
   const forecastGeneratedAt = latestWeekEnding();
@@ -81,10 +84,11 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
   );
 
   const openDrawer = (agg: AreaAggregate) => { setSelected(agg); setDrawerOpen(true); };
+  const openNoActivity = (agg: AreaAggregate) => { setNoActivitySelected(agg); setNoActivityOpen(true); };
 
   const value: WeeklyResponseCtx = {
     epiWeek, setEpiWeek, weekEnding, forecastGeneratedAt, areaLabel,
-    aggregates, priorityRows, summary, scopedRecords, allRecords: records, openDrawer,
+    aggregates, priorityRows, summary, scopedRecords, allRecords: records, openDrawer, openNoActivity,
   };
 
   return (
@@ -100,6 +104,15 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
         forecastGeneratedAt={forecastGeneratedAt}
         onSave={upsert}
         historyRecords={records.filter((r) => r.state === stateId)}
+      />
+      <NoActivityDialog
+        open={noActivityOpen}
+        onOpenChange={setNoActivityOpen}
+        agg={noActivitySelected}
+        stateId={stateId}
+        epiWeek={epiWeek}
+        forecastGeneratedAt={forecastGeneratedAt}
+        onSave={upsert}
       />
     </WeeklyResponseContext.Provider>
   );

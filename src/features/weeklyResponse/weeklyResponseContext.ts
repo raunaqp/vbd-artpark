@@ -20,6 +20,7 @@ export interface WeeklyResponseCtx {
   scopedRecords: WeeklyResponseRecord[];
   allRecords: WeeklyResponseRecord[];
   openDrawer: (agg: AreaAggregate) => void;
+  openNoActivity: (agg: AreaAggregate) => void;
 }
 
 export const WeeklyResponseContext = createContext<WeeklyResponseCtx | null>(null);

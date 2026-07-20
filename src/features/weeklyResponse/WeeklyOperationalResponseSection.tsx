@@ -5,7 +5,7 @@ import ActionsByCategory from "./ActionsByCategory";
 import { useWeeklyResponseContext } from "./weeklyResponseContext";
 
 export default function WeeklyOperationalResponseSection() {
-  const { epiWeek, setEpiWeek, aggregates, summary, scopedRecords, areaLabel, openDrawer } = useWeeklyResponseContext();
+  const { epiWeek, setEpiWeek, aggregates, summary, scopedRecords, areaLabel, openDrawer, openNoActivity } = useWeeklyResponseContext();
 
   return (
     <div className="space-y-4">
@@ -25,7 +25,7 @@ export default function WeeklyOperationalResponseSection() {
 
       <ActionsByCategory records={scopedRecords} />
 
-      <AreaResponseTable aggregates={aggregates} areaLabel={areaLabel} onRecord={openDrawer} />
+      <AreaResponseTable aggregates={aggregates} areaLabel={areaLabel} onRecord={openDrawer} onNoActivity={openNoActivity} />
     </div>
   );
 }

@@ -15,6 +15,7 @@ interface Props {
   aggregates: AreaAggregate[];
   areaLabel: string;
   onRecord: (agg: AreaAggregate) => void;
+  onNoActivity: (agg: AreaAggregate) => void;
 }
 
 const STATUS_META: Record<WorklistStatus, { label: string; cls: string }> = {
@@ -34,7 +35,7 @@ const CHIPS: Array<{ id: Chip; label: string }> = [
   { id: "activity", label: "Field activity conducted" },
 ];
 
-export default function AreaResponseTable({ aggregates, areaLabel, onRecord }: Props) {
+export default function AreaResponseTable({ aggregates, areaLabel, onRecord, onNoActivity }: Props) {
   const { stateId } = useStateSelection();
   const { appliedFilters } = useFilters();
   // Responses are logged against a drilled scope. At state level (no district /
@@ -121,12 +122,20 @@ export default function AreaResponseTable({ aggregates, areaLabel, onRecord }: P
                   <td className={`py-2 px-2 text-center text-xs font-medium ${sm.cls}`}>{sm.label}</td>
                   <td className="py-2 px-2 text-right">
                     {canLog ? (
-                      <button
-                        onClick={() => onRecord(a)}
-                        className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40"
-                      >
-                        {a.primary ? "View / Edit" : "Log Response"}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => onRecord(a)}
+                          className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40"
+                        >
+                          {a.primary ? "View / Edit" : "Log Response"}
+                        </button>
+                        <button
+                          onClick={() => onNoActivity(a)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                        >
+                          Mark as no activity
+                        </button>
+                      </div>
                     ) : (
                       <Tooltip>
                         <TooltipTrigger asChild>

@@ -2,8 +2,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { getFilteredRegions, getOutbreakPredictions } from "@/data/mockData";
-import { getActiveDisease } from "@/data/canonical";
-import { EPI_WEEKS, WEEK_ENDINGS } from "@/data/mock_dataset";
+import { getActiveDisease, stateLabelFromId } from "@/data/canonical";
+import { EPI_WEEKS, WEEK_ENDINGS, STATE_HIERARCHY_LABELS } from "@/data/mock_dataset";
 import { latestEpiWeek, latestWeekEnding } from "@/lib/epiWeek";
 import { useWeeklyResponses } from "./useWeeklyResponses";
 import { summarizeRow, buildSummary, sortAreaAggregates, type AreaRow, type AreaAggregate } from "./aggregation";
@@ -30,7 +30,11 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
       appliedFilters.block !== "All Blocks" ? "ward"
       : appliedFilters.district !== "All Districts" ? "block"
       : "district";
-    const label = level === "ward" ? "wards / villages" : level === "block" ? "blocks / municipalities" : "districts / corporations";
+    // State-aware area noun (e.g. GBA state level → "corporations", not "districts").
+    const hier = STATE_HIERARCHY_LABELS[stateLabelFromId(stateId)] ?? STATE_HIERARCHY_LABELS["Karnataka"];
+    const pluralLower = (s: string) =>
+      s.split("/").map((t) => t.trim().toLowerCase()).map((w) => (w.endsWith("y") ? `${w.slice(0, -1)}ies` : `${w}s`)).join("/");
+    const label = level === "ward" ? pluralLower(hier.level_3) : level === "block" ? pluralLower(hier.level_2) : pluralLower(hier.level_1);
 
     const rows: AreaRow[] = regions.map((r) => {
       const district = level === "district" ? r.name : appliedFilters.district;

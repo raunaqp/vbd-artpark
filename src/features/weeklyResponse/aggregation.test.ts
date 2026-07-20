@@ -33,6 +33,7 @@ interface Opts {
   areasCovered?: number;
   sourceReduction?: number;
   actions?: ActionType[];
+  activities?: string[];
   activityDate?: string;
   forecastGeneratedAt?: string;
 }
@@ -63,6 +64,7 @@ function rec(o: Opts): WeeklyResponseRecord {
     areas_covered: o.areasCovered,
     source_reduction_count: o.sourceReduction,
     actions_taken: o.actions,
+    activities_performed: o.activities,
     logged_by_user_id: "u1",
     logged_by_name: "Officer",
     logged_by_role: "Health Supervisor",
@@ -168,16 +170,16 @@ describe("priority response coverage + zero-priority handling", () => {
 });
 
 describe("action-category totals", () => {
-  it("counts actions across records", () => {
+  it("counts activities across records (from ACTIVITY_TAXONOMY)", () => {
     const records = [
-      rec({ district: "D", risk: "high", activity: "yes", actions: ["Source reduction", "Fogging / space spraying"] }),
-      rec({ district: "D", block: "B2", risk: "moderate", activity: "yes", actions: ["Source reduction", "Larval surveillance"] }),
+      rec({ district: "D", risk: "high", activity: "yes", activities: ["Source reduction", "Indoor space sprays"] }),
+      rec({ district: "D", block: "B2", risk: "moderate", activity: "yes", activities: ["Source reduction", "Larva surveillance"] }),
     ];
     const cats = actionsByCategory(records);
     const map = Object.fromEntries(cats.map((c) => [c.action, c.count]));
     expect(map["Source reduction"]).toBe(2);
-    expect(map["Fogging / space spraying"]).toBe(1);
-    expect(map["Larval surveillance"]).toBe(1);
+    expect(map["Indoor space sprays"]).toBe(1);
+    expect(map["Larva surveillance"]).toBe(1);
     expect(map["Larvicide application"]).toBeUndefined();
   });
 });
@@ -199,9 +201,9 @@ describe("median forecast-to-activity", () => {
 
 describe("state aggregation via collation", () => {
   const records = [
-    rec({ state: "karnataka", district: "Bengaluru Urban", block: "BBMP East Zone", ward: "Ward 84", risk: "high", activity: "yes", personnel: 4, areasCovered: 2, sourceReduction: 3, actions: ["Source reduction"] }),
+    rec({ state: "karnataka", district: "Bengaluru Urban", block: "BBMP East Zone", ward: "Ward 84", risk: "high", activity: "yes", personnel: 4, areasCovered: 2, activities: ["Source reduction"] }),
     rec({ state: "karnataka", district: "Bengaluru Urban", block: "Yelahanka", ward: null, risk: "moderate", activity: "no" }),
-    rec({ state: "karnataka", district: "Mysuru", block: "Mysuru City", ward: "Ward 33", risk: "high", activity: "yes", personnel: 6, areasCovered: 4, sourceReduction: 5, actions: ["Source reduction", "Fogging / space spraying"] }),
+    rec({ state: "karnataka", district: "Mysuru", block: "Mysuru City", ward: "Ward 33", risk: "high", activity: "yes", personnel: 6, areasCovered: 4, activities: ["Source reduction", "Indoor space sprays"] }),
     rec({ state: "karnataka", district: "Udupi", block: "Kundapura", ward: null, risk: "low", activity: "yes", personnel: 2, areasCovered: 1 }),
     rec({ state: "odisha", district: "Puri", block: "Brahmagiri", ward: null, risk: "high", activity: "yes", personnel: 9 }), // other state — must be excluded
   ];
@@ -223,7 +225,7 @@ describe("state aggregation via collation", () => {
     expect(c.priorityCompleted).toBe(2);
     expect(c.personnelDeployed).toBe(12); // 4 + 6 + 2
     expect(c.areasCovered).toBe(7); // 2 + 4 + 1
-    expect(c.sourceReductionActivities).toBe(8); // 3 + 5
+    expect(c.sourceReductionActivities).toBe(2); // 2 records include "Source reduction"
     const src = c.actionsByCategory.find((a) => a.action === "Source reduction");
     expect(src?.count).toBe(2);
   });

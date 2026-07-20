@@ -83,15 +83,29 @@ function activityStatusFor(scenario: Scenario): FieldActivityStatus | null {
     case "routine": return "yes";
     case "no_activity":
     case "no_action": return "no";
-    case "report_pending": return "report_pending";
+    // "report_pending" is retired — treat legacy scenarios as completed.
+    case "report_pending": return "yes";
   }
 }
 
 // Deterministic historic status (weeks before current) so trends look real.
+// (report_pending retired — only yes / no.)
 function historicStatus(risk: SeedLeaf["risk"], seed: number): FieldActivityStatus {
-  if (risk === "high") return seed % 10 < 8 ? "yes" : seed % 10 < 9 ? "report_pending" : "no";
-  if (risk === "moderate") return seed % 10 < 6 ? "yes" : seed % 10 < 8 ? "no" : "report_pending";
-  return seed % 10 < 3 ? "yes" : seed % 10 < 8 ? "no" : "report_pending";
+  if (risk === "high") return seed % 10 < 8 ? "yes" : "no";
+  if (risk === "moderate") return seed % 10 < 6 ? "yes" : "no";
+  return seed % 10 < 3 ? "yes" : "no";
+}
+
+const DESIGNATIONS = ["ASHA + PHC Nurse", "MO + 2 ASHAs", "Ward Vector Team", "MPW + ASHA"];
+
+// Activities logged for a "yes" record, drawn from ACTIVITY_TAXONOMY names.
+function buildActivities(leaf: SeedLeaf, seed: number): string[] {
+  const pool: string[] = ["Source reduction", "Larva surveillance"];
+  if (leaf.risk === "high") pool.push("Indoor space sprays", "Fever surveillance");
+  if (leaf.ward) pool.push("Construction site inspection", "IEC for BCC");
+  else pool.push("Environmental modification");
+  const picked = pool.filter((_, i) => (seed >> i) % 5 !== 0);
+  return picked.length ? picked : ["Source reduction"];
 }
 
 function buildActions(leaf: SeedLeaf, seed: number): { actions: ActionType[]; counts: Partial<WeeklyResponseRecord> } {
@@ -148,10 +162,16 @@ export function buildSeedRecords(state?: string): WeeklyResponseRecord[] {
 
       let actions: WeeklyResponseRecord["actions_taken"];
       let counts: Partial<WeeklyResponseRecord> = {};
+      let activities: string[] | undefined;
+      let households: number | undefined;
+      let designation: string | undefined;
       if (status === "yes") {
         const built = buildActions(leaf, seed);
         actions = built.actions;
         counts = built.counts;
+        activities = buildActivities(leaf, seed);
+        households = 15 + (seed % 60);
+        designation = DESIGNATIONS[seed % DESIGNATIONS.length];
       }
 
       const rec: WeeklyResponseRecord = {
@@ -174,6 +194,9 @@ export function buildSeedRecords(state?: string): WeeklyResponseRecord[] {
         areas_covered: status === "yes" ? 1 + (seed % 5) : undefined,
         localities_visited: undefined,
         actions_taken: actions,
+        activities_performed: activities,
+        personnel_designation: designation,
+        households_covered: households,
         ...counts,
         no_activity_reason: status === "no"
           ? (leaf.scenario === "no_action" && isCurrentWeek ? "No action required this week" : NO_REASONS[seed % NO_REASONS.length])

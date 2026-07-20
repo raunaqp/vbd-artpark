@@ -1,5 +1,5 @@
-import type { WeeklyResponseRecord, ActionType, RiskLevel, ReportingStatus } from "./types";
-import { ACTION_TYPES } from "./types";
+import type { WeeklyResponseRecord, RiskLevel, ReportingStatus } from "./types";
+import { ACTIVITY_TAXONOMY } from "@/data/mock_dataset";
 
 // ── Worklist status ────────────────────────────────────────────────
 // The four operational states shown to officers:
@@ -159,7 +159,11 @@ export function buildSummary(aggs: AreaAggregate[]): WeeklySummary {
     areasWithFieldActivity: aggs.filter((a) => a.fieldActivity === "yes").length,
     personnelDeployed: aggs.reduce((s, a) => s + a.personnel, 0),
     areasCovered: aggs.reduce((s, a) => s + a.areasCovered, 0),
-    sourceReductionActivities: aggs.reduce((s, a) => s + a.sourceReduction, 0),
+    // Count of logged responses whose activities include Source reduction (Change 5.7).
+    sourceReductionActivities: aggs.reduce(
+      (s, a) => s + a.records.filter((r) => r.activities_performed?.includes("Source reduction")).length,
+      0,
+    ),
     highRiskNoCompleted: aggs.filter((a) => a.row.risk === "high" && a.status !== "completed").length,
     moderateRiskNoCompleted: aggs.filter((a) => a.row.risk === "moderate" && a.status !== "completed").length,
   };
@@ -183,10 +187,10 @@ export function sortAreaAggregates(aggs: AreaAggregate[]): AreaAggregate[] {
 }
 
 // ── Action-category + median (over raw records) ─────────────────────
-export function actionsByCategory(records: WeeklyResponseRecord[]): Array<{ action: ActionType; count: number }> {
-  const map = new Map<ActionType, number>();
-  for (const r of records) for (const a of r.actions_taken || []) map.set(a, (map.get(a) || 0) + 1);
-  return ACTION_TYPES.map((a) => ({ action: a, count: map.get(a) || 0 })).filter((x) => x.count > 0);
+export function actionsByCategory(records: WeeklyResponseRecord[]): Array<{ action: string; count: number }> {
+  const map = new Map<string, number>();
+  for (const r of records) for (const a of r.activities_performed || []) map.set(a, (map.get(a) || 0) + 1);
+  return ACTIVITY_TAXONOMY.map((a) => ({ action: a, count: map.get(a) || 0 })).filter((x) => x.count > 0);
 }
 
 export function medianDaysForecastToActivity(records: WeeklyResponseRecord[]): number | null {
@@ -219,7 +223,7 @@ export interface RecordCollation {
   personnelDeployed: number;
   areasCovered: number;
   sourceReductionActivities: number;
-  actionsByCategory: Array<{ action: ActionType; count: number }>;
+  actionsByCategory: Array<{ action: string; count: number }>;
   highRiskNoCompleted: number;
   moderateRiskNoCompleted: number;
   medianForecastToActivityDays: number | null;
@@ -243,7 +247,7 @@ export function collateRecords(records: WeeklyResponseRecord[]): RecordCollation
     areasWithFieldActivity: records.filter((r) => r.field_activity_status === "yes").length,
     personnelDeployed: records.reduce((s, r) => s + (r.personnel_deployed || 0), 0),
     areasCovered: records.reduce((s, r) => s + (r.areas_covered || 0), 0),
-    sourceReductionActivities: records.reduce((s, r) => s + (r.source_reduction_count || 0), 0),
+    sourceReductionActivities: records.filter((r) => r.activities_performed?.includes("Source reduction")).length,
     actionsByCategory: actionsByCategory(records),
     highRiskNoCompleted: records.filter((r) => r.risk_level_at_capture === "high" && r.reporting_status !== "completed").length,
     moderateRiskNoCompleted: records.filter((r) => r.risk_level_at_capture === "moderate" && r.reporting_status !== "completed").length,

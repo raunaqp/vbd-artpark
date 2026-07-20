@@ -3,6 +3,8 @@ import type { AreaAggregate, WorklistStatus } from "./aggregation";
 import { sortAreaAggregates } from "./aggregation";
 import { getRiskLabel } from "@/lib/forecast_labels";
 import { useStateSelection } from "@/contexts/StateContext";
+import { useFilters } from "@/contexts/FilterContext";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import TablePagination from "@/components/TablePagination";
 
 const PAGE_SIZE = 15;
@@ -34,6 +36,11 @@ const CHIPS: Array<{ id: Chip; label: string }> = [
 
 export default function AreaResponseTable({ aggregates, areaLabel, onRecord }: Props) {
   const { stateId } = useStateSelection();
+  const { appliedFilters } = useFilters();
+  // Responses are logged against a drilled scope. At state level (no district /
+  // corporation selected) the rows are whole districts — logging is disabled until
+  // the officer drills to at least district / corporation.
+  const canLog = appliedFilters.district !== "All Districts";
   const [chip, setChip] = useState<Chip>("all");
   const [page, setPage] = useState(1);
 
@@ -115,12 +122,28 @@ export default function AreaResponseTable({ aggregates, areaLabel, onRecord }: P
                   <td className="py-2 px-2 text-xs text-muted-foreground">{a.activityDate || "—"}</td>
                   <td className={`py-2 px-2 text-center text-xs font-medium ${sm.cls}`}>{sm.label}</td>
                   <td className="py-2 px-2 text-right">
-                    <button
-                      onClick={() => onRecord(a)}
-                      className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40"
-                    >
-                      {a.primary ? "View / Edit" : "Log Response"}
-                    </button>
+                    {canLog ? (
+                      <button
+                        onClick={() => onRecord(a)}
+                        className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40"
+                      >
+                        {a.primary ? "View / Edit" : "Log Response"}
+                      </button>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <button
+                              disabled
+                              className="text-xs px-2.5 py-1 rounded-md border border-border opacity-50 cursor-not-allowed"
+                            >
+                              Log Response
+                            </button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Drill down to at least district or corporation to log a response.</TooltipContent>
+                      </Tooltip>
+                    )}
                   </td>
                 </tr>
               );

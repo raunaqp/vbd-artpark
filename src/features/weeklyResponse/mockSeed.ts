@@ -40,7 +40,7 @@ const LEAVES: SeedLeaf[] = [
   { stateId: "odisha", district: "Puri", block: "Sakshigopal", ward: null, risk: "low", scenario: "no_action" },
   { stateId: "odisha", district: "Cuttack", block: "Cuttack MC", ward: "Ward 18", risk: "high", scenario: "report_pending" },
   { stateId: "odisha", district: "Angul", block: "Talcher", ward: null, risk: "moderate", scenario: "no_activity" },
-  { stateId: "odisha", district: "Balasore", block: "Nilgiri", ward: null, risk: "low", scenario: "routine" },
+  { stateId: "odisha", district: "Baleshwar", block: "Nilgiri", ward: null, risk: "low", scenario: "routine" },
   // ── Karnataka ──
   { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP East Zone", ward: "Ward 84", risk: "high", scenario: "completed" },
   { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP East Zone", ward: "Ward 92", risk: "high", scenario: "pending" },
@@ -111,8 +111,10 @@ function buildActions(leaf: SeedLeaf, seed: number): { actions: ActionType[]; co
   return { actions, counts };
 }
 
-export function buildSeedRecords(): WeeklyResponseRecord[] {
+/** Seed records for the current epi-week + 3 prior. Pass `state` to scope to one state. */
+export function buildSeedRecords(state?: string): WeeklyResponseRecord[] {
   const records: WeeklyResponseRecord[] = [];
+  const leaves = state ? LEAVES.filter((l) => l.stateId === state) : LEAVES;
   const totalWeeks = EPI_WEEKS.length;
   const weeksToSeed = 4; // current + 3 prior
   const startIdx = Math.max(0, totalWeeks - weeksToSeed);
@@ -123,7 +125,7 @@ export function buildSeedRecords(): WeeklyResponseRecord[] {
     const isCurrentWeek = i === totalWeeks - 1;
     const forecastGenAt = WEEK_ENDINGS[Math.max(0, i - 1)] || weekEnding;
 
-    for (const leaf of LEAVES) {
+    for (const leaf of leaves) {
       const geographyId = makeGeographyId(leaf.stateId, leaf.district, leaf.block, leaf.ward);
       const seed = h(geographyId + epiWeek);
       const officer = OFFICERS[seed % OFFICERS.length];

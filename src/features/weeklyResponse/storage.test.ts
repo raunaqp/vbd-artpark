@@ -28,41 +28,51 @@ function build(week: string, district: string, block: string | null, activity: W
   };
 }
 
+const S = "karnataka";
+const D = "dengue";
+
 describe("weeklyResponseStorage", () => {
   beforeEach(() => localStorage.clear());
 
   it("stores and reads a record", () => {
     const r = build("W28", "Mysuru", "Nanjangud", "yes", 5);
-    weeklyResponseStorage.upsert(r);
-    expect(weeklyResponseStorage.getAll()).toHaveLength(1);
-    expect(weeklyResponseStorage.getAll()[0].personnel_deployed).toBe(5);
+    weeklyResponseStorage.upsert(S, D, r);
+    expect(weeklyResponseStorage.getAll(S, D)).toHaveLength(1);
+    expect(weeklyResponseStorage.getAll(S, D)[0].personnel_deployed).toBe(5);
   });
 
   it("updates the existing record in place — no duplicate for the same geography + week", () => {
-    weeklyResponseStorage.upsert(build("W28", "Mysuru", "Nanjangud", "yes", 5));
-    weeklyResponseStorage.upsert(build("W28", "Mysuru", "Nanjangud", "yes", 9)); // same id
-    const all = weeklyResponseStorage.getAll();
+    weeklyResponseStorage.upsert(S, D, build("W28", "Mysuru", "Nanjangud", "yes", 5));
+    weeklyResponseStorage.upsert(S, D, build("W28", "Mysuru", "Nanjangud", "yes", 9)); // same id
+    const all = weeklyResponseStorage.getAll(S, D);
     expect(all).toHaveLength(1);
     expect(all[0].personnel_deployed).toBe(9);
     expect(all[0].reporting_status).toBe("completed");
   });
 
   it("keeps separate records across different weeks for the same geography", () => {
-    weeklyResponseStorage.upsert(build("W27", "Mysuru", "Nanjangud", "yes", 5));
-    weeklyResponseStorage.upsert(build("W28", "Mysuru", "Nanjangud", "no", 0));
-    expect(weeklyResponseStorage.getAll()).toHaveLength(2);
+    weeklyResponseStorage.upsert(S, D, build("W27", "Mysuru", "Nanjangud", "yes", 5));
+    weeklyResponseStorage.upsert(S, D, build("W28", "Mysuru", "Nanjangud", "no", 0));
+    expect(weeklyResponseStorage.getAll(S, D)).toHaveLength(2);
   });
 
-  it("seedIfEmpty only seeds when the store is empty", () => {
-    weeklyResponseStorage.upsert(build("W28", "Mysuru", "Nanjangud", "yes", 5));
-    weeklyResponseStorage.seedIfEmpty([build("W28", "Udupi", "Kundapura", "no", 0)]);
-    expect(weeklyResponseStorage.getAll()).toHaveLength(1); // not reseeded
+  it("partitions records by (state, disease) scope", () => {
+    weeklyResponseStorage.upsert(S, D, build("W28", "Mysuru", "Nanjangud", "yes", 5));
+    expect(weeklyResponseStorage.getAll(S, "malaria")).toHaveLength(0);
+    expect(weeklyResponseStorage.getAll("odisha", D)).toHaveLength(0);
+    expect(weeklyResponseStorage.getAll(S, D)).toHaveLength(1);
+  });
+
+  it("seedIfEmpty only seeds when the scope is empty", () => {
+    weeklyResponseStorage.upsert(S, D, build("W28", "Mysuru", "Nanjangud", "yes", 5));
+    weeklyResponseStorage.seedIfEmpty(S, D, [build("W28", "Udupi", "Kundapura", "no", 0)]);
+    expect(weeklyResponseStorage.getAll(S, D)).toHaveLength(1); // not reseeded
   });
 
   it("removes a record by id", () => {
     const r = build("W28", "Mysuru", "Nanjangud", "yes", 5);
-    weeklyResponseStorage.upsert(r);
-    weeklyResponseStorage.remove(r.id);
-    expect(weeklyResponseStorage.getAll()).toHaveLength(0);
+    weeklyResponseStorage.upsert(S, D, r);
+    weeklyResponseStorage.remove(S, D, r.id);
+    expect(weeklyResponseStorage.getAll(S, D)).toHaveLength(0);
   });
 });

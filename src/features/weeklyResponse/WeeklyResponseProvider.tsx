@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { getFilteredRegions, getOutbreakPredictions } from "@/data/mockData";
+import { getActiveDisease } from "@/data/canonical";
 import { EPI_WEEKS, WEEK_ENDINGS } from "@/data/mock_dataset";
 import { latestEpiWeek, latestWeekEnding } from "@/lib/epiWeek";
 import { useWeeklyResponses } from "./useWeeklyResponses";
@@ -13,7 +14,8 @@ import WeeklyResponseDrawer from "./WeeklyResponseDrawer";
 export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
   const { appliedFilters } = useFilters();
   const { stateId } = useStateSelection();
-  const { records, upsert } = useWeeklyResponses();
+  const disease = getActiveDisease();
+  const { records, upsert } = useWeeklyResponses(stateId, disease);
 
   const [epiWeek, setEpiWeek] = useState<string>(latestEpiWeek());
   const [selected, setSelected] = useState<AreaAggregate | null>(null);

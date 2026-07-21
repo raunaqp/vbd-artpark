@@ -205,12 +205,6 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
         </div>
       </header>
 
-      <div className="bg-risk-moderate/10 border-b border-risk-moderate/20 px-6 py-1.5">
-        <p className="text-xs text-foreground/80">
-          ⚠️ Data shown is for demonstration purposes. We are in the process of updating with actual state data.
-        </p>
-      </div>
-
       {dataQualityIssues.length > 0 && (
         <div className="bg-risk-moderate/10 border-b border-risk-moderate/30 px-6 py-2">
           <button

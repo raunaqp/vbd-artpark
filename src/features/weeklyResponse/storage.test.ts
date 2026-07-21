@@ -11,8 +11,9 @@ function build(week: string, district: string, block: string | null, activity: W
     forecast_generated_at: "2026-07-05",
     risk_level_at_capture: "high",
     state: "karnataka",
+    disease: "dengue",
     district,
-    block_or_municipality: block,
+    block_or_mun: block,
     ward_or_village: null,
     geography_level: block ? "block" : "district",
     geography_id: geographyId,
@@ -24,6 +25,7 @@ function build(week: string, district: string, block: string | null, activity: W
     logged_by_name: "Officer",
     logged_by_role: "Health Supervisor",
     recorded_at: "2026-07-12T00:00:00.000Z",
+    logged_at: "2026-07-12T00:00:00.000Z",
     updated_at: "2026-07-12T00:00:00.000Z",
   };
 }

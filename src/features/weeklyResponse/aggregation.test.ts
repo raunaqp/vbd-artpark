@@ -51,8 +51,9 @@ function rec(o: Opts): WeeklyResponseRecord {
     forecast_generated_at: o.forecastGeneratedAt ?? "2026-07-05",
     risk_level_at_capture: o.risk,
     state,
+    disease: "dengue",
     district: o.district,
-    block_or_municipality: block,
+    block_or_mun: block,
     ward_or_village: ward,
     geography_level: ward ? "ward" : block ? "block" : "district",
     geography_id: geographyId,
@@ -69,6 +70,7 @@ function rec(o: Opts): WeeklyResponseRecord {
     logged_by_name: "Officer",
     logged_by_role: "Health Supervisor",
     recorded_at: "2026-07-12T00:00:00.000Z",
+    logged_at: "2026-07-12T00:00:00.000Z",
     updated_at: "2026-07-12T00:00:00.000Z",
   };
 }

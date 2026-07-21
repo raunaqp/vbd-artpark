@@ -10,7 +10,7 @@ import type { WeeklyResponseRecord } from "./types";
  */
 export function useWeeklyResponses(state: string, disease: string) {
   const load = useCallback(() => {
-    weeklyResponseStorage.seedIfEmpty(state, disease, buildSeedRecords(state));
+    weeklyResponseStorage.seedIfEmpty(state, disease, buildSeedRecords(state, disease));
     return weeklyResponseStorage.getAll(state, disease);
   }, [state, disease]);
 

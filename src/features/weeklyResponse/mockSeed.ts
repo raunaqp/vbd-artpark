@@ -125,8 +125,8 @@ function buildActions(leaf: SeedLeaf, seed: number): { actions: ActionType[]; co
   return { actions, counts };
 }
 
-/** Seed records for the current epi-week + 3 prior. Pass `state` to scope to one state. */
-export function buildSeedRecords(state?: string): WeeklyResponseRecord[] {
+/** Seed records for the current epi-week + 3 prior. Pass `state`/`disease` to scope. */
+export function buildSeedRecords(state?: string, disease = "dengue"): WeeklyResponseRecord[] {
   const records: WeeklyResponseRecord[] = [];
   const leaves = state ? LEAVES.filter((l) => l.stateId === state) : LEAVES;
   const totalWeeks = EPI_WEEKS.length;
@@ -181,8 +181,9 @@ export function buildSeedRecords(state?: string): WeeklyResponseRecord[] {
         forecast_generated_at: forecastGenAt,
         risk_level_at_capture: leaf.risk,
         state: leaf.stateId,
+        disease,
         district: leaf.district,
-        block_or_municipality: leaf.block,
+        block_or_mun: leaf.block,
         ward_or_village: leaf.ward,
         geography_level: level,
         geography_id: geographyId,
@@ -204,6 +205,7 @@ export function buildSeedRecords(state?: string): WeeklyResponseRecord[] {
         logged_by_name: officer.name,
         logged_by_role: officer.role,
         recorded_at: `${activityDate}T09:00:00.000Z`,
+        logged_at: `${activityDate}T09:00:00.000Z`,
         updated_at: `${activityDate}T09:00:00.000Z`,
       };
       records.push(rec);

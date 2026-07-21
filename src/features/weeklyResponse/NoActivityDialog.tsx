@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { NO_ACTIVITY_REASONS, makeRecordId } from "./types";
+import { getActiveDisease } from "@/data/canonical";
 import type { AreaAggregate } from "./aggregation";
 import type { NoActivityReason, WeeklyResponseRecord } from "./types";
 import { useRole } from "@/contexts/RoleContext";
@@ -53,8 +54,9 @@ export default function NoActivityDialog({ open, onOpenChange, agg, stateId, epi
       forecast_generated_at: forecastGen,
       risk_level_at_capture: row.risk,
       state: stateId,
+      disease: getActiveDisease(),
       district: row.district || "",
-      block_or_municipality: row.block,
+      block_or_mun: row.block,
       ward_or_village: row.ward,
       geography_level: row.ward ? "ward" : row.block ? "block" : "district",
       geography_id: geographyId,
@@ -68,6 +70,7 @@ export default function NoActivityDialog({ open, onOpenChange, agg, stateId, epi
       logged_by_name: existing?.logged_by_name || currentRole.userName,
       logged_by_role: existing?.logged_by_role || currentRole.roleName,
       recorded_at: existing?.recorded_at || now,
+      logged_at: existing?.recorded_at || now,
       updated_at: now,
     };
     onSave(rec);

@@ -46,8 +46,10 @@ export interface WeeklyResponseRecord {
   risk_level_at_capture: RiskLevel;
 
   state: string;
+  /** Disease this response was captured under (also the storage-key partition). */
+  disease: string;
   district: string;
-  block_or_municipality: string | null;
+  block_or_mun: string | null;
   ward_or_village: string | null;
   geography_level: GeographyLevel;
   geography_id: string;
@@ -87,6 +89,8 @@ export interface WeeklyResponseRecord {
   logged_by_role: string;
 
   recorded_at: string;
+  /** Alias of recorded_at, for consumers built to the Change 5.6 wire schema. */
+  logged_at: string;
   updated_at: string;
 }
 

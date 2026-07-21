@@ -52,7 +52,7 @@ function statusFromReporting(reporting: ReportingStatus): WorklistStatus {
 
 function matchesScope(row: AreaRow, r: WeeklyResponseRecord): boolean {
   if (row.district && r.district !== row.district) return false;
-  if (row.block && (r.block_or_municipality || null) !== row.block) return false;
+  if (row.block && (r.block_or_mun || null) !== row.block) return false;
   if (row.ward && (r.ward_or_village || null) !== row.ward) return false;
   return true;
 }
@@ -84,7 +84,7 @@ export function summarizeRow(row: AreaRow, records: WeeklyResponseRecord[]): Are
   const scoped = records.filter((r) => matchesScope(row, r));
   const primary = scoped.find(
     (r) => r.district === (row.district || r.district) &&
-      (r.block_or_municipality || null) === row.block &&
+      (r.block_or_mun || null) === row.block &&
       (r.ward_or_village || null) === row.ward,
   );
 

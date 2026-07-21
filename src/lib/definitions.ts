@@ -26,8 +26,18 @@ export const HOTSPOT = {
   HIGH_CONSEC_WEEKS: 3,
 };
 
+// State → Risk-Class method. Source of truth: the acestor pipeline configs at
+//   ~/work/dengue/acestor/acestor/configs/*.yaml  (thresholds.classification_method)
+//   cross-checked against docs/threshold-methods-reference.md §4 "State Assignment Summary".
+//   Andhra Pradesh → ICMR   (configs/ap_district_v3.yaml)
+//   GBA Central    → ICMR   (configs/gba_corp.yaml, configs/gba_zone.yaml)
+//   Karnataka      → WHO    (default classification_method: who)
+//   Odisha         → WHO    (od_district.yaml uses the WHO default; the `percentile`
+//                            method in configs/od_*_to_*.yaml is child-level
+//                            disaggregation re-derivation, NOT the state Risk Class)
 export const STATE_RISK_METHOD = {
   "Andhra Pradesh": "ICMR",
+  "GBA Central": "ICMR",
   Karnataka: "WHO",
   Odisha: "WHO",
 } as const;

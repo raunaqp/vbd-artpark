@@ -1,5 +1,6 @@
-// State-aware risk label helper.
-// Karnataka & Odisha → WHO labels; Andhra Pradesh → ICMR labels.
+// State-aware risk label helper. Method per state comes from STATE_RISK_METHOD
+// (source of truth: acestor configs/*.yaml — see definitions.ts).
+// Karnataka & Odisha → WHO labels; Andhra Pradesh & GBA Central → ICMR labels.
 import { STATE_RISK_METHOD } from "./definitions";
 
 const WHO: Record<"low" | "moderate" | "high", string> = {
@@ -14,6 +15,7 @@ const ICMR: Record<"low" | "moderate" | "high", string> = {
 };
 
 const STATE_BY_ID: Record<string, string> = {
+  gba_central: "GBA Central",
   andhra_pradesh: "Andhra Pradesh",
   karnataka: "Karnataka",
   odisha: "Odisha",

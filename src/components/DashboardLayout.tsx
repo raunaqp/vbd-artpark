@@ -8,6 +8,7 @@ import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecas
 import { useEffect, useState } from "react";
 import { useSectionToggles } from "@/lib/sectionVisibility";
 import Footer from "@/components/Footer";
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 
 const baseTabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -63,6 +64,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
 
   return (
     <div className="min-h-screen flex flex-col">
+      <DisclaimerBanner />
       <header className="dashboard-header px-6 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Early Warning System for Vector-Borne Diseases</h1>

@@ -8,6 +8,7 @@ import { exportSummaryCsv, exportLineListingCsv, exportHotspotCsv, exportForecas
 import { useEffect, useState } from "react";
 import { useSectionToggles } from "@/lib/sectionVisibility";
 import Footer from "@/components/Footer";
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 
 const baseTabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -63,6 +64,7 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
 
   return (
     <div className="min-h-screen flex flex-col">
+      <DisclaimerBanner />
       <header className="dashboard-header px-6 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Early Warning System for Vector-Borne Diseases</h1>
@@ -202,12 +204,6 @@ export default function DashboardLayout({ activeTab, onTabChange, children }: Pr
           <span className="inline-flex items-center rounded-full bg-amber-400/20 text-amber-100 border border-amber-300/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Demo</span>
         </div>
       </header>
-
-      <div className="bg-risk-moderate/10 border-b border-risk-moderate/20 px-6 py-1.5">
-        <p className="text-xs text-foreground/80">
-          ⚠️ Data shown is for demonstration purposes. We are in the process of updating with actual state data.
-        </p>
-      </div>
 
       {dataQualityIssues.length > 0 && (
         <div className="bg-risk-moderate/10 border-b border-risk-moderate/30 px-6 py-2">

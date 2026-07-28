@@ -25,6 +25,7 @@ const TAB_LABELS: Record<TabId, string> = {
   overview: "Overview",
   surveillance: "Case Surveillance",
   forecast: "Forecast",
+  response: "Response",
   weather: "Weather",
   hotspots: "Hotspots",
   signals: "Signals",

@@ -4,6 +4,7 @@ import { useRole } from "@/contexts/RoleContext";
 import OverviewScreen from "@/screens/OverviewScreen";
 import CaseSurveillanceScreen from "@/screens/CaseSurveillanceScreen";
 import ForecastScreen from "@/screens/ForecastScreen";
+import ResponseScreen from "@/screens/ResponseScreen";
 import WeatherScreen from "@/screens/WeatherScreen";
 import HotspotsScreen from "@/screens/HotspotsScreen";
 import SignalsScreen from "@/screens/SignalsScreen";
@@ -22,6 +23,7 @@ const screens: Record<TabId, React.ComponentType<{ onNavigate?: (tab: TabId) => 
   overview: OverviewScreen,
   surveillance: CaseSurveillanceScreen,
   forecast: ForecastScreen,
+  response: ResponseScreen,
   weather: WeatherScreen,
   hotspots: HotspotsScreen,
   signals: SignalsScreen,

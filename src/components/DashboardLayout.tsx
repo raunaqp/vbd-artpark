@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, TrendingUp, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings, Shield } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, ClipboardCheck, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings, Shield } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -14,6 +14,7 @@ const baseTabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "surveillance", label: "Case Surveillance", icon: Activity },
   { id: "forecast", label: "Forecast", icon: TrendingUp },
+  { id: "response", label: "Response", icon: ClipboardCheck },
   { id: "weather", label: "Weather", icon: CloudRain },
   { id: "hotspots", label: "Hotspots", icon: MapPin },
   { id: "signals", label: "Signals", icon: Radio },

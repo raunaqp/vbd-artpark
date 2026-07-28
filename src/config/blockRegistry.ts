@@ -27,6 +27,9 @@ export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings" | "admin">, BlockD
     { id: "actual_vs_predicted", label: "Incidence — Actual vs Predicted" },
     { id: "outbreak_table", label: "Priority Forecast Areas" },
   ],
+  // Response tab (R2). Operational sections don't have block-visibility toggles
+  // yet; add them here if/when they become individually toggleable.
+  response: [],
   weather: [
     { id: "observed_climate", label: "Observed Climate (Last 8 Weeks)" },
     { id: "forecast_climate", label: "Forecast Climate (Next 8 Weeks)" },
@@ -53,6 +56,7 @@ export const TAB_LABELS: Record<keyof typeof BLOCK_REGISTRY, string> = {
   overview: "Overview",
   surveillance: "Case Surveillance",
   forecast: "Forecast",
+  response: "Response",
   weather: "Weather",
   hotspots: "Hotspots",
   signals: "Signals",

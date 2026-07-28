@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Pencil, Archive, RotateCcw } from "lucide-react";
+import { Search, Pencil, Archive, RotateCcw, Trash2 } from "lucide-react";
 import { type MockCase } from "@/data/mock_line_listing";
 import {
   getAllCasesMerged, subscribeCaseStore, caseStoreVersion,
@@ -20,6 +20,7 @@ export default function CaseManagementPanel() {
   const [version, setVersion] = useState(caseStoreVersion());
   const [editing, setEditing] = useState<MockCase | null>(null);
   const [archiving, setArchiving] = useState<MockCase | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   // 250ms debounce on keystrokes.
   useEffect(() => {
@@ -55,12 +56,35 @@ export default function CaseManagementPanel() {
     setVersion(caseStoreVersion());
   };
 
+  // Reset demo: clear every prismh:* localStorage key (edits, archives, logged
+  // responses, admin state) so repeat walkthroughs start from the pristine base.
+  const confirmReset = () => {
+    try {
+      const keys = Object.keys(localStorage).filter((k) => k.startsWith("prismh:"));
+      keys.forEach((k) => localStorage.removeItem(k));
+    } catch { /* storage disabled */ }
+    setResetting(false);
+    toast({ title: "Demo data reset", description: "Reloading..." });
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
   return (
     <div className="section-card p-5">
-      <h3 className="section-title mb-1">Case Management</h3>
-      <p className="text-xs text-muted-foreground mb-4">
-        Search any case by UHID across all states. Edit or archive individual cases.
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="section-title mb-1">Case Management</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Search any case by UHID across all states. Edit or archive individual cases.
+          </p>
+        </div>
+        <button
+          onClick={() => setResetting(true)}
+          className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md border border-input text-xs text-muted-foreground hover:text-risk-high hover:border-risk-high/40 transition-colors"
+          title="Clear all demo edits, archives, and logged responses"
+        >
+          <Trash2 className="h-3 w-3" /> Reset demo data
+        </button>
+      </div>
 
       {/* Search input */}
       <div className="relative max-w-md mb-4">
@@ -178,6 +202,23 @@ export default function CaseManagementPanel() {
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-border">
               <button onClick={() => setArchiving(null)} className="h-8 px-3 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted/50">Cancel</button>
               <button onClick={confirmArchive} className="h-8 px-4 rounded-md bg-risk-high text-white text-xs font-medium hover:opacity-90">Archive case</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resetting && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 p-4" onClick={() => setResetting(false)}>
+          <div className="bg-card rounded-lg border border-border shadow-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4">
+              <h3 className="text-sm font-semibold text-foreground mb-2">Reset demo data?</h3>
+              <p className="text-sm text-muted-foreground">
+                This will clear all edits, archives, and logged responses. The demo dataset will be restored to its pristine state. Continue?
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-border">
+              <button onClick={() => setResetting(false)} className="h-8 px-3 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted/50">Cancel</button>
+              <button onClick={confirmReset} className="h-8 px-4 rounded-md bg-risk-high text-white text-xs font-medium hover:opacity-90">Reset demo data</button>
             </div>
           </div>
         </div>

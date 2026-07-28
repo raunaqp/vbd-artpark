@@ -25,7 +25,7 @@ export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings" | "admin">, BlockD
     { id: "risk_cards", label: "Forecast Risk Cards (Next 4W)" },
     { id: "forecast_map", label: "Forecasted Risk Map" },
     { id: "actual_vs_predicted", label: "Incidence — Actual vs Predicted" },
-    { id: "outbreak_table", label: "Outbreak Prediction Table" },
+    { id: "outbreak_table", label: "Priority Forecast Areas" },
   ],
   weather: [
     { id: "observed_climate", label: "Observed Climate (Last 8 Weeks)" },

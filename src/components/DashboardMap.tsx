@@ -17,7 +17,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
-import { GBA_BOUNDARIES_GEOJSON } from "@/data/gba_boundaries";
+import {
+  gbaCorporationLayer,
+  gbaWardLayer,
+  positionalJoin,
+  featureKey,
+  type PolygonJoin,
+} from "@/lib/boundaryLayers";
 import "leaflet/dist/leaflet.css";
 
 // ──────────────── Risk colors (semantic but inline-required by leaflet) ────────────────
@@ -65,18 +71,23 @@ const GEOJSON_URLS: Record<string, string> = {
     "https://cdn.jsdelivr.net/gh/datta07/INDIAN-SHAPEFILES@master/STATES/KARNATAKA/KARNATAKA_DISTRICTS.geojson",
 };
 
-// Locally-bundled boundary approximations (no network fetch). Used for demo
-// states that have no real source polygons yet. Checked before GEOJSON_URLS.
-const LOCAL_GEOJSON: Record<string, FeatureCollection> = {
-  gba_central: GBA_BOUNDARIES_GEOJSON,
+// Locally-bundled real boundaries (no network fetch), built on first use from
+// `src/data/boundaries.ts`. Thunks rather than values so the 6 MB polygon module
+// is only walked when a state that needs it is actually selected.
+// Checked before GEOJSON_URLS.
+const LOCAL_GEOJSON: Record<string, () => FeatureCollection> = {
+  gba_central: gbaCorporationLayer,
 };
 
 // In-memory cache (lives for the session); also mirrored to sessionStorage so a reload reuses it.
 const geoCache = new Map<string, FeatureCollection>();
 
 async function fetchStateGeoJSON(stateId: string): Promise<FeatureCollection | null> {
-  // Local mock boundaries take precedence over the remote CDN pattern.
-  if (LOCAL_GEOJSON[stateId]) return LOCAL_GEOJSON[stateId];
+  // Local real boundaries take precedence over the remote CDN pattern.
+  if (LOCAL_GEOJSON[stateId]) {
+    if (!geoCache.has(stateId)) geoCache.set(stateId, LOCAL_GEOJSON[stateId]());
+    return geoCache.get(stateId)!;
+  }
   if (geoCache.has(stateId)) return geoCache.get(stateId)!;
   // sessionStorage backup
   try {
@@ -466,6 +477,115 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geoData, isStateLevel, mode]);
 
+  // ─── Real sub-district polygon layer ───
+  // States with official geometry render their children as polygons instead of
+  // centroid dots. GBA: corporation → official Dec 2025 ward polygons.
+  // Everything else falls through to the marker rendering below.
+  const subLayer = useMemo<{
+    data: FeatureCollection;
+    join: PolygonJoin;
+    levelLabel: string;
+  } | null>(() => {
+    if (stateId !== "gba_central" || isStateLevel) return null;
+    const corp = appliedFilters.district;
+
+    // Mock ward records for the whole corporation, in mock-hierarchy order:
+    // zone by zone, wards within each zone. This ordering is what the
+    // positional join pairs against, so it must stay deterministic.
+    const zoneFilters = { ...appliedFilters, district: corp, block: "All Blocks", ward: "All Wards" };
+    const zones = getFilteredRegions(zoneFilters).filter(
+      (r) => r.type === "municipality" || r.type === "block",
+    );
+    const mockWards = zones.flatMap((z) =>
+      getFilteredRegions({ ...appliedFilters, district: corp, block: z.name, ward: "All Wards" }),
+    );
+
+    const all = gbaWardLayer(corp);
+    if (!all.features.length) return null;
+    const join = positionalJoin(all, mockWards);
+
+    // Zone (block) selected → show only the wards paired to that zone's mock
+    // records. Zones are a mock-hierarchy layer with no counterpart in the
+    // official Dec 2025 data, so unpaired polygons have no zone and drop out.
+    let data = all;
+    if (isBlockLevel) {
+      data = {
+        type: "FeatureCollection",
+        features: all.features.filter((f) => {
+          const k = featureKey(f);
+          return k ? join.byKey.get(k)?.parentBlock === appliedFilters.block : false;
+        }),
+      };
+    }
+
+    return { data, join, levelLabel: "ward" };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateId, isStateLevel, isBlockLevel, appliedFilters.district, appliedFilters.block, appliedFilters.fromDate, appliedFilters.toDate, regions.length]);
+
+  // Report the polygon ↔ mock-data mapping status once per corporation, so the
+  // reconciliation gap is visible during demos instead of silently grey.
+  const loggedJoinRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!subLayer) return;
+    const sig = `${stateId}|${appliedFilters.district}`;
+    if (loggedJoinRef.current === sig) return;
+    loggedJoinRef.current = sig;
+    const { polygonCount, mockCount, unmatchedPolygons, unusedMockRecords } = subLayer.join;
+    console.info(
+      `[boundaries] ${appliedFilters.district}: ${polygonCount} official ward polygons, ` +
+        `${mockCount} mock ward records · ${unmatchedPolygons} polygons unshaded (no mock match), ` +
+        `${unusedMockRecords} mock records undrawn (no polygon). Join is positional — see known_debt.md.`,
+    );
+  }, [subLayer, stateId, appliedFilters.district]);
+
+  // Max case count across the sub-layer → drives its blue intensity scale.
+  const maxSubCases = useMemo(() => {
+    if (!subLayer) return 0;
+    let max = 0;
+    subLayer.join.byKey.forEach((r) => { max = Math.max(max, r.confirmed || 0); });
+    return max;
+  }, [subLayer]);
+
+  const styleSubFeature = (feature?: Feature): PathOptions => {
+    if (!feature) return {};
+    const k = featureKey(feature);
+    const rec = k ? subLayer?.join.byKey.get(k) : undefined;
+    const base: PathOptions = { color: "#334155", weight: 0.8, opacity: 0.9 };
+    if (!rec) {
+      // Official polygon with no mock counterpart — drawn, but never shaded.
+      return { ...base, fillColor: NO_DATA_COLOR, fillOpacity: 0.25 };
+    }
+    if (mode === "forecast") return { ...base, fillColor: riskColor[rec.risk], fillOpacity: 0.7 };
+    if (mode === "hotspot") return { ...base, fillColor: hotspotBurdenColor[rec.risk], fillOpacity: 0.65 };
+    return { ...base, fillColor: blueForIntensity(rec.confirmed, maxSubCases), fillOpacity: 0.8 };
+  };
+
+  const onEachSubFeature = (feature: Feature<Geometry>, layer: Layer) => {
+    const k = featureKey(feature);
+    const rec = k ? subLayer?.join.byKey.get(k) : undefined;
+    const props = (feature.properties || {}) as Record<string, unknown>;
+    const wardName = String(props.name ?? "Unnamed ward");
+    const assembly = props.assembly ? String(props.assembly) : "";
+    const zone = rec?.parentBlock ? String(rec.parentBlock) : "";
+
+    layer.bindTooltip(
+      `<div style="font-size:12px;line-height:1.45;min-width:180px">
+         <div style="font-weight:700;margin-bottom:2px">${wardName}</div>
+         ${zone ? `<div style="opacity:0.75;font-size:11px">${zone}</div>` : ""}
+         ${assembly ? `<div style="opacity:0.6;font-size:11px">${assembly}</div>` : ""}
+         ${rec
+           ? `<div style="margin-top:3px">Cases: <strong>${rec.confirmed} ${trendArrow[rec.trend] || ""}</strong></div>`
+           : `<div style="margin-top:3px;opacity:0.7">Data not available</div>`}
+       </div>`,
+      { sticky: true },
+    );
+
+    layer.on({
+      mouseover: (e) => { (e.target as any).setStyle({ weight: 2.5, color: "#0f172a" }); },
+      mouseout: (e) => { (e.target as any).setStyle(styleSubFeature(feature)); },
+    });
+  };
+
   // ─── Child overlays at sub-district / ward levels ───
   // STRICT scope rule:
   //  - State view → only district-level data (polygons; no child markers)
@@ -474,14 +594,18 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   // We do NOT mix multiple geographic levels in the same view.
   const childPoints = useMemo(() => {
     if (isStateLevel) return [];
+    // Real polygons supersede centroid dots at this level.
+    if (subLayer) return [];
     if (isBlockLevel) {
       return regions.filter((r) => r.type === "village" || r.type === "ward");
     }
     return regions.filter((r) => r.type === "block" || r.type === "municipality");
-  }, [regions, isStateLevel, isBlockLevel]);
+  }, [regions, isStateLevel, isBlockLevel, subLayer]);
 
   // Scope label shown above the map.
-  const scopeLabel = isBlockLevel
+  const scopeLabel = subLayer
+    ? `Showing: Ward boundaries (${subLayer.data.features.length})`
+    : isBlockLevel
     ? "Showing: Village / Ward distribution"
     : !isStateLevel
     ? "Showing: Block & Municipality distribution"
@@ -489,6 +613,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
 
   // Force GeoJSON layer to re-style when filter changes (key trick).
   const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}-${maxDistrictCases}`;
+  const subKey = `${geoKey}-${appliedFilters.block}-${subLayer?.data.features.length ?? 0}-${maxSubCases}`;
 
   // Breadcrumb navigation
   const handleBreadcrumb = (index: number) => {
@@ -574,6 +699,16 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             style={styleFeature as any}
             onEachFeature={onEachFeature}
           />
+
+          {/* Real sub-district polygons (GBA wards) — drawn over the dimmed parent layer. */}
+          {subLayer && (
+            <GeoJSON
+              key={subKey}
+              data={subLayer.data}
+              style={styleSubFeature as any}
+              onEachFeature={onEachSubFeature}
+            />
+          )}
 
           {/* Permanent district-name labels at state-level view (any mode). */}
           {districtLabelPoints.map((p) => (
@@ -710,10 +845,10 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         </div>
       )}
 
-      {/* Demo-boundary note — only for states drawn from local placeholder polygons. */}
+      {/* Boundary provenance note — shown for states drawn from the bundled real polygons. */}
       {geoReady && stateId === "gba_central" && (
         <div className="absolute bottom-3 right-3 z-[1000] bg-card/80 backdrop-blur rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground pointer-events-none">
-          Demo boundaries — approximate
+          Official GBA Dec 2025 delimitation. Karnataka boundaries from KGIS.
         </div>
       )}
 

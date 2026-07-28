@@ -1,3 +1,5 @@
+// DEPRECATED: replaced by boundaries.ts real polygons
+//
 // Demo approximation — polygons are generated placeholders, not official
 // GoK boundaries. Replace with real GIS data before production use.
 //

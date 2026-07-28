@@ -2156,6 +2156,48 @@ export function getOutbreakPredictions(input?: DashboardFiltersLike | string, le
   return canon.length ? canon : buildDerivedDashboardData(filters).predictions;
 }
 
+// Priority Forecast Areas (R1) — the same predicted areas as getOutbreakPredictions,
+// but surfacing the honest per-area 4-week projection instead of probability.
+// projectedCases = sum(DistrictMetrics.forecast4w) joined by area name. Only
+// district/corporation level carries forecast4w; sub-district areas (blocks,
+// wards, villages) have none → projectedCases is null and the UI flags the gap
+// (never backfilled). getOutbreakPredictions is left untouched for the map.
+export interface PriorityForecastArea {
+  area: string;
+  projectedCases: number | null; // null = no forecast4w for this area (flag, don't backfill)
+  risk: "high" | "moderate" | "low";
+  riskLabel?: string;
+  expectedWeek: string;
+  signal: string;
+  parentDistrict?: string;
+  parentBlock?: string;
+  areaType?: string;
+}
+
+export function getPriorityForecastAreas(input?: DashboardFiltersLike | string, legacyBlock?: string): PriorityForecastArea[] {
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  // Per-district 4-week projection (summed forecast4w), keyed by area name.
+  const projectedByDistrict = new Map<string, number>();
+  for (const m of getDistrictMetrics(stateLabel)) {
+    projectedByDistrict.set(m.name, Math.round(m.forecast4w.reduce((a, b) => a + b, 0)));
+  }
+  return getOutbreakPredictions(filters)
+    .map((p) => ({
+      area: p.area,
+      projectedCases: projectedByDistrict.has(p.area) ? projectedByDistrict.get(p.area)! : null,
+      risk: p.risk,
+      riskLabel: p.riskLabel,
+      expectedWeek: p.expectedWeek,
+      signal: p.signal,
+      parentDistrict: p.parentDistrict,
+      parentBlock: p.parentBlock,
+      areaType: p.areaType,
+    }))
+    // Sort by projected cases descending; gap rows (null) sink to the bottom.
+    .sort((a, b) => (b.projectedCases ?? -1) - (a.projectedCases ?? -1));
+}
+
 export function getFilteredHotspots(input?: DashboardFiltersLike | string, lookbackWeeks: 2 | 4 = 4): HotspotData[] {
   const filters = resolveFilters(input);
   const stateLabel = stateLabelFromId(activeStateId);

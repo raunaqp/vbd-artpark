@@ -243,6 +243,34 @@ ReportingWeekSelector to an *older* week outside the effectiveness window, the
 new checkmark won't appear until they widen the window. Edge case; default path
 is fine.
 
+## Forecast / Response redesign (R1–R5)
+
+Driven by `docs/design/PREDICTION_VS_OPERATIONS.md`.
+
+### Priority Forecast Areas: no projected cases below district level — [demo-ok]
+`getPriorityForecastAreas` (R1.1) sources `projectedCases` from
+`DistrictMetrics.forecast4w`, which exists only at district/corporation level.
+Drilling into a corporation returns sub-areas (zones/wards) with
+`projectedCases: null`; the table/tooltip shows "—" rather than backfilling a
+derived value (deliberate — flagged, not invented). `canonicalPredictions`
+*does* compute a per-block `projected` internally, but it's a synthesis from
+recent cases × the district forecast ratio, not a real forecast, so it's not
+surfaced. If sub-district forecasts are ever mocked, wire them here and the
+gap closes.
+
+### Filter simplification deferred to R2 — [planned]
+The design doc wants Corporation/Zone/Ward filters with auto-apply, no Apply
+button, keep Reset — on **both** Forecast and Response tabs. `GlobalFilters` is
+shared across 6 screens (Overview, Forecast, Weather, Hotspots, Signals, Case
+Surveillance), so changing it touches all of them. Deferred to **R2** (Response
+tab scaffold) to do it once, consistently, for both new tabs rather than as a
+cross-cutting change mid-R1. R1 does not touch `GlobalFilters`.
+
+### "Critical" risk tier not implemented — [planned]
+The doc lists five risk categories (Critical / High / Moderate / Low / No Data)
+but the data model only has `high | moderate | low` (+ no-data). Adding
+"Critical" is a data-model change (new signal), out of R1 scope. Deferred.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

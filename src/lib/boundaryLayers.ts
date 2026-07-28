@@ -12,7 +12,9 @@ import {
   getGbaCorporations,
   getGbaWards,
   getKaTaluks,
+  getKaWards,
   MOCK_TO_KGIS_TALUK_NAME,
+  KA_DISTRICTS_WITH_WARD_POLYGONS,
   type BoundaryFeature,
 } from "@/data/boundaries";
 import type { RegionData } from "@/data/mockData";
@@ -94,6 +96,48 @@ export function kaTalukLayer(district: string): FeatureCollection {
  */
 export function mockBlockToTalukName(district: string, mockBlock: string): string {
   return MOCK_TO_KGIS_TALUK_NAME[district]?.[mockBlock] ?? mockBlock;
+}
+
+/**
+ * Mock municipality name → KGIS municipality name.
+ *
+ * Not shipped in boundaries.ts, so it lives here. Only the 11 cities that have
+ * ward polygons need an entry; every other municipality (Karkala, Kundapura,
+ * Puttur, …) is absent on purpose and keeps its marker rendering.
+ *
+ * Bhadravathi is deliberately omitted: KGIS has 35 ward polygons for it, but in
+ * our mock it is a *block* (taluk) whose children are villages, not a
+ * municipality — so there are no municipal ward records to shade them with.
+ */
+const MOCK_TO_KGIS_MUN: Record<string, string> = {
+  "BBMP-Legacy": "BBMP",
+  "Mysuru City Corporation": "Mysuru",
+  "Udupi City Municipal Council": "Udupi",
+  "Mangaluru City Corporation": "Manglore",
+  "Belagavi City Corporation": "Belagavi",
+  "Tumakuru City Corporation": "Tumkur",
+  "Shivamogga City Corporation": "Shivamogga",
+  "Kalaburagi City Corporation": "Kalaburagi",
+  "Hassan City Municipal Council": "Hassan",
+  "Hubballi-Dharwad Municipal Corporation": "Hubli Dharwad",
+};
+
+/**
+ * KGIS municipality for a selected mock block, or null when we have no ward
+ * polygons for it — the caller then falls back to marker rendering.
+ *
+ * Checks `KA_DISTRICTS_WITH_WARD_POLYGONS` as well as the name map, so a
+ * mapping alone can't make us ask for polygons that aren't in the dataset.
+ */
+export function kaWardMunicipality(district: string, mockBlock: string): string | null {
+  const kgis = MOCK_TO_KGIS_MUN[mockBlock];
+  if (!kgis) return null;
+  return (KA_DISTRICTS_WITH_WARD_POLYGONS[district] ?? []).includes(kgis) ? kgis : null;
+}
+
+/** Official KGIS municipal ward polygons for one city. */
+export function kaWardLayer(municipality: string): FeatureCollection {
+  return toFeatureCollection(sortBoundaries(getKaWards(municipality)), `ka-ward:${municipality}`);
 }
 
 // ──────────────── Positional join ────────────────

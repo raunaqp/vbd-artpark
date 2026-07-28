@@ -21,6 +21,8 @@ import {
   gbaCorporationLayer,
   gbaWardLayer,
   kaTalukLayer,
+  kaWardLayer,
+  kaWardMunicipality,
   mockBlockToTalukName,
   positionalJoin,
   nameJoin,
@@ -531,10 +533,28 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     }
 
     if (stateId === "karnataka") {
+      // A city corporation is selected and we have its ward polygons → drop to
+      // municipal ward level. Rural blocks and the cities we have no geometry
+      // for fall through to the taluk layer + village markers.
+      if (isBlockLevel) {
+        const municipality = kaWardMunicipality(district, appliedFilters.block);
+        if (municipality) {
+          const all = kaWardLayer(municipality);
+          if (all.features.length) {
+            const mockWards = getFilteredRegions({ ...appliedFilters, ward: "All Wards" })
+              .filter((r) => r.type === "ward");
+            // Same story as GBA: the mock ward names are placeholders
+            // ("Mysuru Ward 1") with no relation to the KGIS names, so pairing
+            // is positional. See positionalJoin.
+            const join = positionalJoin(all, mockWards);
+            return { data: all, join, levelLabel: "Ward", covers: ["ward", "village"] };
+          }
+        }
+      }
+
       const all = kaTalukLayer(district);
       if (!all.features.length) return null;
-      // Only blocks are taluks — city corporations sit alongside them and keep
-      // their markers until Substage 3 gives them ward polygons.
+      // Only blocks are taluks — city corporations sit alongside them.
       const mockBlocks = getFilteredRegions({ ...appliedFilters, district, block: "All Blocks", ward: "All Wards" })
         .filter((r) => r.type === "block");
       const join = nameJoin(all, mockBlocks, (n) => mockBlockToTalukName(district, n));
@@ -561,6 +581,16 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         `${unusedMockRecords} mock records undrawn (no polygon). See known_debt.md.`,
     );
   }, [subLayer, stateId, appliedFilters.district]);
+
+  // Below district level, frame the polygons themselves — fitting the parent
+  // district instead leaves a city's wards as an unreadable speck.
+  const subBounds = useMemo<LatLngBounds | null>(() => {
+    if (!subLayer || !isBlockLevel || !subLayer.data.features.length) return null;
+    try {
+      const b = L.geoJSON(subLayer.data as any).getBounds();
+      return b.isValid() ? b : null;
+    } catch { return null; }
+  }, [subLayer, isBlockLevel]);
 
   // Max case count across the sub-layer → drives its blue intensity scale.
   const maxSubCases = useMemo(() => {
@@ -651,8 +681,8 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   const boundaryNote =
     stateId === "gba_central"
       ? "Official GBA Dec 2025 delimitation. Karnataka boundaries from KGIS."
-      : stateId === "karnataka"
-      ? "Karnataka taluk boundaries from KGIS (Karnataka Geographic Information System)."
+      : stateId === "karnataka" && subLayer
+      ? `Karnataka ${subLayer.levelLabel === "Ward" ? "municipal ward" : "taluk"} boundaries from KGIS (Karnataka Geographic Information System).`
       : null;
 
   // Force GeoJSON layer to re-style when filter changes (key trick).
@@ -728,7 +758,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
           <MapViewUpdater
             center={center}
             zoom={zoom}
-            bounds={selectionBounds}
+            bounds={subBounds ?? selectionBounds}
             viewKey={`${stateId}-${appliedFilters.district}-${appliedFilters.block}-${recenterTick}`}
           />
           <TileLayer

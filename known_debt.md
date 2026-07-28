@@ -94,16 +94,16 @@ Real geometry, ~6 MB, generated externally. **Do not hand-edit** — regenerate 
 at source. Sources: GBA from Open City / Oorvani Foundation (Dec 2025
 delimitation, public domain); Karnataka from KGIS via the `samashti/KGIS` repo.
 
-### `metadata` key fails typecheck — [fix-before-real]
-The JSON literal ends with a `"metadata"` block that the `BoundaryCollection`
-interface doesn't declare, so `tsc -p tsconfig.app.json --noEmit` reports one
-`TS2353`. It is the only error in the repo. `npm run build` is unaffected —
-Vite uses esbuild, which doesn't typecheck.
-- Fix at the generator: either declare `metadata?` on the interface or drop the
-  key from the emitted JSON.
-- Note that a bare `tsc --noEmit` reports nothing here: the root `tsconfig.json`
-  has `"files": []` and only project references, so it checks nothing. Always
-  use `tsc -p tsconfig.app.json --noEmit`.
+### ~~`metadata` key fails typecheck~~ — RESOLVED
+The emitted JSON ends with a `"metadata"` block (generated / sources / licenses
+/ counts) that `BoundaryCollection` didn't declare, so the assignment failed
+excess-property checking with `TS2353`. Fixed by declaring `metadata?` on the
+interface — the data was always correct, only the type was incomplete. Keep the
+field on the interface if the generator is ever re-run.
+
+- Verify typechecks with `tsc -p tsconfig.app.json --noEmit`. A bare
+  `tsc --noEmit` reports nothing here: the root `tsconfig.json` has
+  `"files": []` and only project references, so it checks nothing at all.
 
 ### Polygon chunk is lazy-loaded — [demo-ok]
 `boundaries.ts` is pulled in with a dynamic `import()` from
@@ -154,12 +154,19 @@ a *block* (taluk) of Shivamogga whose children are villages. With no municipal
 ward records to shade them, it is deliberately excluded from
 `MOCK_TO_KGIS_MUN`.
 
-### The mock→KGIS name maps will sprawl — [polish]
-Three separate reconciliations now exist: `DISTRICT_ALIASES` (in
-`DashboardMap.tsx`), `MOCK_TO_KGIS_TALUK_NAME` (shipped in `boundaries.ts`), and
-`MOCK_TO_KGIS_MUN` (in `boundaryLayers.ts`). Each new state adds another. If a
-fourth state lands, collapse them into one per-state reconciliation table
-instead of adding a fourth dict in a fourth place.
+### The mock→official name maps will sprawl — [polish]
+Three reconciliation dictionaries live in three places:
+
+| Dict | Lives in | Maps |
+|---|---|---|
+| `DISTRICT_ALIASES` | `src/components/DashboardMap.tsx` | GeoJSON district name → mock district |
+| `MOCK_TO_KGIS_TALUK_NAME` | `src/data/boundaries.ts` (shipped) | mock block → KGIS taluk |
+| `MOCK_TO_KGIS_MUN` | `src/lib/boundaryLayers.ts` | mock municipality → KGIS municipality |
+
+Adding a fifth state means a fourth dict in a fourth place. Collapse to one
+per-state reconciliation table when state #5 lands, not before — three is
+tolerable, and consolidating early would mean guessing at the shape the fifth
+state needs.
 
 ---
 

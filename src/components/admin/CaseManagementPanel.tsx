@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Pencil, Archive } from "lucide-react";
-import { ALL_CASES, type MockCase } from "@/data/mock_line_listing";
+import { type MockCase } from "@/data/mock_line_listing";
+import { getAllCasesMerged, subscribeCaseStore, caseStoreVersion } from "@/lib/caseStore";
+import EditCaseModal from "./EditCaseModal";
 
 const RESULT_CAP = 50;
 
 // Case Management — global UHID search across all mock cases (all states).
-// B.3: search + results table. Edit/Archive wired in B.4/B.5.
+// B.3: search + results table. B.4: edit modal + overlay-aware results.
 export default function CaseManagementPanel() {
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [version, setVersion] = useState(caseStoreVersion());
+  const [editing, setEditing] = useState<MockCase | null>(null);
 
   // 250ms debounce on keystrokes.
   useEffect(() => {
@@ -16,16 +20,20 @@ export default function CaseManagementPanel() {
     return () => clearTimeout(t);
   }, [term]);
 
+  // Re-read results whenever the case store changes (edit/archive).
+  useEffect(() => subscribeCaseStore(() => setVersion(caseStoreVersion())), []);
+
   const matches = useMemo(() => {
     if (!debounced) return [];
     const q = debounced.toLowerCase();
-    return ALL_CASES.filter((c) => c.uhid.toLowerCase().includes(q));
-  }, [debounced]);
+    return getAllCasesMerged().filter((c) => c.uhid.toLowerCase().includes(q));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced, version]);
 
   const shown = matches.slice(0, RESULT_CAP);
   const overflow = matches.length > RESULT_CAP;
 
-  const onEdit = (c: MockCase) => { void c; /* wired in B.4 */ };
+  const onEdit = (c: MockCase) => setEditing(c);
   const onArchive = (c: MockCase) => { void c; /* wired in B.5 */ };
 
   return (
@@ -112,6 +120,14 @@ export default function CaseManagementPanel() {
             </table>
           </div>
         </div>
+      )}
+
+      {editing && (
+        <EditCaseModal
+          caseData={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => setVersion(caseStoreVersion())}
+        />
       )}
     </div>
   );

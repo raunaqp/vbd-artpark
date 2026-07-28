@@ -1,7 +1,8 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
 import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions, walkSeedNodes, type SeedConcernNode } from "./seed";
 import { STATE_HIERARCHY_LABELS } from "./mock_dataset";
-import { ALL_CASES, caseToLineListing, type MockCase } from "./mock_line_listing";
+import { caseToLineListing } from "./mock_line_listing";
+import { getWorkingCases, getCaseDeltasByArea } from "@/lib/caseStore";
 import {
   canonicalRegions,
   canonicalHotspots,
@@ -2053,7 +2054,20 @@ export function getFilteredRegions(
   const filters = resolveFilters(input, legacyBlock);
   const stateLabel = stateLabelFromId(activeStateId);
   const canon = canonicalRegions(stateLabel, filters, windowWeeks);
-  return canon.length ? canon : buildDerivedDashboardData(filters).regions;
+  const regions = canon.length ? canon : buildDerivedDashboardData(filters).regions;
+  return applyCaseDeltaToRegions(regions);
+}
+
+// Delta overlay (B.4): apply live +1/−1 case-count adjustments from the case
+// store onto canonical region counts, so edits/archives move ward/district
+// totals immediately. No-op when no cases have been edited/archived.
+function applyCaseDeltaToRegions(regions: RegionData[]): RegionData[] {
+  const delta = getCaseDeltasByArea();
+  if (!Object.keys(delta).length) return regions;
+  return regions.map((r) => {
+    const d = delta[r.name];
+    return d ? { ...r, confirmed: Math.max(0, r.confirmed + d) } : r;
+  });
 }
 
 export function getKpiFromRegions(regions: RegionData[]) {
@@ -2146,9 +2160,21 @@ export function getFilteredHotspots(input?: DashboardFiltersLike | string, lookb
   const filters = resolveFilters(input);
   const stateLabel = stateLabelFromId(activeStateId);
   const canon = canonicalHotspots(stateLabel, filters, lookbackWeeks);
-  if (canon.length) return canon;
-  const derived = buildDerivedDashboardData(filters);
-  return lookbackWeeks === 2 ? derived.hotspots2w : derived.hotspots4w;
+  const hotspots = canon.length
+    ? canon
+    : (lookbackWeeks === 2 ? buildDerivedDashboardData(filters).hotspots2w : buildDerivedDashboardData(filters).hotspots4w);
+  return applyCaseDeltaToHotspots(hotspots);
+}
+
+// Delta overlay (B.4): adjust hotspot current-case counts by the case store's
+// per-area delta so a reassigned/archived case moves the visible burden.
+function applyCaseDeltaToHotspots(hotspots: HotspotData[]): HotspotData[] {
+  const delta = getCaseDeltasByArea();
+  if (!Object.keys(delta).length) return hotspots;
+  return hotspots.map((h) => {
+    const d = delta[h.area];
+    return d ? { ...h, currentCases: Math.max(0, h.currentCases + d) } : h;
+  });
 }
 
 export function getHotspotAlerts(input?: DashboardFiltersLike | string, legacyBlock?: string) {
@@ -2166,12 +2192,6 @@ export function getGeoTaggedAlerts(input?: DashboardFiltersLike | string, legacy
   const filters = resolveFilters(input, legacyBlock);
   if ((filters.block && filters.block !== "All Blocks") || (filters.ward && filters.ward !== "All Wards")) return [];
   return buildDerivedDashboardData(filters).geoTaggedAlerts;
-}
-
-// Working case set = base dataset (B.2). B.4 repoints this to the localStorage
-// overlay (base + edits − archived) so mutations flow into every consumer.
-function getWorkingCases(): MockCase[] {
-  return ALL_CASES;
 }
 
 // Line listing now reads from the static 1,000-case dataset (B.2), scoped to

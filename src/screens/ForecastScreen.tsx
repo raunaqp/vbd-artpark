@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
-import { AlertTriangle } from "lucide-react";
-import { getForecastData, getRiskForecast, getOutbreakPredictions, getPriorityForecastAreas, getStateLocalRiskNote } from "@/data/mockData";
+import { getForecastData, getRiskForecast, getPriorityForecastAreas, getStateLocalRiskNote } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
@@ -29,7 +28,6 @@ export default function ForecastScreen() {
 
   const riskForecast = getRiskForecast(appliedFilters);
   const forecastData = getForecastData(appliedFilters);
-  const predictions = getOutbreakPredictions(appliedFilters); // still used by the risk banner + PDF export
   const priorityAreas = getPriorityForecastAreas(appliedFilters);
   const stateLocalNote = getStateLocalRiskNote(appliedFilters);
 
@@ -52,6 +50,17 @@ export default function ForecastScreen() {
   const epiToday = latestEpiWeek();
   const epiRange = epiWeekRange(dateWindow.forecastStartDate, dateWindow.forecastEndDate);
 
+  // One concise operational sentence, driven by the peak risk across the 4 weeks.
+  const riskRank = (r: string) => (r === "high" ? 2 : r === "moderate" ? 1 : 0);
+  const peakRisk = riskForecast.reduce<"high" | "moderate" | "low">(
+    (acc, f) => (riskRank(f.risk) > riskRank(acc) ? f.risk : acc), "low");
+  const disease = diseaseName.toLowerCase();
+  const opSentence = peakRisk === "high"
+    ? `High ${disease} activity is expected over the next four weeks. Prioritise surveillance and response in high-risk areas.`
+    : peakRisk === "moderate"
+    ? `Moderate ${disease} activity is expected over the next four weeks. Continue surveillance and prioritise moderate-risk areas.`
+    : `Low ${disease} activity is expected over the next four weeks. Maintain routine surveillance.`;
+
   const buildSections = () => {
     const sections = [
       {
@@ -73,20 +82,25 @@ export default function ForecastScreen() {
     <div className="space-y-6">
       <GlobalFilters freshnessLabel="Forecast generated: this week" />
 
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Forecast — Predicted Risk ({forecastRange}{epiRange ? ` · ${epiRange}` : ""})</h2>
-          <p className="text-xs text-muted-foreground">Forecast last updated: {todayLabel}{epiToday ? ` (${epiToday})` : ""}</p>
+          <h2 className="text-lg font-semibold text-foreground">{diseaseName} Forecast — Predicted Risk</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Forecast generated: <span className="text-foreground font-medium">{todayLabel}{epiToday ? ` (${epiToday})` : ""}</span>
+            <span className="mx-2 text-border">·</span>
+            Forecast period: <span className="text-foreground font-medium">{forecastRange}{epiRange ? ` · ${epiRange}` : ""}</span>
+          </p>
         </div>
         <ExportPdfButton tabName="Forecast" buildSections={buildSections} />
       </div>
 
-      {predictions.length > 0 && predictions.every(p => p.risk === "high" || p.risk === "moderate") && (
-        <div className="flex items-center gap-2 rounded-lg border border-risk-high/30 bg-risk-high/5 px-4 py-2.5 text-sm">
-          <AlertTriangle className="h-4 w-4 text-risk-high flex-shrink-0" />
-          <span className="text-foreground">High {diseaseName.toLowerCase()} risk detected due to predictive signals (climate conditions / rising trend / historical patterns).</span>
-        </div>
-      )}
+      <div className={`rounded-lg border px-4 py-2.5 text-sm ${
+        peakRisk === "high" ? "border-risk-high/30 bg-risk-high/5"
+        : peakRisk === "moderate" ? "border-risk-moderate/30 bg-risk-moderate/5"
+        : "border-border bg-muted/30"
+      }`}>
+        <span className="text-foreground">{opSentence}</span>
+      </div>
 
       {show("risk_cards") && (
       <div className="grid grid-cols-4 gap-3">

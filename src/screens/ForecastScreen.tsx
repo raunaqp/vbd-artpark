@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
 import { AlertTriangle } from "lucide-react";
-import { getForecastData, getRiskForecast, getOutbreakPredictions, getStateLocalRiskNote } from "@/data/mockData";
+import { getForecastData, getRiskForecast, getOutbreakPredictions, getPriorityForecastAreas, getStateLocalRiskNote } from "@/data/mockData";
 import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
@@ -29,12 +29,13 @@ export default function ForecastScreen() {
 
   const riskForecast = getRiskForecast(appliedFilters);
   const forecastData = getForecastData(appliedFilters);
-  const predictions = getOutbreakPredictions(appliedFilters);
+  const predictions = getOutbreakPredictions(appliedFilters); // still used by the risk banner + PDF export
+  const priorityAreas = getPriorityForecastAreas(appliedFilters);
   const stateLocalNote = getStateLocalRiskNote(appliedFilters);
 
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
-  const visiblePredictions = predictions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const visiblePriorityAreas = priorityAreas.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const areaLabel = appliedFilters.block !== "All Blocks"
     ? levelLabels.level_3
@@ -156,48 +157,34 @@ export default function ForecastScreen() {
 
       {show("outbreak_table") && (
       <div className="section-card p-5">
-        <h3 className="section-title mb-1">Forecast Details</h3>
-        <p className="text-xs text-muted-foreground mb-4">Technical forecast outputs supporting the operational recommendations above · Sorted by probability of outbreak · Showing: {areaLabel} level</p>
+        <h3 className="section-title mb-1">Priority Forecast Areas</h3>
+        <p className="text-xs text-muted-foreground mb-4">Projected {diseaseName.toLowerCase()} cases over the 4-week forecast window · Sorted by projected cases · Showing: {areaLabel} level</p>
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {[areaLabel, "Outbreak Probability", "Forecast Risk", "Forecast Window", "Drivers"].map((h) => (
+                {[areaLabel, "Projected Cases", "Forecast Risk"].map((h) => (
                   <th key={h} className="text-left py-2.5 px-3 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {visiblePredictions.map((r) => (
+              {visiblePriorityAreas.map((r) => (
                 <tr key={r.area} className="border-b border-border/50 hover:bg-muted/30">
                   <td className="py-2.5 px-3 font-medium">
                     {r.area}
                     {r.areaType && <span className="text-[10px] text-muted-foreground ml-1.5">({r.areaType})</span>}
                   </td>
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            r.risk === "high" ? "bg-risk-high" :
-                            r.risk === "moderate" ? "bg-risk-moderate" :
-                            "bg-risk-low"
-                          }`}
-                          style={{ width: `${r.probability}%` }}
-                        />
-                      </div>
-                      <span className="font-semibold text-foreground">{r.probability}%</span>
-                    </div>
+                  <td className="py-2.5 px-3 font-semibold text-foreground tabular-nums">
+                    {r.projectedCases === null ? <span className="text-muted-foreground font-normal">—</span> : r.projectedCases.toLocaleString()}
                   </td>
                   <td className="py-2.5 px-3"><span className={`risk-badge-${r.risk}`}>{r.riskLabel ?? r.risk}</span></td>
-                  <td className="py-2.5 px-3 font-medium">{r.expectedWeek}</td>
-                  <td className="py-2.5 px-3 text-xs text-muted-foreground max-w-xs">{r.signal}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <TablePagination page={page} pageSize={PAGE_SIZE} total={predictions.length} onPageChange={setPage} />
+        <TablePagination page={page} pageSize={PAGE_SIZE} total={priorityAreas.length} onPageChange={setPage} />
       </div>
       )}
     </div>

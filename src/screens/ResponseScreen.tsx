@@ -1,6 +1,7 @@
 import GlobalFilters from "@/components/GlobalFilters";
 import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
 import PriorityAreasSection from "@/features/weeklyResponse/PriorityAreasSection";
+import WeeklyOperationalResponseSection from "@/features/weeklyResponse/WeeklyOperationalResponseSection";
 
 // Response tab — operational surface (R2). The operational block relocates here
 // from Forecast: Priority Areas (R2.2), Weekly Operational Response +
@@ -20,7 +21,7 @@ export default function ResponseScreen() {
 
       <WeeklyResponseProvider>
         <PriorityAreasSection />
-        {/* Weekly Operational Response + Response Effectiveness join here in R2.3 */}
+        <WeeklyOperationalResponseSection />
       </WeeklyResponseProvider>
     </div>
   );

@@ -12,7 +12,6 @@ import TablePagination from "@/components/TablePagination";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import { latestEpiWeek, epiWeekRange } from "@/lib/epiWeek";
 import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
-import WeeklyOperationalResponseSection from "@/features/weeklyResponse/WeeklyOperationalResponseSection";
 
 const PAGE_SIZE = 20;
 
@@ -123,8 +122,9 @@ export default function ForecastScreen() {
         <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
       )}
 
-      {/* 2–4. Operational layer: Priority Areas → Forecast Risk Map → Weekly Operational Response.
-          Wrapped in a provider so both operational sections share one reporting week + drawer. */}
+      {/* Forecast Risk Map — prediction only. Still inside the (now childless)
+          provider wrapper; R2.4 extracts it to standalone as the map does not
+          consume the weekly-response context. */}
       <WeeklyResponseProvider>
         {show("forecast_map") && (
         <div>
@@ -135,8 +135,6 @@ export default function ForecastScreen() {
           <DashboardMap height="380px" mode="forecast" />
         </div>
         )}
-
-        <WeeklyOperationalResponseSection />
       </WeeklyResponseProvider>
 
       {show("outbreak_table") && (

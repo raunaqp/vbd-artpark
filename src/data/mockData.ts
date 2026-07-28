@@ -1,6 +1,7 @@
 import { addDays, addWeeks, addYears, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, format, parseISO, startOfDay, startOfWeek, subMonths } from "date-fns";
 import { getSeedDailyDist, getSeedForecastForDistrict, getSeededDistrictsWithActions, walkSeedNodes, type SeedConcernNode } from "./seed";
 import { STATE_HIERARCHY_LABELS } from "./mock_dataset";
+import { ALL_CASES, caseToLineListing, type MockCase } from "./mock_line_listing";
 import {
   canonicalRegions,
   canonicalHotspots,
@@ -2167,8 +2168,25 @@ export function getGeoTaggedAlerts(input?: DashboardFiltersLike | string, legacy
   return buildDerivedDashboardData(filters).geoTaggedAlerts;
 }
 
-export function getLineListing(input?: DashboardFiltersLike | string, legacyBlock?: string) {
-  return buildDerivedDashboardData(input, legacyBlock).lineListing;
+// Working case set = base dataset (B.2). B.4 repoints this to the localStorage
+// overlay (base + edits − archived) so mutations flow into every consumer.
+function getWorkingCases(): MockCase[] {
+  return ALL_CASES;
+}
+
+// Line listing now reads from the static 1,000-case dataset (B.2), scoped to
+// the active state + district/block/ward filters. Stable UHIDs let cases be
+// edited/archived via Case Management.
+export function getLineListing(input?: DashboardFiltersLike | string, legacyBlock?: string): LineListing[] {
+  const filters = resolveFilters(input, legacyBlock);
+  const stateLabel = stateLabelFromId(activeStateId);
+  return getWorkingCases()
+    .filter((c) => c.state === stateLabel)
+    .filter((c) => filters.district === "All Districts" || c.district === filters.district)
+    .filter((c) => !filters.block || filters.block === "All Blocks" || c.block === filters.block)
+    .filter((c) => !filters.ward || filters.ward === "All Wards" || c.ward === filters.ward)
+    .map(caseToLineListing)
+    .sort((a, b) => b.dateOfTesting.localeCompare(a.dateOfTesting));
 }
 
 // ──────────────── State-aware getters (preferred for components that re-render on filters/state change) ────────────────

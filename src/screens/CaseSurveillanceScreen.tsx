@@ -83,8 +83,6 @@ export default function CaseSurveillanceScreen() {
       <div className="flex justify-end -mt-2 mb-3">
         <ExportPdfButton tabName="Case Surveillance" buildSections={buildSections} />
       </div>
-      {show("kpis") && <KpiCards windowWeeks={weeksFromFilters(appliedFilters)} />}
-
       {show("cases_over_time") && (
       <div className="section-card p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -114,6 +112,8 @@ export default function CaseSurveillanceScreen() {
         </ResponsiveContainer>
       </div>
       )}
+
+      {show("kpis") && <KpiCards windowWeeks={weeksFromFilters(appliedFilters)} />}
 
       {show("cases_over_time") && overlayData.length > 0 && (
       <div className="section-card p-5 mb-6">

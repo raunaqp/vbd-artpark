@@ -23,13 +23,23 @@ import {
   kaTalukLayer,
   kaWardLayer,
   kaWardMunicipality,
-  mockBlockToTalukName,
+  talukNameResolver,
+  boundariesLoaded,
   positionalJoin,
   nameJoin,
   featureKey,
   type PolygonJoin,
 } from "@/lib/boundaryLayers";
 import type { RegionData } from "@/data/mockData";
+
+/** A resolved sub-district polygon layer plus its join to mock case data. */
+interface SubLayer {
+  data: FeatureCollection;
+  join: PolygonJoin;
+  levelLabel: string;
+  /** Region types these polygons replace — those markers are suppressed. */
+  covers: Array<RegionData["type"]>;
+}
 import "leaflet/dist/leaflet.css";
 
 // ──────────────── Risk colors (semantic but inline-required by leaflet) ────────────────
@@ -81,7 +91,7 @@ const GEOJSON_URLS: Record<string, string> = {
 // `src/data/boundaries.ts`. Thunks rather than values so the 6 MB polygon module
 // is only walked when a state that needs it is actually selected.
 // Checked before GEOJSON_URLS.
-const LOCAL_GEOJSON: Record<string, () => FeatureCollection> = {
+const LOCAL_GEOJSON: Record<string, () => Promise<FeatureCollection>> = {
   gba_central: gbaCorporationLayer,
 };
 
@@ -91,7 +101,7 @@ const geoCache = new Map<string, FeatureCollection>();
 async function fetchStateGeoJSON(stateId: string): Promise<FeatureCollection | null> {
   // Local real boundaries take precedence over the remote CDN pattern.
   if (LOCAL_GEOJSON[stateId]) {
-    if (!geoCache.has(stateId)) geoCache.set(stateId, LOCAL_GEOJSON[stateId]());
+    if (!geoCache.has(stateId)) geoCache.set(stateId, await LOCAL_GEOJSON[stateId]());
     return geoCache.get(stateId)!;
   }
   if (geoCache.has(stateId)) return geoCache.get(stateId)!;
@@ -491,13 +501,12 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   // States with official geometry render their children as polygons instead of
   // centroid dots. GBA: corporation → official Dec 2025 ward polygons.
   // Everything else falls through to the marker rendering below.
-  const subLayer = useMemo<{
-    data: FeatureCollection;
-    join: PolygonJoin;
-    levelLabel: string;
-    /** Region types these polygons replace — those markers are suppressed. */
-    covers: Array<RegionData["type"]>;
-  } | null>(() => {
+  // Built asynchronously because the polygon module is loaded on demand — see
+  // loadBoundaries(). `subPending` drives a small indicator on first use.
+  const [subLayer, setSubLayer] = useState<SubLayer | null>(null);
+  const [subPending, setSubPending] = useState(false);
+
+  const buildSubLayer = async (): Promise<SubLayer | null> => {
     if (isStateLevel) return null;
     const district = appliedFilters.district;
 
@@ -511,7 +520,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         getFilteredRegions({ ...appliedFilters, district, block: z.name, ward: "All Wards" }),
       );
 
-      const all = gbaWardLayer(district);
+      const all = await gbaWardLayer(district);
       if (!all.features.length) return null;
       const join = positionalJoin(all, mockWards);
 
@@ -537,9 +546,9 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
       // municipal ward level. Rural blocks and the cities we have no geometry
       // for fall through to the taluk layer + village markers.
       if (isBlockLevel) {
-        const municipality = kaWardMunicipality(district, appliedFilters.block);
+        const municipality = await kaWardMunicipality(district, appliedFilters.block);
         if (municipality) {
-          const all = kaWardLayer(municipality);
+          const all = await kaWardLayer(municipality);
           if (all.features.length) {
             const mockWards = getFilteredRegions({ ...appliedFilters, ward: "All Wards" })
               .filter((r) => r.type === "ward");
@@ -552,16 +561,35 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         }
       }
 
-      const all = kaTalukLayer(district);
+      const all = await kaTalukLayer(district);
       if (!all.features.length) return null;
       // Only blocks are taluks — city corporations sit alongside them.
       const mockBlocks = getFilteredRegions({ ...appliedFilters, district, block: "All Blocks", ward: "All Wards" })
         .filter((r) => r.type === "block");
-      const join = nameJoin(all, mockBlocks, (n) => mockBlockToTalukName(district, n));
+      const resolveTaluk = await talukNameResolver(district);
+      const join = nameJoin(all, mockBlocks, resolveTaluk);
       return { data: all, join, levelLabel: "Taluk", covers: ["block"] };
     }
 
     return null;
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    // Drop the previous level's polygons immediately so we never paint a
+    // corporation's wards over a different corporation.
+    setSubLayer(null);
+    if (isStateLevel || (stateId !== "gba_central" && stateId !== "karnataka")) {
+      setSubPending(false);
+      return;
+    }
+    // Only show the indicator when the module still has to be fetched.
+    setSubPending(!boundariesLoaded());
+    buildSubLayer()
+      .then((res) => { if (!cancelled) setSubLayer(res); })
+      .catch((err) => { if (!cancelled) console.error("[boundaries] failed to load", err); })
+      .finally(() => { if (!cancelled) setSubPending(false); });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateId, isStateLevel, isBlockLevel, appliedFilters.district, appliedFilters.block, appliedFilters.fromDate, appliedFilters.toDate, regions.length]);
 
@@ -913,6 +941,13 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             );
           })}
         </MapContainer>
+      )}
+
+      {/* First-use fetch of the 6 MB polygon module. */}
+      {subPending && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-[11px] text-muted-foreground pointer-events-none">
+          Loading boundaries…
+        </div>
       )}
 
       {/* Scope label (top-center) */}

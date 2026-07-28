@@ -105,6 +105,29 @@ Vite uses esbuild, which doesn't typecheck.
   has `"files": []` and only project references, so it checks nothing. Always
   use `tsc -p tsconfig.app.json --noEmit`.
 
+### Polygon chunk is lazy-loaded — [demo-ok]
+`boundaries.ts` is pulled in with a dynamic `import()` from
+`src/lib/boundaryLayers.ts`, so it lands in its own chunk instead of the entry
+bundle:
+
+| | Entry chunk | Boundaries chunk |
+|---|---|---|
+| Before | 2,716 kB (gzip 625 kB) | — |
+| Bundled in | 8,939 kB (gzip 2,526 kB) | — |
+| Lazy-loaded | 2,723 kB (gzip 627 kB) | 6,217 kB (gzip 1,898 kB) |
+
+Fetched on first drill-down into GBA or Karnataka (~1.85 MB over the wire,
+~230 ms locally), then cached for the session. A "Loading boundaries…"
+indicator covers that first fetch.
+
+**That dynamic import must stay the only import of the module.** A single
+static `import ... from "@/data/boundaries"` anywhere folds all 6 MB back into
+the entry chunk with no error and no warning — the only symptom is the entry
+chunk tripling.
+
+Vite still warns about chunks over 500 kB, but it did before this work too: the
+entry chunk was already 2.7 MB, mostly `mock_dataset.ts`.
+
 ### No ward polygons for Odisha or Andhra Pradesh — [fix-before-real]
 Both states still render district polygons from the datameet mirror (jsDelivr
 CDN) and centroid markers below that. No official sub-district geometry has

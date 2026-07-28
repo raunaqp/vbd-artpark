@@ -8,16 +8,27 @@
 // level below documents how it bridges that gap.
 
 import type { Feature, FeatureCollection } from "geojson";
-import {
-  getGbaCorporations,
-  getGbaWards,
-  getKaTaluks,
-  getKaWards,
-  MOCK_TO_KGIS_TALUK_NAME,
-  KA_DISTRICTS_WITH_WARD_POLYGONS,
-  type BoundaryFeature,
-} from "@/data/boundaries";
+import type { BoundaryFeature } from "@/data/boundaries";
 import type { RegionData } from "@/data/mockData";
+
+// `boundaries.ts` is ~6 MB and only two of the four states need it, so it is
+// pulled in on demand rather than bundled into the entry chunk. This import
+// must stay dynamic and stay the *only* import of that module — a single static
+// import anywhere would fold it back into the main bundle.
+//
+// The promise is cached, so the module is fetched and parsed once per session
+// however many times a layer is requested.
+let boundariesModule: Promise<typeof import("@/data/boundaries")> | null = null;
+
+export function loadBoundaries() {
+  if (!boundariesModule) boundariesModule = import("@/data/boundaries");
+  return boundariesModule;
+}
+
+/** True once the polygon module is in memory — lets callers skip a spinner. */
+export function boundariesLoaded(): boolean {
+  return boundariesModule !== null;
+}
 
 // Stable per-feature identity. Polygon names are not unique (two corporations
 // can both have a "Dasarahalli" ward), so the map keys its join on this instead.
@@ -69,19 +80,22 @@ export function sortBoundaries(features: BoundaryFeature[]): BoundaryFeature[] {
 // ──────────────── GBA Central ────────────────
 
 /** The 5 BBMP corporations — GBA's district-equivalent level. */
-export function gbaCorporationLayer(): FeatureCollection {
+export async function gbaCorporationLayer(): Promise<FeatureCollection> {
+  const { getGbaCorporations } = await loadBoundaries();
   return toFeatureCollection(sortBoundaries(getGbaCorporations()), "gba-corp");
 }
 
 /** Official ward polygons for one corporation, in deterministic order. */
-export function gbaWardLayer(corp: string): FeatureCollection {
+export async function gbaWardLayer(corp: string): Promise<FeatureCollection> {
+  const { getGbaWards } = await loadBoundaries();
   return toFeatureCollection(sortBoundaries(getGbaWards(corp)), `gba-ward:${corp}`);
 }
 
 // ──────────────── Karnataka ────────────────
 
 /** Official KGIS taluk polygons for one district — Karnataka's block level. */
-export function kaTalukLayer(district: string): FeatureCollection {
+export async function kaTalukLayer(district: string): Promise<FeatureCollection> {
+  const { getKaTaluks } = await loadBoundaries();
   return toFeatureCollection(sortBoundaries(getKaTaluks(district)), `ka-taluk:${district}`);
 }
 
@@ -94,8 +108,9 @@ export function kaTalukLayer(district: string): FeatureCollection {
  * falls through to the mock name unchanged and is matched case/punctuation
  * insensitively.
  */
-export function mockBlockToTalukName(district: string, mockBlock: string): string {
-  return MOCK_TO_KGIS_TALUK_NAME[district]?.[mockBlock] ?? mockBlock;
+export async function talukNameResolver(district: string): Promise<(mockBlock: string) => string> {
+  const { MOCK_TO_KGIS_TALUK_NAME } = await loadBoundaries();
+  return (mockBlock) => MOCK_TO_KGIS_TALUK_NAME[district]?.[mockBlock] ?? mockBlock;
 }
 
 /**
@@ -129,14 +144,16 @@ const MOCK_TO_KGIS_MUN: Record<string, string> = {
  * Checks `KA_DISTRICTS_WITH_WARD_POLYGONS` as well as the name map, so a
  * mapping alone can't make us ask for polygons that aren't in the dataset.
  */
-export function kaWardMunicipality(district: string, mockBlock: string): string | null {
+export async function kaWardMunicipality(district: string, mockBlock: string): Promise<string | null> {
   const kgis = MOCK_TO_KGIS_MUN[mockBlock];
   if (!kgis) return null;
+  const { KA_DISTRICTS_WITH_WARD_POLYGONS } = await loadBoundaries();
   return (KA_DISTRICTS_WITH_WARD_POLYGONS[district] ?? []).includes(kgis) ? kgis : null;
 }
 
 /** Official KGIS municipal ward polygons for one city. */
-export function kaWardLayer(municipality: string): FeatureCollection {
+export async function kaWardLayer(municipality: string): Promise<FeatureCollection> {
+  const { getKaWards } = await loadBoundaries();
   return toFeatureCollection(sortBoundaries(getKaWards(municipality)), `ka-ward:${municipality}`);
 }
 

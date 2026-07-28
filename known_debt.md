@@ -266,10 +266,29 @@ Surveillance), so changing it touches all of them. Deferred to **R2** (Response
 tab scaffold) to do it once, consistently, for both new tabs rather than as a
 cross-cutting change mid-R1. R1 does not touch `GlobalFilters`.
 
-### "Critical" risk tier not implemented — [planned]
-The doc lists five risk categories (Critical / High / Moderate / Low / No Data)
-but the data model only has `high | moderate | low` (+ no-data). Adding
-"Critical" is a data-model change (new signal), out of R1 scope. Deferred.
+### "Critical" tier is inconsistent across surfaces — [planned]
+The app carries **two** risk vocabularies that diverge at the top tier:
+
+- **`risk`** — 3-tier legacy (`high | moderate | low`). Drives the four forecast
+  **cards**, the map **polygon colour**, and the map **legend** (hardcoded
+  low/moderate/high + no-data).
+- **`riskLabel`** — 4-tier WHO/ICMR (WHO: Low/Moderate/High/**Very High**;
+  ICMR: Low/Caution/High Risk/**Critical**). Drives **table text** (Priority
+  Forecast Areas) and **tooltip text**.
+
+Effect: a GBA (ICMR-method) corporation in stratum A1 shows **"Critical"** in the
+table/tooltip, but renders **red (= High)** on the map with the legend saying
+"High", and the cards top out at "High Risk" — "Critical"/"Very High" is
+structurally unreachable from the card/legend pipeline (`canonicalRiskForecast`
+maps only the 3-tier risk). This is **pre-existing**, not introduced by R1; R1.2
+only made the table's Forecast Risk column more prominent by removing the
+probability column.
+
+Deferred work: promote the 4-tier vocabulary to a first-class tier consistently
+across **all** surfaces. That means a data-model change (4th `risk` value), a
+colour-palette addition, an updated legend, and a card-label/ceiling update —
+real R-work, not a small fix. Deferred until it's the highest-value change to
+make.
 
 ## Build / tooling
 

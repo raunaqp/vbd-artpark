@@ -59,7 +59,20 @@ export interface HotspotData {
 
 export interface NewsAlert { id: number; headline: string; source: string; date: string; district: string; severity: "high" | "moderate" | "low"; }
 export interface GeoAlert { id: number; lat: number; lng: number; message: string; district: string; severity: "high" | "moderate" | "low"; }
-export interface LineListing { patient: string; gender: string; age: number; subDistrict: string; block: string; village: string; district: string; diagnosis: string; testType: string; testResult: string; dateOfTesting: string; urbanRural: string; referredBy: string; }
+export interface LineListing { uhid: string; gender: string; age: number; subDistrict: string; block: string; village: string; district: string; diagnosis: string; testType: string; testResult: string; dateOfTesting: string; urbanRural: string; referredBy: string; }
+
+// UHID (Unique Health ID) — non-PII primary identifier for a case.
+// Format: UHID-{STATE}-{6-digit}. Replaces patient name in the line listing.
+export const STATE_UHID_CODE: Record<StateId, string> = {
+  karnataka: "KA",
+  odisha: "OD",
+  andhra_pradesh: "AP",
+  gba_central: "GBA",
+};
+export function makeUhid(stateId: StateId, seed: number): string {
+  const n = seed % 1000000;
+  return `UHID-${STATE_UHID_CODE[stateId]}-${String(n).padStart(6, "0")}`;
+}
 
 export interface TimeSeriesPoint { week?: string; date?: string; month?: string; positive: number; samples: number; tpr: number; }
 export interface RiskForecastPoint { week: string; risk: "high" | "moderate" | "low"; riskLabel?: string; cases: number; label: string; }
@@ -314,13 +327,9 @@ const AP: StateBundle = {
     { id: 4, lat: 15.48, lng: 78.48, message: "ASHA reports gradual fever rise in Nandyal rural pockets", district: "Kurnool", severity: "moderate" },
     { id: 5, lat: 17.0, lng: 81.78, message: "Post-rainfall breeding flagged in delta region", district: "East Godavari", severity: "moderate" },
   ],
+  // Legacy seed rows removed in B.1 (contained patient names). The working line
+  // listing is generated at runtime (buildLineListing) / from mock_line_listing.
   lineListingData: [
-    { patient: "Afrid", gender: "Male", age: 10, subDistrict: "Kallur", block: "Kallur", village: "Kallur", district: "Kurnool", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-15", urbanRural: "Rural", referredBy: "ASHA" },
-    { patient: "Suresh", gender: "Male", age: 15, subDistrict: "C.Belagal", block: "C.Belagal", village: "C.Belagal", district: "Kurnool", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-03-22", urbanRural: "Rural", referredBy: "ASHA" },
-    { patient: "D Umesh Reddy", gender: "Male", age: 21, subDistrict: "Guntur West", block: "Guntur West", village: "Guntur West", district: "Guntur", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-28", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Lakshmi Devi", gender: "Female", age: 45, subDistrict: "Tenali", block: "Tenali", village: "Kollipara", district: "Guntur", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-04-03", urbanRural: "Rural", referredBy: "ANM" },
-    { patient: "Mohan Rao", gender: "Male", age: 28, subDistrict: "Vizag MC", block: "Vizag MC", village: "MVP Colony", district: "Visakhapatnam", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-04", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Padma K", gender: "Female", age: 36, subDistrict: "Vijayawada MC", block: "Vijayawada MC", village: "Benz Circle", district: "Krishna", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-05", urbanRural: "Urban", referredBy: "HW" },
   ],
   mapCenter: [15.9129, 79.74],
   mapZoom: 7,
@@ -614,15 +623,9 @@ const ODISHA: StateBundle = {
     { id: 4, lat: 19.81, lng: 85.83, message: "Tourist mobility risk — coastal Puri", district: "Puri", severity: "moderate" },
     { id: 5, lat: 20.95, lng: 85.22, message: "Industrial-area breeding flagged in Talcher (Nalco Nagar)", district: "Angul", severity: "moderate" },
   ],
+  // Legacy seed rows removed in B.1 (contained patient names). The working line
+  // listing is generated at runtime (buildLineListing) / from mock_line_listing.
   lineListingData: [
-    { patient: "Sanjay Sahoo", gender: "Male", age: 24, subDistrict: "Nilgiri", block: "Nilgiri", village: "Nilgiri Town", district: "Baleshwar", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-28", urbanRural: "Rural", referredBy: "ASHA" },
-    { patient: "Pratima Das", gender: "Female", age: 31, subDistrict: "Nilgiri", block: "Nilgiri", village: "Oupada", district: "Baleshwar", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-03-30", urbanRural: "Rural", referredBy: "ANM" },
-    { patient: "Manoj Mohanty", gender: "Male", age: 42, subDistrict: "Bhubaneswar MC", block: "Bhubaneswar MC", village: "Old Town", district: "Khordha", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-01", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Rashmi Pradhan", gender: "Female", age: 28, subDistrict: "Cuttack MC", block: "Cuttack MC", village: "Buxi Bazaar", district: "Cuttack", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-02", urbanRural: "Urban", referredBy: "HW" },
-    { patient: "Bikash Minz", gender: "Male", age: 36, subDistrict: "Rourkela MC", block: "Rourkela MC", village: "Chhend", district: "Sundargarh", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-03", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Sushant Sethi", gender: "Male", age: 29, subDistrict: "Rourkela MC", block: "Rourkela MC", village: "Panposh", district: "Sundargarh", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-04-04", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Ranjan Kar", gender: "Male", age: 34, subDistrict: "Talcher", block: "Talcher", village: "Nalco Nagar", district: "Angul", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-05", urbanRural: "Urban", referredBy: "ASHA" },
-    { patient: "Lipika Behera", gender: "Female", age: 22, subDistrict: "Brahmagiri", block: "Brahmagiri", village: "Satapada", district: "Puri", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-04-06", urbanRural: "Rural", referredBy: "ANM" },
   ],
   mapCenter: [20.95, 85.10],
   mapZoom: 7,
@@ -869,15 +872,9 @@ const KARNATAKA: StateBundle = {
     { id: 4, lat: 13.35, lng: 74.79, message: "Manipal student-housing density + rainfall-driven density", district: "Udupi", severity: "high" },
     { id: 5, lat: 15.85, lng: 74.50, message: "Belagavi rural baseline — routine surveillance", district: "Belagavi", severity: "moderate" },
   ],
+  // Legacy seed rows removed in B.1 (contained patient names). The working line
+  // listing is generated at runtime (buildLineListing) / from mock_line_listing.
   lineListingData: [
-    { patient: "Arjun Rao", gender: "Male", age: 28, subDistrict: "BBMP East Zone", block: "BBMP East Zone", village: "Whitefield", district: "Bengaluru Urban", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-03-30", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Priya Shetty", gender: "Female", age: 34, subDistrict: "BBMP East Zone", block: "BBMP East Zone", village: "Mahadevapura", district: "Bengaluru Urban", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-04-01", urbanRural: "Urban", referredBy: "HW" },
-    { patient: "Suresh Kumar", gender: "Male", age: 42, subDistrict: "Yelahanka", block: "Yelahanka", village: "Jakkur", district: "Bengaluru Urban", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-02", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Lakshmi Iyer", gender: "Female", age: 26, subDistrict: "Mysuru City", block: "Mysuru City", village: "Vijayanagar", district: "Mysuru", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-03", urbanRural: "Urban", referredBy: "HW" },
-    { patient: "Ramesh Gowda", gender: "Male", age: 38, subDistrict: "Nanjangud", block: "Nanjangud", village: "Hadinaru", district: "Mysuru", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-04-04", urbanRural: "Rural", referredBy: "ASHA" },
-    { patient: "Vinod Pai", gender: "Male", age: 31, subDistrict: "Udupi City", block: "Udupi City", village: "Manipal", district: "Udupi", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-05", urbanRural: "Urban", referredBy: "MO" },
-    { patient: "Deepa Kamath", gender: "Female", age: 24, subDistrict: "Kundapura", block: "Kundapura", village: "Malpe", district: "Udupi", diagnosis: "Dengue", testType: "NS1", testResult: "Positive", dateOfTesting: "2026-04-06", urbanRural: "Rural", referredBy: "ANM" },
-    { patient: "Mahesh Patil", gender: "Male", age: 45, subDistrict: "Belagavi City", block: "Belagavi City", village: "Belagavi City", district: "Belagavi", diagnosis: "Dengue", testType: "IgM", testResult: "Positive", dateOfTesting: "2026-04-07", urbanRural: "Urban", referredBy: "MO" },
   ],
   mapCenter: [13.50, 76.50],
   mapZoom: 7,
@@ -1127,8 +1124,7 @@ interface DerivedDashboardData {
 
 const DATA_LOOKBACK_YEARS = 6;
 const REFERENCE_DATE = startOfDay(new Date("2026-04-07"));
-const FIRST_NAMES = ["Aarav", "Aditi", "Anil", "Bhavana", "Charan", "Deepa", "Harsha", "Kiran", "Lakshmi", "Madhav", "Naveen", "Pratima", "Raghav", "Sahana", "Sanjay", "Shreya", "Sujata", "Usha", "Vikram", "Yamini"];
-const LAST_NAMES = ["Behera", "Das", "Gowda", "Kamat", "Kumari", "Mahapatra", "Mohanty", "Naidu", "Pai", "Patil", "Pradhan", "Rao", "Reddy", "Rout", "Sahoo", "Sethi", "Shetty", "Swain", "Varma", "Yadav"];
+// Patient name pools removed in B.1 — the line listing no longer carries names.
 const REFERRAL_SOURCES = ["ASHA", "ANM", "HW", "MO", "PHC", "CHC"];
 
 const temporalProfiles: Record<StateId, TemporalProfile> = {
@@ -1823,7 +1819,7 @@ function buildLineListing(bundle: StateBundle, profile: TemporalProfile, filters
     const testDate = addDays(window.from, dateOffset);
     const seed = hashSeed(`${seedKey}:${district}:${block}:${area.name}:${index}`);
     return {
-      patient: `${FIRST_NAMES[seed % FIRST_NAMES.length]} ${LAST_NAMES[(seed + index) % LAST_NAMES.length]}`,
+      uhid: makeUhid(bundle.id, seed),
       gender: seed % 2 === 0 ? "Male" : "Female",
       age: 6 + (seed % 61),
       subDistrict: block,

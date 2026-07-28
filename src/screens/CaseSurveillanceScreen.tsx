@@ -72,8 +72,8 @@ export default function CaseSurveillanceScreen() {
       rows: timeData.slice(-12).map((d: any) => [d[xKey], d.positive, d.samples, d.tpr]),
     },
     { title: "Line Listing (sample)", type: "table" as const,
-      headers: ["Patient", "District", "Block", "Result", "Date"],
-      rows: filteredListing.slice(0, 30).map((r) => [r.patient, r.district, r.block, r.testResult, r.dateOfTesting]),
+      headers: ["UHID", "District", "Block", "Result", "Date"],
+      rows: filteredListing.slice(0, 30).map((r) => [r.uhid, r.district, r.block, r.testResult, r.dateOfTesting]),
     },
   ];
 
@@ -169,7 +169,7 @@ export default function CaseSurveillanceScreen() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["Patient", "Gender", "Age", "District", "Block", "Village / MC", "Test Type", "Result", "Date", "Urban/Rural", "Referred By"].map((h) => (
+                {["UHID", "Gender", "Age", "District", "Block", "Village / MC", "Test Type", "Result", "Date", "Urban/Rural", "Referred By"].map((h) => (
                   <th key={h} className="text-left py-2 px-2 text-xs font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -177,7 +177,7 @@ export default function CaseSurveillanceScreen() {
             <tbody>
               {visibleListing.map((r, i) => (
                 <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="py-2 px-2">{r.patient}</td>
+                  <td className="py-2 px-2 font-mono text-xs">{r.uhid}</td>
                   <td className="py-2 px-2">{r.gender}</td>
                   <td className="py-2 px-2">{r.age}</td>
                   <td className="py-2 px-2">{r.district}</td>

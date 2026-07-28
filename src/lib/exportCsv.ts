@@ -81,7 +81,7 @@ export function exportSummaryCsv(ctx: ExportContext) {
 
 export function exportLineListingCsv(ctx: ExportContext) {
   const rows = getLineListing(ctx.filters).map((r) => ({
-    patient: r.patient,
+    uhid: r.uhid,
     gender: r.gender,
     age: r.age,
     district: r.district,
@@ -94,7 +94,7 @@ export function exportLineListingCsv(ctx: ExportContext) {
     urban_rural: r.urbanRural,
     referred_by: r.referredBy,
   }));
-  const headers = ["patient", "gender", "age", "district", "block", "village", "diagnosis", "test_type", "test_result", "date_of_testing", "urban_rural", "referred_by"];
+  const headers = ["uhid", "gender", "age", "district", "block", "village", "diagnosis", "test_type", "test_result", "date_of_testing", "urban_rural", "referred_by"];
   triggerDownload(`line-listing-${scopeSlug(ctx)}-${todayStamp()}.csv`, toCsv(rows, headers));
 }
 

@@ -60,10 +60,10 @@ export default function ForecastScreen() {
         lines: riskForecast.map((f, i) => `${f.label}: ${f.cases} projected cases · ${f.riskLabel ?? f.risk}`),
       },
       {
-        title: "Forecast Details",
+        title: "Priority Forecast Areas",
         type: "table" as const,
-        headers: [areaLabel, "Outbreak Prob", "Forecast Risk", "Window", "Drivers"],
-        rows: predictions.map((r) => [r.area, `${r.probability}%`, String(r.riskLabel ?? r.risk), r.expectedWeek, r.signal]),
+        headers: [areaLabel, "Projected Cases", "Forecast Risk"],
+        rows: priorityAreas.map((r) => [r.area, r.projectedCases === null ? "—" : r.projectedCases.toLocaleString(), String(r.riskLabel ?? r.risk)]),
       },
     ];
     return sections;

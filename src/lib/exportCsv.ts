@@ -5,7 +5,7 @@ import {
   getFilteredRegions,
   getFilteredKpi,
   getFilteredHotspots,
-  getOutbreakPredictions,
+  getPriorityForecastAreas,
   getRiskForecast,
   getLineListing,
   type DashboardFiltersLike,
@@ -116,7 +116,7 @@ export function exportHotspotCsv(ctx: ExportContext) {
 
 export function exportForecastCsv(ctx: ExportContext) {
   const weekly = getRiskForecast(ctx.filters);
-  const preds = getOutbreakPredictions(ctx.filters);
+  const preds = getPriorityForecastAreas(ctx.filters);
 
   const weeklyRows = weekly.map((w) => ({
     section: "weekly_forecast",
@@ -130,15 +130,14 @@ export function exportForecastCsv(ctx: ExportContext) {
     section: "area_forecast",
     week_label: p.expectedWeek,
     week_start: "",
-    projected_cases: "",
-    forecast_risk: p.risk,
+    projected_cases: p.projectedCases ?? "", // blank when no forecast4w for this area (gap)
+    forecast_risk: p.riskLabel ?? p.risk,
     area: p.area,
-    outbreak_probability: `${p.probability}%`,
     drivers: p.signal,
     parent_district: p.parentDistrict ?? "",
     parent_block: p.parentBlock ?? "",
   }));
 
-  const headers = ["section", "area", "week_label", "week_start", "projected_cases", "forecast_risk", "outbreak_probability", "drivers", "parent_district", "parent_block"];
+  const headers = ["section", "area", "week_label", "week_start", "projected_cases", "forecast_risk", "drivers", "parent_district", "parent_block"];
   triggerDownload(`forecast-${scopeSlug(ctx)}-${todayStamp()}.csv`, toCsv([...weeklyRows, ...predRows], headers));
 }

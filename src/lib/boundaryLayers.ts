@@ -11,6 +11,8 @@ import type { Feature, FeatureCollection } from "geojson";
 import {
   getGbaCorporations,
   getGbaWards,
+  getKaTaluks,
+  MOCK_TO_KGIS_TALUK_NAME,
   type BoundaryFeature,
 } from "@/data/boundaries";
 import type { RegionData } from "@/data/mockData";
@@ -74,6 +76,26 @@ export function gbaWardLayer(corp: string): FeatureCollection {
   return toFeatureCollection(sortBoundaries(getGbaWards(corp)), `gba-ward:${corp}`);
 }
 
+// ──────────────── Karnataka ────────────────
+
+/** Official KGIS taluk polygons for one district — Karnataka's block level. */
+export function kaTalukLayer(district: string): FeatureCollection {
+  return toFeatureCollection(sortBoundaries(getKaTaluks(district)), `ka-taluk:${district}`);
+}
+
+/**
+ * Mock block name → KGIS taluk name, for one district.
+ *
+ * Unlike GBA, Karnataka's mock block names are real taluk names, so they mostly
+ * match the polygons outright. `MOCK_TO_KGIS_TALUK_NAME` covers the spelling
+ * drift KGIS has ("Sullia" → "Sulya", "Sorab" → "Soraba"); anything not listed
+ * falls through to the mock name unchanged and is matched case/punctuation
+ * insensitively.
+ */
+export function mockBlockToTalukName(district: string, mockBlock: string): string {
+  return MOCK_TO_KGIS_TALUK_NAME[district]?.[mockBlock] ?? mockBlock;
+}
+
 // ──────────────── Positional join ────────────────
 
 /**
@@ -123,6 +145,47 @@ export function positionalJoin(
     mockCount: mockRecords.length,
     unmatchedPolygons: layer.features.length - paired,
     unusedMockRecords: mockRecords.length - paired,
+  };
+}
+
+/**
+ * Pair polygons to mock records **by name**, after mapping each mock name
+ * through `resolveName`. Comparison ignores case, spaces and punctuation, which
+ * is enough to absorb "T. Narsipur" / "T.Narasipura"-style drift once the
+ * explicit spelling map has run.
+ *
+ * Used for Karnataka, where mock area names really are the official area names.
+ * GBA uses `positionalJoin` instead — see the note there.
+ */
+export function nameJoin(
+  layer: FeatureCollection,
+  mockRecords: RegionData[],
+  resolveName: (mockName: string) => string,
+): PolygonJoin {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const polygonsByName = new Map<string, Feature>();
+  layer.features.forEach((f) => {
+    const n = (f.properties as Record<string, unknown>)?.name;
+    if (typeof n === "string") polygonsByName.set(norm(n), f);
+  });
+
+  const byKey = new Map<string, RegionData>();
+  let usedRecords = 0;
+  mockRecords.forEach((rec) => {
+    const f = polygonsByName.get(norm(resolveName(rec.name)));
+    if (!f) return;
+    const key = featureKey(f);
+    if (!key) return;
+    byKey.set(key, rec);
+    usedRecords += 1;
+  });
+
+  return {
+    byKey,
+    polygonCount: layer.features.length,
+    mockCount: mockRecords.length,
+    unmatchedPolygons: layer.features.length - byKey.size,
+    unusedMockRecords: mockRecords.length - usedRecords,
   };
 }
 

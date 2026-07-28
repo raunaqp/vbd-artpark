@@ -20,10 +20,14 @@ import { useStateSelection } from "@/contexts/StateContext";
 import {
   gbaCorporationLayer,
   gbaWardLayer,
+  kaTalukLayer,
+  mockBlockToTalukName,
   positionalJoin,
+  nameJoin,
   featureKey,
   type PolygonJoin,
 } from "@/lib/boundaryLayers";
+import type { RegionData } from "@/data/mockData";
 import "leaflet/dist/leaflet.css";
 
 // ──────────────── Risk colors (semantic but inline-required by leaflet) ────────────────
@@ -199,6 +203,10 @@ interface DashboardMapProps {
 function MapViewUpdater({ center, zoom, bounds, viewKey }: { center: [number, number]; zoom: number; bounds?: LatLngBounds | null; viewKey: string }) {
   const map = useMap();
   useEffect(() => {
+    // The map is created before its card has settled to full size, so Leaflet's
+    // cached container size can be stale — which makes fitBounds compute a far
+    // too low zoom and leave a drill-down looking like the state view.
+    map.invalidateSize({ animate: false });
     if (bounds) {
       map.fitBounds(bounds, { padding: [24, 24], animate: true });
     } else {
@@ -485,40 +493,55 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     data: FeatureCollection;
     join: PolygonJoin;
     levelLabel: string;
+    /** Region types these polygons replace — those markers are suppressed. */
+    covers: Array<RegionData["type"]>;
   } | null>(() => {
-    if (stateId !== "gba_central" || isStateLevel) return null;
-    const corp = appliedFilters.district;
+    if (isStateLevel) return null;
+    const district = appliedFilters.district;
 
-    // Mock ward records for the whole corporation, in mock-hierarchy order:
-    // zone by zone, wards within each zone. This ordering is what the
-    // positional join pairs against, so it must stay deterministic.
-    const zoneFilters = { ...appliedFilters, district: corp, block: "All Blocks", ward: "All Wards" };
-    const zones = getFilteredRegions(zoneFilters).filter(
-      (r) => r.type === "municipality" || r.type === "block",
-    );
-    const mockWards = zones.flatMap((z) =>
-      getFilteredRegions({ ...appliedFilters, district: corp, block: z.name, ward: "All Wards" }),
-    );
+    if (stateId === "gba_central") {
+      // Mock ward records for the whole corporation, in mock-hierarchy order:
+      // zone by zone, wards within each zone. This ordering is what the
+      // positional join pairs against, so it must stay deterministic.
+      const zones = getFilteredRegions({ ...appliedFilters, district, block: "All Blocks", ward: "All Wards" })
+        .filter((r) => r.type === "municipality" || r.type === "block");
+      const mockWards = zones.flatMap((z) =>
+        getFilteredRegions({ ...appliedFilters, district, block: z.name, ward: "All Wards" }),
+      );
 
-    const all = gbaWardLayer(corp);
-    if (!all.features.length) return null;
-    const join = positionalJoin(all, mockWards);
+      const all = gbaWardLayer(district);
+      if (!all.features.length) return null;
+      const join = positionalJoin(all, mockWards);
 
-    // Zone (block) selected → show only the wards paired to that zone's mock
-    // records. Zones are a mock-hierarchy layer with no counterpart in the
-    // official Dec 2025 data, so unpaired polygons have no zone and drop out.
-    let data = all;
-    if (isBlockLevel) {
-      data = {
-        type: "FeatureCollection",
-        features: all.features.filter((f) => {
-          const k = featureKey(f);
-          return k ? join.byKey.get(k)?.parentBlock === appliedFilters.block : false;
-        }),
-      };
+      // Zone (block) selected → show only the wards paired to that zone's mock
+      // records. Zones are a mock-hierarchy layer with no counterpart in the
+      // official Dec 2025 data, so unpaired polygons have no zone and drop out.
+      let data = all;
+      if (isBlockLevel) {
+        data = {
+          type: "FeatureCollection",
+          features: all.features.filter((f) => {
+            const k = featureKey(f);
+            return k ? join.byKey.get(k)?.parentBlock === appliedFilters.block : false;
+          }),
+        };
+      }
+
+      return { data, join, levelLabel: "Ward", covers: ["block", "municipality", "village", "ward"] };
     }
 
-    return { data, join, levelLabel: "ward" };
+    if (stateId === "karnataka") {
+      const all = kaTalukLayer(district);
+      if (!all.features.length) return null;
+      // Only blocks are taluks — city corporations sit alongside them and keep
+      // their markers until Substage 3 gives them ward polygons.
+      const mockBlocks = getFilteredRegions({ ...appliedFilters, district, block: "All Blocks", ward: "All Wards" })
+        .filter((r) => r.type === "block");
+      const join = nameJoin(all, mockBlocks, (n) => mockBlockToTalukName(district, n));
+      return { data: all, join, levelLabel: "Taluk", covers: ["block"] };
+    }
+
+    return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateId, isStateLevel, isBlockLevel, appliedFilters.district, appliedFilters.block, appliedFilters.fromDate, appliedFilters.toDate, regions.length]);
 
@@ -531,10 +554,11 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     if (loggedJoinRef.current === sig) return;
     loggedJoinRef.current = sig;
     const { polygonCount, mockCount, unmatchedPolygons, unusedMockRecords } = subLayer.join;
+    const level = subLayer.levelLabel.toLowerCase();
     console.info(
-      `[boundaries] ${appliedFilters.district}: ${polygonCount} official ward polygons, ` +
-        `${mockCount} mock ward records · ${unmatchedPolygons} polygons unshaded (no mock match), ` +
-        `${unusedMockRecords} mock records undrawn (no polygon). Join is positional — see known_debt.md.`,
+      `[boundaries] ${appliedFilters.district}: ${polygonCount} official ${level} polygons, ` +
+        `${mockCount} mock ${level} records · ${unmatchedPolygons} polygons unshaded (no mock match), ` +
+        `${unusedMockRecords} mock records undrawn (no polygon). See known_debt.md.`,
     );
   }, [subLayer, stateId, appliedFilters.district]);
 
@@ -550,7 +574,12 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     if (!feature) return {};
     const k = featureKey(feature);
     const rec = k ? subLayer?.join.byKey.get(k) : undefined;
-    const base: PathOptions = { color: "#334155", weight: 0.8, opacity: 0.9 };
+    // The selected child (e.g. the taluk named in the block filter) gets a
+    // heavier outline so it reads as the current scope.
+    const isSelected = !!rec && rec.name === appliedFilters.block;
+    const base: PathOptions = isSelected
+      ? { color: "#0f172a", weight: 2.5, opacity: 1 }
+      : { color: "#334155", weight: 0.8, opacity: 0.9 };
     if (!rec) {
       // Official polygon with no mock counterpart — drawn, but never shaded.
       return { ...base, fillColor: NO_DATA_COLOR, fillOpacity: 0.25 };
@@ -564,14 +593,15 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     const k = featureKey(feature);
     const rec = k ? subLayer?.join.byKey.get(k) : undefined;
     const props = (feature.properties || {}) as Record<string, unknown>;
-    const wardName = String(props.name ?? "Unnamed ward");
+    const areaName = String(props.name ?? `Unnamed ${subLayer?.levelLabel.toLowerCase() ?? "area"}`);
     const assembly = props.assembly ? String(props.assembly) : "";
-    const zone = rec?.parentBlock ? String(rec.parentBlock) : "";
+    const parent = rec?.parentBlock ? String(rec.parentBlock) : "";
+    const kind = subLayer?.levelLabel ?? "";
 
     layer.bindTooltip(
       `<div style="font-size:12px;line-height:1.45;min-width:180px">
-         <div style="font-weight:700;margin-bottom:2px">${wardName}</div>
-         ${zone ? `<div style="opacity:0.75;font-size:11px">${zone}</div>` : ""}
+         <div style="font-weight:700;margin-bottom:2px">${areaName}</div>
+         <div style="opacity:0.6;font-size:11px">${[kind, parent].filter(Boolean).join(" · ")}</div>
          ${assembly ? `<div style="opacity:0.6;font-size:11px">${assembly}</div>` : ""}
          ${rec
            ? `<div style="margin-top:3px">Cases: <strong>${rec.confirmed} ${trendArrow[rec.trend] || ""}</strong></div>`
@@ -583,6 +613,10 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     layer.on({
       mouseover: (e) => { (e.target as any).setStyle({ weight: 2.5, color: "#0f172a" }); },
       mouseout: (e) => { (e.target as any).setStyle(styleSubFeature(feature)); },
+      click: () => {
+        // Drill into a taluk/ward the same way its marker used to behave.
+        if (isDistrictLevel && rec && !isLocked("block")) drillDown(rec.name, "block");
+      },
     });
   };
 
@@ -594,22 +628,32 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   // We do NOT mix multiple geographic levels in the same view.
   const childPoints = useMemo(() => {
     if (isStateLevel) return [];
-    // Real polygons supersede centroid dots at this level.
-    if (subLayer) return [];
-    if (isBlockLevel) {
-      return regions.filter((r) => r.type === "village" || r.type === "ward");
-    }
-    return regions.filter((r) => r.type === "block" || r.type === "municipality");
+    const atLevel = isBlockLevel
+      ? regions.filter((r) => r.type === "village" || r.type === "ward")
+      : regions.filter((r) => r.type === "block" || r.type === "municipality");
+    // Real polygons supersede centroid dots for the levels they cover.
+    if (!subLayer) return atLevel;
+    return atLevel.filter((r) => !subLayer.covers.includes(r.type));
   }, [regions, isStateLevel, isBlockLevel, subLayer]);
 
   // Scope label shown above the map.
   const scopeLabel = subLayer
-    ? `Showing: Ward boundaries (${subLayer.data.features.length})`
+    ? `Showing: ${subLayer.levelLabel} boundaries (${subLayer.data.features.length})`
     : isBlockLevel
     ? "Showing: Village / Ward distribution"
     : !isStateLevel
     ? "Showing: Block & Municipality distribution"
     : "Showing: District-level distribution";
+
+  // Boundary provenance, per state. Districts for AP/Odisha come from the
+  // datameet mirror; only GBA and Karnataka have bundled official sub-district
+  // geometry, so only they claim it.
+  const boundaryNote =
+    stateId === "gba_central"
+      ? "Official GBA Dec 2025 delimitation. Karnataka boundaries from KGIS."
+      : stateId === "karnataka"
+      ? "Karnataka taluk boundaries from KGIS (Karnataka Geographic Information System)."
+      : null;
 
   // Force GeoJSON layer to re-style when filter changes (key trick).
   const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}-${maxDistrictCases}`;
@@ -846,9 +890,9 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
       )}
 
       {/* Boundary provenance note — shown for states drawn from the bundled real polygons. */}
-      {geoReady && stateId === "gba_central" && (
-        <div className="absolute bottom-3 right-3 z-[1000] bg-card/80 backdrop-blur rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground pointer-events-none">
-          Official GBA Dec 2025 delimitation. Karnataka boundaries from KGIS.
+      {geoReady && boundaryNote && (
+        <div className="absolute bottom-3 right-3 z-[1000] bg-card/80 backdrop-blur rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground pointer-events-none max-w-[60%] text-right">
+          {boundaryNote}
         </div>
       )}
 

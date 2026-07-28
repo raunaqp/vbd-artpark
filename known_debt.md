@@ -12,12 +12,14 @@ before any non-demo use · **[polish]** nice-to-have.
 
 ## GBA Central
 
-### GBA sub-level data still clones Karnataka — [fix-before-real]
+### GBA sub-level: map child markers still clone Karnataka — [fix-before-real]
 District-level data for GBA resolves to the 5 BBMP corporations (East/South/
-West/North/Central), so the map choropleth, labels, and KPIs are correct. But
-the **line-listing rows and sub-level (block/ward) markers still come from the
-Karnataka clone** (Bengaluru Urban, Udupi, …). Effect: drilling into a BBMP
-corporation shows an **empty line-listing table** and **no child dots** on the
+West/North/Central), so the map choropleth, labels, and KPIs are correct.
+The **line listing is now populated for GBA** (B.2 reads the 1,000-case dataset,
+~455 GBA cases across the corporations), which resolved the empty-table part of
+this item. What remains: **sub-level (block/ward) map child markers still come
+from the Karnataka clone** (Bengaluru Urban, Udupi, …). Effect: drilling the map
+into a BBMP corporation may show **no child dots** on the
 map.
 - Where: `src/data/mockData.ts` (`GBA` bundle spreads `KARNATAKA`), canonical
   data in `src/data/mock_dataset.ts`.
@@ -55,6 +57,39 @@ The `LOCAL_GEOJSON` record is the generalization seam: any future
 placeholder-boundary state is a one-line entry, no special-casing needed.
 
 ---
+
+## Case Management & overlay (Session B)
+
+### Overlay pattern will get messy with more mutation types — [demo-ok]
+`caseStore.ts` uses two parallel localStorage maps (`prismh:case_edits`,
+`prismh:case_archives`) merged over the base dataset, with a per-area delta for
+aggregations. This is clean for **edit + archive**, but each new mutation type
+(merge duplicates, split, bulk reassign, review status…) means another overlay
+map, another merge branch, and another delta case. Before adding a third
+mutation type, collapse to a **single event log** (`{uhid, op, payload, ts, by}`)
+folded into the working set once — it generalizes the delta and undo for free.
+
+### Aggregation delta covers counts, not risk re-classification — [demo-ok]
+Edits/archives apply a live +1/−1 to **region `confirmed` and hotspot
+`currentCases`** (`getFilteredRegions` / `getFilteredHotspots`). They do NOT
+re-run the WHO/ICMR risk-class or forecast math, which read canonical weekly
+curves. So a case move shows the count change everywhere, but a hotspot's
+risk *label* won't flip from one moved case (it never would at ±1 anyway).
+Forecasts and the district-polygon risk-fallback are likewise count-only.
+Acceptable for the delta-overlay approach we chose; note it if a demo needs a
+class to visibly change.
+
+### Delta keys by area NAME — [demo-ok]
+`getCaseDeltasByArea()` maps area name → net change and is applied by matching
+`region.name` / `hotspot.area`. Works because district/block/ward names are
+distinct strings today. If two levels ever share a name, the delta could double-
+apply. A future event-log refactor should key by (level, name).
+
+### One HMR/browser caveat, not code — [demo-ok]
+Editing case-store files triggers a Vite full reload, which resets the in-memory
+role to the default (Admin tab hides). localStorage overlays persist correctly;
+only the selected role resets. To reset demo overlays, clear localStorage keys
+`prismh:case_edits` and `prismh:case_archives`.
 
 ## Build / tooling
 

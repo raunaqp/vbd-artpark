@@ -5,6 +5,9 @@
 // these trend counts. This matches existing hotspot behavior.
 import { getDistrictMetrics } from "@/data/canonical";
 import type { DashboardFiltersLike } from "@/data/mockData";
+import { EPI_WEEKS } from "@/data/mock_dataset";
+import { getLarvalSurveyCoverage, larvalWardKey } from "@/data/mock_larval_surveys";
+import type { WeeklyResponseRecord } from "./types";
 
 export interface WardRef {
   district: string;
@@ -73,31 +76,80 @@ export function computeCaseRise(weekly: number[], windowWeeks: number): CaseRise
 export const trendLabel = (t: CaseTrend): string =>
   t === "up" ? "Rising" : t === "down" ? "Declining" : t === "stable" ? "Stable" : "No cases";
 
+// ── Larval survey coverage (C.3b) ──
+export type Coverage = "high" | "medium" | "low" | "no_data";
+const LEVEL_NUM: Record<"high" | "medium" | "low", number> = { high: 3, medium: 2, low: 1 };
+
+// Average the last N weeks of larval survey levels for this ward → bucket.
+export function computeCoverage(stateLabel: string, w: WardRef, windowWeeks: number): Coverage {
+  const key = larvalWardKey(stateLabel, w.district, w.block, w.ward);
+  const weeks = EPI_WEEKS.slice(-windowWeeks);
+  const nums: number[] = [];
+  for (const wk of weeks) {
+    const lvl = getLarvalSurveyCoverage(key, wk);
+    if (lvl) nums.push(LEVEL_NUM[lvl]);
+  }
+  if (!nums.length) return "no_data";
+  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+  return avg >= 2.34 ? "high" : avg >= 1.67 ? "medium" : "low";
+}
+
+// Most recent logged action targeting this ward within the window, else null.
+export function findWardAction(w: WardRef, records: WeeklyResponseRecord[], windowWeeks: number): WeeklyResponseRecord | null {
+  const weeks = new Set(EPI_WEEKS.slice(-windowWeeks));
+  let best: WeeklyResponseRecord | null = null;
+  for (const r of records) {
+    if (!weeks.has(r.epidemiological_week)) continue;
+    const wardMatch =
+      (r.ward_or_village === w.ward && r.district === w.district) ||
+      (r.wards_affected?.includes(w.ward) ?? false);
+    if (!wardMatch) continue;
+    if (!best || (r.recorded_at ?? "") > (best.recorded_at ?? "")) best = r;
+  }
+  return best;
+}
+
+/** A gap ward: cases rising, survey lagging (low/none), and no action logged. */
+export function isActionGap(row: EffRow): boolean {
+  return row.rise.rising && (row.coverage === "low" || row.coverage === "no_data") && !row.action;
+}
+
 export interface EffRow {
   district: string;
   block: string;
   ward: string;
   rise: CaseRise;
+  coverage: Coverage;
+  action: WeeklyResponseRecord | null;
 }
 
 export function buildEffectivenessRows(
   stateLabel: string,
   filters: DashboardFiltersLike,
   windowWeeks: number,
+  records: WeeklyResponseRecord[],
 ): EffRow[] {
   return enumerateWards(stateLabel, filters).map((w) => ({
     district: w.district,
     block: w.block,
     ward: w.ward,
     rise: computeCaseRise(w.weekly, windowWeeks),
+    coverage: computeCoverage(stateLabel, w, windowWeeks),
+    action: findWardAction(w, records, windowWeeks),
   }));
 }
 
-// Sort: rising first, then by window case count (desc). Extended in C.3b to
-// also weight low survey coverage + no action so action-gap wards sit on top.
+// Rank low/no-survey as most urgent (0), medium (1), high (2).
+const coverageRank = (c: Coverage): number => (c === "low" || c === "no_data" ? 0 : c === "medium" ? 1 : 2);
+
+// Sort: rising first, then low/no survey, then no action → action-gap wards top.
 export function sortEffRows(rows: EffRow[]): EffRow[] {
   return [...rows].sort((a, b) => {
     if (a.rise.rising !== b.rise.rising) return a.rise.rising ? -1 : 1;
+    const ca = coverageRank(a.coverage), cb = coverageRank(b.coverage);
+    if (ca !== cb) return ca - cb;
+    const aa = a.action ? 1 : 0, ab = b.action ? 1 : 0;
+    if (aa !== ab) return aa - ab;
     return b.rise.windowCases - a.rise.windowCases;
   });
 }

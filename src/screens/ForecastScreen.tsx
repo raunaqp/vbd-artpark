@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from "recharts";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { getForecastData, getRiskForecast, getPriorityForecastAreas, getStateLocalRiskNote } from "@/data/mockData";
-import { useRole } from "@/contexts/RoleContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -18,7 +18,6 @@ import WeeklyOperationalResponseSection from "@/features/weeklyResponse/WeeklyOp
 const PAGE_SIZE = 20;
 
 export default function ForecastScreen() {
-  const { isAnalyst } = useRole();
   const { appliedFilters, dateWindow, levelLabels } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId } = useStateSelection();
@@ -32,6 +31,7 @@ export default function ForecastScreen() {
   const stateLocalNote = getStateLocalRiskNote(appliedFilters);
 
   const [page, setPage] = useState(1);
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
   useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
   const visiblePriorityAreas = priorityAreas.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -142,33 +142,6 @@ export default function ForecastScreen() {
         <WeeklyOperationalResponseSection />
       </WeeklyResponseProvider>
 
-      {/* 5. Forecast Details — technical outputs supporting the operational recommendations above. */}
-      {show("actual_vs_predicted") && isAnalyst && (
-        <div className="section-card p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="section-title">{diseaseName} Incidence — Actual vs Predicted</h3>
-            <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">Analyst View</span>
-          </div>
-          <p className="text-xs text-muted-foreground mb-4">Past weeks (W-) and forecast (W+) with confidence interval</p>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={forecastData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
-              <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Area dataKey="upper" fill="hsl(25, 90%, 50%)" fillOpacity={0.1} stroke="none" />
-              <Area dataKey="lower" fill="hsl(0, 0%, 100%)" stroke="none" />
-              <Line type="monotone" dataKey="actual" stroke="hsl(215, 60%, 40%)" strokeWidth={2} dot={{ r: 3, fill: "hsl(215, 60%, 40%)" }} connectNulls={false} />
-              <Line type="monotone" dataKey="predicted" stroke="hsl(25, 90%, 50%)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: "hsl(25, 90%, 50%)" }} />
-            </ComposedChart>
-          </ResponsiveContainer>
-          <div className="flex gap-6 justify-center mt-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-chart-actual inline-block" /> Actual</span>
-            <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-chart-predicted inline-block" /> Predicted</span>
-          </div>
-        </div>
-      )}
-
       {show("outbreak_table") && (
       <div className="section-card p-5">
         <h3 className="section-title mb-1">Priority Forecast Areas</h3>
@@ -201,6 +174,59 @@ export default function ForecastScreen() {
         <TablePagination page={page} pageSize={PAGE_SIZE} total={priorityAreas.length} onPageChange={setPage} />
       </div>
       )}
+
+      {/* Forecast Methodology — technical detail, collapsed by default (progressive disclosure). */}
+      <div className="rounded-lg border border-border bg-card">
+        <button
+          onClick={() => setMethodologyOpen((o) => !o)}
+          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-muted/40"
+        >
+          {methodologyOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          Forecast Methodology
+        </button>
+        {methodologyOpen && (
+          <div className="border-t border-border p-4 space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Risk categories derive from an ensemble outbreak-probability model combining NBR, LSTM, XGBoost and TSE
+              forecasts with WHO/ICMR percentile classification. Historical percentile, climate signals (rainfall,
+              humidity) and time-series patterns inform the outputs.
+            </p>
+
+            {show("actual_vs_predicted") && (
+              <div>
+                <h4 className="text-xs font-semibold text-foreground mb-1">{diseaseName} Incidence — Actual vs Predicted</h4>
+                <p className="text-xs text-muted-foreground mb-3">Past weeks (W-) and forecast (W+) with confidence interval</p>
+                <ResponsiveContainer width="100%" height={280}>
+                  <ComposedChart data={forecastData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
+                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Area dataKey="upper" fill="hsl(25, 90%, 50%)" fillOpacity={0.1} stroke="none" />
+                    <Area dataKey="lower" fill="hsl(0, 0%, 100%)" stroke="none" />
+                    <Line type="monotone" dataKey="actual" stroke="hsl(215, 60%, 40%)" strokeWidth={2} dot={{ r: 3, fill: "hsl(215, 60%, 40%)" }} connectNulls={false} />
+                    <Line type="monotone" dataKey="predicted" stroke="hsl(25, 90%, 50%)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: "hsl(25, 90%, 50%)" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+                <div className="flex gap-6 justify-center mt-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-chart-actual inline-block" /> Actual</span>
+                  <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-chart-predicted inline-block" /> Predicted</span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h4 className="text-xs font-semibold text-foreground mb-1">Model assumptions &amp; validation</h4>
+              <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+                <li>Projected cases are the summed 4-week ensemble forecast per area; outbreak probability is an internal intermediate, not shown in the primary UI.</li>
+                <li>Risk classification is relative to each area's historical baseline (WHO percentile) or ICMR stratum, depending on the state's method.</li>
+                <li>Forecasts assume stable reporting and no major intervention shocks within the window; sub-district projections are not yet modelled.</li>
+                <li>Validated against back-tested actual-vs-predicted incidence (chart above) over recent weeks.</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

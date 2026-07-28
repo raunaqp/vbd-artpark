@@ -969,7 +969,15 @@ const KARNATAKA: StateBundle = {
 // the canonical adapters (MULTI_DISEASE_DATASET filtered by state "GBA Central").
 // The legacy bundle only backs weather/time-series/map fallbacks, so it reuses
 // KARNATAKA's shape as a stub; districts/blocks are injected from canonical below.
-const GBA: StateBundle = { ...KARNATAKA, id: "gba_central", label: "GBA Central" };
+// GBA clones Karnataka's data shape, but its map view is Bengaluru-city scale
+// (the 5 BBMP corporations) rather than the whole-state Karnataka view.
+const GBA: StateBundle = {
+  ...KARNATAKA,
+  id: "gba_central",
+  label: "GBA Central",
+  mapCenter: [12.98, 77.60],
+  mapZoom: 11,
+};
 
 export const stateBundles: Record<StateId, StateBundle> = { gba_central: GBA, andhra_pradesh: AP, odisha: ODISHA, karnataka: KARNATAKA };
 

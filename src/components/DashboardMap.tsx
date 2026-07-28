@@ -17,6 +17,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { GBA_BOUNDARIES_GEOJSON } from "@/data/gba_boundaries";
 import "leaflet/dist/leaflet.css";
 
 // ──────────────── Risk colors (semantic but inline-required by leaflet) ────────────────
@@ -64,10 +65,18 @@ const GEOJSON_URLS: Record<string, string> = {
     "https://cdn.jsdelivr.net/gh/datta07/INDIAN-SHAPEFILES@master/STATES/KARNATAKA/KARNATAKA_DISTRICTS.geojson",
 };
 
+// Locally-bundled boundary approximations (no network fetch). Used for demo
+// states that have no real source polygons yet. Checked before GEOJSON_URLS.
+const LOCAL_GEOJSON: Record<string, FeatureCollection> = {
+  gba_central: GBA_BOUNDARIES_GEOJSON,
+};
+
 // In-memory cache (lives for the session); also mirrored to sessionStorage so a reload reuses it.
 const geoCache = new Map<string, FeatureCollection>();
 
 async function fetchStateGeoJSON(stateId: string): Promise<FeatureCollection | null> {
+  // Local mock boundaries take precedence over the remote CDN pattern.
+  if (LOCAL_GEOJSON[stateId]) return LOCAL_GEOJSON[stateId];
   if (geoCache.has(stateId)) return geoCache.get(stateId)!;
   // sessionStorage backup
   try {
@@ -698,6 +707,13 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
       {geoReady && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1 text-[11px] text-foreground font-medium pointer-events-none">
           {scopeLabel}
+        </div>
+      )}
+
+      {/* Demo-boundary note — only for states drawn from local placeholder polygons. */}
+      {geoReady && stateId === "gba_central" && (
+        <div className="absolute bottom-3 right-3 z-[1000] bg-card/80 backdrop-blur rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground pointer-events-none">
+          Demo boundaries — approximate
         </div>
       )}
 

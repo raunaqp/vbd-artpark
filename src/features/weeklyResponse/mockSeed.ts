@@ -27,27 +27,31 @@ const LEAVES: SeedLeaf[] = [
   // ── Andhra Pradesh — Visakhapatnam blocks + Vizag MC wards ──
   { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Bheemunipatnam", ward: null, risk: "high", scenario: "completed" },
   { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Anakapalle", ward: null, risk: "moderate", scenario: "no_activity" },
-  { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Vizag MC", ward: "Ward 12", risk: "high", scenario: "completed" },
-  { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Vizag MC", ward: "Ward 34", risk: "moderate", scenario: "report_pending" },
-  { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Vizag MC", ward: "Ward 51", risk: "low", scenario: "routine" },
+  // Ward-level entries use CANONICAL block/ward names so logged actions join the
+  // Effectiveness panel (which walks the canonical hierarchy). Block-null entries
+  // aggregate at block level and are left as-is.
+  { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Greater Visakhapatnam Municipal Corp", ward: "Visakhapatnam Ward 3", risk: "high", scenario: "completed" },
+  { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Greater Visakhapatnam Municipal Corp", ward: "Visakhapatnam Ward 1", risk: "moderate", scenario: "report_pending" },
+  { stateId: "andhra_pradesh", district: "Visakhapatnam", block: "Greater Visakhapatnam Municipal Corp", ward: "Visakhapatnam Ward 2", risk: "low", scenario: "routine" },
   { stateId: "andhra_pradesh", district: "Guntur", block: "Tenali", ward: null, risk: "moderate", scenario: "completed" },
   { stateId: "andhra_pradesh", district: "Guntur", block: "Bapatla", ward: null, risk: "low", scenario: "no_action" },
-  { stateId: "andhra_pradesh", district: "Krishna", block: "Vijayawada MC", ward: "Ward 22", risk: "high", scenario: "pending" },
+  { stateId: "andhra_pradesh", district: "Krishna", block: "Machilipatnam Municipality", ward: "Krishna Ward 1", risk: "high", scenario: "pending" },
   // ── Odisha ──
-  { stateId: "odisha", district: "Khordha", block: "Bhubaneswar MC", ward: "Ward 07", risk: "high", scenario: "completed" },
-  { stateId: "odisha", district: "Khordha", block: "Bhubaneswar MC", ward: "Ward 45", risk: "moderate", scenario: "pending" },
+  { stateId: "odisha", district: "Khordha", block: "Bhubaneswar Municipal Corporation", ward: "Bhubaneswar Ward 1", risk: "high", scenario: "completed" },
+  { stateId: "odisha", district: "Khordha", block: "Bhubaneswar Municipal Corporation", ward: "Bhubaneswar Ward 3", risk: "moderate", scenario: "pending" },
   { stateId: "odisha", district: "Puri", block: "Brahmagiri", ward: null, risk: "moderate", scenario: "completed" },
   { stateId: "odisha", district: "Puri", block: "Sakshigopal", ward: null, risk: "low", scenario: "no_action" },
-  { stateId: "odisha", district: "Cuttack", block: "Cuttack MC", ward: "Ward 18", risk: "high", scenario: "report_pending" },
+  { stateId: "odisha", district: "Cuttack", block: "Cuttack Municipal Corporation", ward: "Cuttack Ward 1", risk: "high", scenario: "report_pending" },
   { stateId: "odisha", district: "Angul", block: "Talcher", ward: null, risk: "moderate", scenario: "no_activity" },
   { stateId: "odisha", district: "Baleshwar", block: "Nilgiri", ward: null, risk: "low", scenario: "routine" },
   // ── Karnataka ──
-  { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP East Zone", ward: "Ward 84", risk: "high", scenario: "completed" },
-  { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP East Zone", ward: "Ward 92", risk: "high", scenario: "pending" },
-  { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP East Zone", ward: "Ward 110", risk: "moderate", scenario: "completed" },
+  { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP-Legacy", ward: "Bengaluru Urban Ward 5", risk: "high", scenario: "completed" },
+  { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP-Legacy", ward: "Bengaluru Urban Extension 6", risk: "high", scenario: "pending" },
+  // Rising + low-survey ward → a completed action here clears one action gap on cold load.
+  { stateId: "karnataka", district: "Bengaluru Urban", block: "BBMP-Legacy", ward: "Bengaluru Urban Colony 7", risk: "moderate", scenario: "completed" },
   { stateId: "karnataka", district: "Bengaluru Urban", block: "Yelahanka", ward: null, risk: "moderate", scenario: "no_activity" },
   { stateId: "karnataka", district: "Mysuru", block: "Nanjangud", ward: null, risk: "low", scenario: "routine" },
-  { stateId: "karnataka", district: "Mysuru", block: "Mysuru City", ward: "Ward 33", risk: "high", scenario: "completed" },
+  { stateId: "karnataka", district: "Mysuru", block: "Mysuru City Corporation", ward: "Mysuru Ward 1", risk: "high", scenario: "completed" },
   { stateId: "karnataka", district: "Udupi", block: "Kundapura", ward: null, risk: "low", scenario: "no_action" },
 ];
 

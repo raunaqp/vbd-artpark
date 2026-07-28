@@ -11,7 +11,6 @@ import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import { latestEpiWeek, epiWeekRange } from "@/lib/epiWeek";
-import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
 
 const PAGE_SIZE = 20;
 
@@ -122,20 +121,17 @@ export default function ForecastScreen() {
         <p className="text-xs text-muted-foreground -mt-2">{stateLocalNote}</p>
       )}
 
-      {/* Forecast Risk Map — prediction only. Still inside the (now childless)
-          provider wrapper; R2.4 extracts it to standalone as the map does not
-          consume the weekly-response context. */}
-      <WeeklyResponseProvider>
-        {show("forecast_map") && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="section-title">Forecast Risk Map — {forecastRange}</h3>
-            <span className="text-[11px] text-muted-foreground">Colors reflect <strong>predicted</strong> outbreak risk · Click areas to drill down</span>
-          </div>
-          <DashboardMap height="380px" mode="forecast" />
+      {/* Forecast Risk Map — prediction only. Standalone: it reads filters /
+          state directly and does not consume the weekly-response context. */}
+      {show("forecast_map") && (
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="section-title">Forecast Risk Map — {forecastRange}</h3>
+          <span className="text-[11px] text-muted-foreground">Colors reflect <strong>predicted</strong> outbreak risk · Click areas to drill down</span>
         </div>
-        )}
-      </WeeklyResponseProvider>
+        <DashboardMap height="380px" mode="forecast" />
+      </div>
+      )}
 
       {show("outbreak_table") && (
       <div className="section-card p-5">

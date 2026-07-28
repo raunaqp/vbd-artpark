@@ -1,18 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Pencil, Archive } from "lucide-react";
+import { Search, Pencil, Archive, RotateCcw } from "lucide-react";
 import { type MockCase } from "@/data/mock_line_listing";
-import { getAllCasesMerged, subscribeCaseStore, caseStoreVersion } from "@/lib/caseStore";
+import {
+  getAllCasesMerged, subscribeCaseStore, caseStoreVersion,
+  isArchived, archiveCase, restoreCase,
+} from "@/lib/caseStore";
+import { useRole } from "@/contexts/RoleContext";
+import { toast } from "@/hooks/use-toast";
 import EditCaseModal from "./EditCaseModal";
 
 const RESULT_CAP = 50;
 
 // Case Management — global UHID search across all mock cases (all states).
-// B.3: search + results table. B.4: edit modal + overlay-aware results.
+// B.3: search + results table. B.4: edit modal. B.5: archive/restore.
 export default function CaseManagementPanel() {
+  const { currentRole } = useRole();
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
   const [version, setVersion] = useState(caseStoreVersion());
   const [editing, setEditing] = useState<MockCase | null>(null);
+  const [archiving, setArchiving] = useState<MockCase | null>(null);
 
   // 250ms debounce on keystrokes.
   useEffect(() => {
@@ -34,7 +41,19 @@ export default function CaseManagementPanel() {
   const overflow = matches.length > RESULT_CAP;
 
   const onEdit = (c: MockCase) => setEditing(c);
-  const onArchive = (c: MockCase) => { void c; /* wired in B.5 */ };
+
+  const confirmArchive = () => {
+    if (!archiving) return;
+    archiveCase(archiving.uhid, currentRole.userName);
+    toast({ title: "Case archived", description: `${archiving.uhid} hidden from aggregations and reports.` });
+    setArchiving(null);
+    setVersion(caseStoreVersion());
+  };
+  const onRestore = (c: MockCase) => {
+    restoreCase(c.uhid);
+    toast({ title: "Case restored", description: `${c.uhid} returned to all views.` });
+    setVersion(caseStoreVersion());
+  };
 
   return (
     <div className="section-card p-5">
@@ -86,8 +105,13 @@ export default function CaseManagementPanel() {
                 </tr>
               </thead>
               <tbody>
-                {shown.map((c) => (
-                  <tr key={c.uhid} className="border-b border-border/50 hover:bg-muted/30">
+                {shown.map((c) => {
+                  const archived = isArchived(c.uhid);
+                  return (
+                  <tr
+                    key={c.uhid}
+                    className={`border-b border-border/50 hover:bg-muted/30 ${archived ? "opacity-50 [&_td:not(:last-child)]:line-through" : ""}`}
+                  >
                     <td className="py-2 px-2 font-mono text-xs whitespace-nowrap">{c.uhid}</td>
                     <td className="py-2 px-2">{c.age}</td>
                     <td className="py-2 px-2">{c.gender}</td>
@@ -99,23 +123,33 @@ export default function CaseManagementPanel() {
                     <td className="py-2 px-2 whitespace-nowrap">{c.block}</td>
                     <td className="py-2 px-2 whitespace-nowrap">{c.ward}</td>
                     <td className="py-2 px-2">
-                      <div className="flex items-center gap-1.5">
+                      {archived ? (
                         <button
-                          onClick={() => onEdit(c)}
+                          onClick={() => onRestore(c)}
                           className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-input text-xs text-foreground hover:bg-muted transition-colors"
                         >
-                          <Pencil className="h-3 w-3" /> Edit
+                          <RotateCcw className="h-3 w-3" /> Restore
                         </button>
-                        <button
-                          onClick={() => onArchive(c)}
-                          className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted transition-colors"
-                        >
-                          <Archive className="h-3 w-3" /> Archive
-                        </button>
-                      </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => onEdit(c)}
+                            className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-input text-xs text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Pencil className="h-3 w-3" /> Edit
+                          </button>
+                          <button
+                            onClick={() => setArchiving(c)}
+                            className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted transition-colors"
+                          >
+                            <Archive className="h-3 w-3" /> Archive
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -128,6 +162,25 @@ export default function CaseManagementPanel() {
           onClose={() => setEditing(null)}
           onSaved={() => setVersion(caseStoreVersion())}
         />
+      )}
+
+      {archiving && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 p-4" onClick={() => setArchiving(null)}>
+          <div className="bg-card rounded-lg border border-border shadow-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4">
+              <h3 className="text-sm font-semibold text-foreground mb-2">
+                Archive case <span className="font-mono">{archiving.uhid}</span>?
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                This case will be hidden from aggregations and reports. This action can be reversed by an admin.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-border">
+              <button onClick={() => setArchiving(null)} className="h-8 px-3 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted/50">Cancel</button>
+              <button onClick={confirmArchive} className="h-8 px-4 rounded-md bg-risk-high text-white text-xs font-medium hover:opacity-90">Archive case</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

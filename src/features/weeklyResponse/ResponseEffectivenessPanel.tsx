@@ -4,7 +4,7 @@ import Sparkline from "@/components/Sparkline";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { stateLabelFromId } from "@/data/canonical";
-import { buildEffectivenessRows, sortEffRows, trendLabel, type Coverage, type EffRow } from "./effectiveness";
+import { buildEffectivenessRows, sortEffRows, trendLabel, isActionGap, type Coverage, type EffRow } from "./effectiveness";
 import { useWeeklyResponseContext } from "./weeklyResponseContext";
 
 // Response Effectiveness — joins case rise × larval survey coverage × logged
@@ -55,6 +55,8 @@ export default function ResponseEffectivenessPanel() {
   const shown = rows.slice(0, ROW_CAP);
   const overflow = rows.length > ROW_CAP;
   const risingCount = rows.filter((r) => r.rise.rising).length;
+  const coverageGaps = rows.filter((r) => r.rise.rising && (r.coverage === "low" || r.coverage === "no_data")).length;
+  const actionGaps = rows.filter(isActionGap).length;
 
   return (
     <div className="section-card p-5 space-y-4">
@@ -77,6 +79,35 @@ export default function ResponseEffectivenessPanel() {
           ))}
         </div>
       </div>
+
+      {/* Summary strip — Action Gaps is the headline signal. */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-md border border-border bg-muted/30 px-4 py-3">
+          <div className="text-2xl font-semibold text-foreground">{risingCount}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">Rising wards · cases rising in the window</div>
+        </div>
+        <div className="rounded-md border border-border bg-muted/30 px-4 py-3">
+          <div className="text-2xl font-semibold text-foreground">{coverageGaps}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">Coverage gaps · rising wards with low or no survey</div>
+        </div>
+        <div
+          className="rounded-md border-2 px-4 py-3"
+          style={{ borderColor: "hsl(var(--risk-high))", backgroundColor: "hsl(var(--risk-high) / 0.08)" }}
+        >
+          <div className="text-3xl font-bold" style={{ color: "hsl(var(--risk-high))" }}>{actionGaps}</div>
+          <div className="text-xs font-medium text-foreground mt-0.5">Action gaps · rising + low survey + no action logged</div>
+        </div>
+      </div>
+
+      {actionGaps > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Action gap wards are the highest priority for the coming week — cases are rising, surveys are lagging, and no operational response has been logged.
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No action gaps in this window. All rising wards have either survey coverage or logged action.
+        </p>
+      )}
 
       {risingCount === 0 && (
         <div className="rounded-md bg-muted/40 border border-border px-3 py-2 text-xs text-muted-foreground">

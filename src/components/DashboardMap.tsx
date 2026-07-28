@@ -9,6 +9,7 @@ import {
   districtCoordinates,
   getFilteredRegions,
   getOutbreakPredictions,
+  getPriorityForecastAreas,
   getDistrictRiskFallback,
   getDistrictHotspotRisk,
   getFilteredHotspots,
@@ -236,6 +237,13 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   const regions = getFilteredRegions(appliedFilters);
   const predictions = mode === "forecast" ? getOutbreakPredictions(appliedFilters) : [];
   const predByArea = useMemo(() => new Map(predictions.map((p) => [p.area, p])), [predictions]);
+  // Projected cases per area (forecast mode) — shown in tooltips instead of probability (R1.3).
+  const priorityForecast = mode === "forecast" ? getPriorityForecastAreas(appliedFilters) : [];
+  const projectedByArea = useMemo(() => new Map(priorityForecast.map((p) => [p.area, p.projectedCases])), [priorityForecast]);
+  const projectedLabel = (name: string | null): string => {
+    const v = name ? projectedByArea.get(name) : undefined;
+    return v === null || v === undefined ? "—" : v.toLocaleString();
+  };
   // Hotspot mode → state-level hotspot list, same source the hotspot table reads from.
   const hotspotsForMap = mode === "hotspot" ? getFilteredHotspots({ ...appliedFilters, district: "All Districts", block: "All Blocks", ward: "All Wards" }, hotspotLookbackWeeks) : [];
   const hotspotByArea = useMemo(() => new Map(hotspotsForMap.map((h) => [h.area, h])), [hotspotsForMap]);
@@ -343,12 +351,13 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
 
     if (mode === "forecast") {
       const pred = predByArea.get(name);
-      if (pred) return { risk: pred.risk, cases: `${pred.probability}%`, week: pred.expectedWeek };
+      // Show projected cases (R1.3) — never probability. Gap areas render "—".
+      if (pred) return { risk: pred.risk, cases: projectedLabel(name), week: pred.expectedWeek };
       // Fallback: synthesize a risk for districts without an explicit forecast
       // entry so every polygon is shaded (mock-data parity across the state).
       const fb = getDistrictRiskFallback(name, appliedFilters);
       if (fb.synthesized && !stateCoversAllDistricts()) return { risk: null, cases: "—" };
-      return { risk: fb.risk, cases: `${fb.confirmed}` };
+      return { risk: fb.risk, cases: projectedLabel(name) };
     }
 
 
@@ -453,7 +462,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         <div style="font-size:12px;line-height:1.45;min-width:180px">
           <div style="font-weight:700;margin-bottom:2px">${displayName}</div>
           <div>Forecast risk: <strong>${riskLabel}</strong></div>
-          <div>Outbreak probability: <strong>${risk ? cases : "—"}</strong></div>
+          <div>Projected cases: <strong>${cases}</strong></div>
           ${week ? `<div style="opacity:0.8">Forecast window: ${week}</div>` : ""}
         </div>`
       : `
@@ -915,7 +924,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                         {r.name}{r.type ? ` (${r.type})` : ""}
                       </div>
                       <div>Forecast risk: <strong>{(displayRisk || "data not available").toString().replace(/^./, c => c.toUpperCase())}</strong></div>
-                      <div>Outbreak probability: <strong>{pred.probability}%</strong></div>
+                      <div>Projected cases: <strong>{projectedLabel(r.name)}</strong></div>
                       <div style={{ opacity: 0.8 }}>Forecast window: {pred.expectedWeek}</div>
                     </div>
                   ) : mode === "hotspot" ? (

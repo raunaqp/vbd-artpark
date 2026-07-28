@@ -2,6 +2,7 @@ import ReportingWeekSelector from "./ReportingWeekSelector";
 import ResponseSummaryCards from "./ResponseSummaryCards";
 import AreaResponseTable from "./AreaResponseTable";
 import ActionsByCategory from "./ActionsByCategory";
+import ResponseEffectivenessPanel from "./ResponseEffectivenessPanel";
 import { useWeeklyResponseContext } from "./weeklyResponseContext";
 
 export default function WeeklyOperationalResponseSection() {
@@ -26,6 +27,8 @@ export default function WeeklyOperationalResponseSection() {
       <ActionsByCategory records={scopedRecords} />
 
       <AreaResponseTable aggregates={aggregates} areaLabel={areaLabel} onRecord={openDrawer} onNoActivity={openNoActivity} />
+
+      <ResponseEffectivenessPanel />
     </div>
   );
 }

@@ -91,6 +91,46 @@ role to the default (Admin tab hides). localStorage overlays persist correctly;
 only the selected role resets. To reset demo overlays, clear localStorage keys
 `prismh:case_edits` and `prismh:case_archives`.
 
+## Response Effectiveness (Session C)
+
+### Seeded actions never join to canonical wards — [fix-before-real]
+The effectiveness panel walks **canonical** wards ("Bengaluru Urban Ward 5"),
+but the pre-seeded weekly-response records use **legacy** ward names
+("Ward 84", block "BBMP East Zone"). `findWardAction` matches on ward+district,
+so seeded ward-level actions never show a checkmark — only actions logged
+*through the panel* (C.5) do, because those write the canonical ward name.
+- Effect: at first load the Action column is all dashes until an officer logs
+  one. This is why the C.5 flow works but pre-seeded coverage looks empty.
+- Fix: reconcile seed geography to canonical ward names (or key the seed off the
+  canonical hierarchy the way mock_line_listing / mock_larval_surveys do).
+
+### The 3-way join is O(wards) per render — fine now, watch the pattern — [demo-ok]
+`buildEffectivenessRows` is O(wards × windowWeeks) and re-runs on every window/
+filter change: it enumerates all wards (≤1,286 state-wide), sums two windows,
+buckets coverage, and linear-scans `allRecords` per ward for the action join.
+At demo scale (state-wide ≤1,286 wards, tens of records) this is a few ms and
+memoized on [stateLabel, filters, window, records]. It will get slow if either
+side grows large (thousands of records, or joining more sources). The pattern to
+extend cleanly: **pre-index records once** (Map keyed by `state|district|ward` →
+records) instead of scanning `allRecords` per ward, and add each new data source
+as its own `computeX(ward, window)` that the row builder composes — keep the
+join a fold over per-ward lookups, not nested scans.
+
+### Larval coverage correlates with burden → few state-level gaps — [demo-ok]
+Because C.1 skews well-resourced (high-burden) districts toward high coverage,
+rising wards there tend to have coverage, so state-level action gaps are modest
+(GBA 2W ≈ 15, KA 2W = 2, longer windows trend to 0). Gaps are most visible at
+2W/4W and when drilled into rural districts. Intentional (matches the C.1 spec)
+and the demo narrative — "drill in to find the gaps" — but worth knowing when
+choosing what to show on stage.
+
+### Logged action uses the reporting-week selector's week — [demo-ok]
+C.5 records the response at the provider's current `epiWeek` (defaults to the
+latest, which is inside every window). If an officer first switches the
+ReportingWeekSelector to an *older* week outside the effectiveness window, the
+new checkmark won't appear until they widen the window. Edge case; default path
+is fine.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

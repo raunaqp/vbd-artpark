@@ -1,9 +1,11 @@
 import GlobalFilters from "@/components/GlobalFilters";
+import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
+import PriorityAreasSection from "@/features/weeklyResponse/PriorityAreasSection";
 
-// Response tab — operational surface (R2 scaffold). The operational block
-// (Priority Areas, Weekly Operational Response, Response Effectiveness)
-// relocates here from Forecast in R2.2–R2.3. Six-tile summary (R3), action map
-// (R4), and side panel / priority table (R5) land later.
+// Response tab — operational surface (R2). The operational block relocates here
+// from Forecast: Priority Areas (R2.2), Weekly Operational Response +
+// Effectiveness (R2.3). Six-tile summary (R3), action map (R4), side panel /
+// priority table (R5) land later.
 export default function ResponseScreen() {
   return (
     <div className="space-y-6">
@@ -16,10 +18,10 @@ export default function ResponseScreen() {
         </p>
       </div>
 
-      {/* Placeholder — operational block moves here in R2.2–R2.3 */}
-      <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-        Operational response sections load here.
-      </div>
+      <WeeklyResponseProvider>
+        <PriorityAreasSection />
+        {/* Weekly Operational Response + Response Effectiveness join here in R2.3 */}
+      </WeeklyResponseProvider>
     </div>
   );
 }

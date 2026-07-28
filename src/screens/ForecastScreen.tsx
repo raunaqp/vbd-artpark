@@ -12,7 +12,6 @@ import TablePagination from "@/components/TablePagination";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import { latestEpiWeek, epiWeekRange } from "@/lib/epiWeek";
 import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
-import PriorityAreasSection from "@/features/weeklyResponse/PriorityAreasSection";
 import WeeklyOperationalResponseSection from "@/features/weeklyResponse/WeeklyOperationalResponseSection";
 
 const PAGE_SIZE = 20;
@@ -127,8 +126,6 @@ export default function ForecastScreen() {
       {/* 2–4. Operational layer: Priority Areas → Forecast Risk Map → Weekly Operational Response.
           Wrapped in a provider so both operational sections share one reporting week + drawer. */}
       <WeeklyResponseProvider>
-        <PriorityAreasSection />
-
         {show("forecast_map") && (
         <div>
           <div className="flex items-center justify-between mb-2">

@@ -28,14 +28,43 @@ map.
 - Smallest next step: add GBA line-listing rows keyed to the 5 corporations so
   drilling shows records. Self-contained, mock-data only.
 
-### Boundary polygons are generated rectangles — [demo-ok]
-`src/data/gba_boundaries.ts` holds 5 axis-aligned rectangular placeholders around
-approximate Bengaluru centroids. They read as obviously synthetic (which pairs
-with the "Demo boundaries — approximate" note), but are **not official GoK/BBMP
-geometry**.
-- Replace with real GIS polygons before any production use.
-- [polish] Rougher convex hulls would look less synthetic if a nicer demo is
-  wanted without real data.
+### ~~Boundary polygons are generated rectangles~~ — RESOLVED
+Replaced by the official GBA Dec 2025 delimitation in `src/data/boundaries.ts`
+(5 corporations, 369 wards). `src/data/gba_boundaries.ts` is kept but no longer
+imported, and is marked DEPRECATED at the top of the file. Delete it once
+nothing references it in a demo branch.
+
+### GBA ward case data is joined to polygons by position — [fix-before-real]
+Ward polygons are shaded by pairing them with mock ward records **in sort
+order** within each corporation, not by name. The official Dec 2025 ward names
+("Vinayaka Layout", "Kogilu", "Yamalur") share almost no vocabulary with our
+synthetic mock ward names ("East Ward 3", "Hagadur Extension") — a name join
+matches roughly 60 of 369 and would leave the map mostly grey.
+
+All 369 polygons render with their real names; the shading behind them is
+arbitrary within a corporation. Cosmetic for a demo, wrong for anything real —
+a production system would key on official ward IDs.
+
+Because corporations have different polygon and mock-record counts, some of
+each is left over. Counts are logged to the console on first render per
+corporation:
+
+| Corporation | Polygons | Mock wards | Unshaded polygons | Undrawn mock records |
+|---|---|---|---|---|
+| BBMP East | 50 | 75 | 0 | 25 |
+| BBMP West | 112 | 80 | 32 | 0 |
+| BBMP North | 72 | 80 | 0 | 8 |
+| BBMP South | 72 | 85 | 0 | 13 |
+| BBMP Central | 63 | 47 | 16 | 0 |
+
+- Where: `positionalJoin` in `src/lib/boundaryLayers.ts`.
+
+### GBA zones have no counterpart in the official data — [demo-ok]
+Our mock hierarchy puts 4 zones ("East Zone 1"…) between a corporation and its
+wards. The Dec 2025 data has no zone field — zones are a mock construct. Zone
+membership is therefore inherited from whichever mock ward a polygon was paired
+with, so polygons left unpaired by the positional join disappear when a zone is
+selected rather than showing as unassigned.
 
 ### GBA map center/zoom is inline on the bundle — [demo-ok]
 GBA's Bengaluru-city center/zoom lives directly on the `GBA` bundle in
@@ -49,12 +78,65 @@ city-scale state appears.
 
 ### Local boundaries bypass the session/CDN cache path — [demo-ok]
 `LOCAL_GEOJSON` in `src/components/DashboardMap.tsx` is checked **before** the
-`geoCache` / `sessionStorage` / remote-fetch path. Intentional: local boundaries
-are already in-memory constants, so caching adds nothing. Noted only so the
-short-circuit isn't mistaken for a missed cache.
+`geoCache` / `sessionStorage` / remote-fetch path. Local boundaries are built
+from the bundled polygon module on first use and memoised in `geoCache`, so the
+remote cache path adds nothing. Noted only so the short-circuit isn't mistaken
+for a missed cache.
 
 The `LOCAL_GEOJSON` record is the generalization seam: any future
-placeholder-boundary state is a one-line entry, no special-casing needed.
+real-boundary state is a one-line entry, no special-casing needed.
+
+---
+
+## Boundary polygons (`src/data/boundaries.ts`)
+
+Real geometry, ~6 MB, generated externally. **Do not hand-edit** — regenerate it
+at source. Sources: GBA from Open City / Oorvani Foundation (Dec 2025
+delimitation, public domain); Karnataka from KGIS via the `samashti/KGIS` repo.
+
+### `metadata` key fails typecheck — [fix-before-real]
+The JSON literal ends with a `"metadata"` block that the `BoundaryCollection`
+interface doesn't declare, so `tsc -p tsconfig.app.json --noEmit` reports one
+`TS2353`. It is the only error in the repo. `npm run build` is unaffected —
+Vite uses esbuild, which doesn't typecheck.
+- Fix at the generator: either declare `metadata?` on the interface or drop the
+  key from the emitted JSON.
+- Note that a bare `tsc --noEmit` reports nothing here: the root `tsconfig.json`
+  has `"files": []` and only project references, so it checks nothing. Always
+  use `tsc -p tsconfig.app.json --noEmit`.
+
+### No ward polygons for Odisha or Andhra Pradesh — [fix-before-real]
+Both states still render district polygons from the datameet mirror (jsDelivr
+CDN) and centroid markers below that. No official sub-district geometry has
+been sourced for either.
+- Effect: drilling into an AP or Odisha district shows dots, not polygons.
+
+### No Karnataka rural village polygons — [demo-ok]
+KGIS publishes village-level geometry, but it is ~13k polygons — too heavy to
+bundle for a demo. Rural blocks keep centroid markers at ward/village level;
+only the 11 municipalities in `KA_DISTRICTS_WITH_WARD_POLYGONS` get real ward
+polygons.
+
+### Karnataka municipal wards are joined by position — [fix-before-real]
+Same problem as GBA, and worse. Mock municipal ward names are pure placeholders
+("Mysuru Ward 1", "Dharwad Ward 3") with no relation to the KGIS names, so the
+pairing is positional. Cities also have far more real wards than our mock has
+records — BBMP is 198 polygons against 40 mock wards — so most polygons render
+unshaded, and the shaded ones cluster wherever ward numbering starts rather
+than where cases actually are.
+
+### Bhadravathi has polygons but no municipal records — [demo-ok]
+KGIS ships 35 ward polygons for Bhadravathi, but our mock treats Bhadravathi as
+a *block* (taluk) of Shivamogga whose children are villages. With no municipal
+ward records to shade them, it is deliberately excluded from
+`MOCK_TO_KGIS_MUN`.
+
+### The mock→KGIS name maps will sprawl — [polish]
+Three separate reconciliations now exist: `DISTRICT_ALIASES` (in
+`DashboardMap.tsx`), `MOCK_TO_KGIS_TALUK_NAME` (shipped in `boundaries.ts`), and
+`MOCK_TO_KGIS_MUN` (in `boundaryLayers.ts`). Each new state adds another. If a
+fourth state lands, collapse them into one per-state reconciliation table
+instead of adding a fourth dict in a fourth place.
 
 ---
 

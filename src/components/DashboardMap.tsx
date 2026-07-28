@@ -675,15 +675,18 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
     ? "Showing: Block & Municipality distribution"
     : "Showing: District-level distribution";
 
-  // Boundary provenance, per state. Districts for AP/Odisha come from the
-  // datameet mirror; only GBA and Karnataka have bundled official sub-district
-  // geometry, so only they claim it.
+  // Boundary provenance, per state and level. Only GBA and Karnataka have
+  // bundled official geometry; AP and Odisha still draw districts from the
+  // public datameet mirror and have no sub-district polygons at all. The note
+  // says which of those you are looking at rather than one blanket claim.
   const boundaryNote =
     stateId === "gba_central"
-      ? "Official GBA Dec 2025 delimitation. Karnataka boundaries from KGIS."
-      : stateId === "karnataka" && subLayer
-      ? `Karnataka ${subLayer.levelLabel === "Ward" ? "municipal ward" : "taluk"} boundaries from KGIS (Karnataka Geographic Information System).`
-      : null;
+      ? "Official GBA boundaries — Dec 2025 delimitation"
+      : stateId === "karnataka"
+      ? subLayer
+        ? `Karnataka ${subLayer.levelLabel === "Ward" ? "municipal ward" : "taluk"} boundaries — KGIS`
+        : "Districts: public shapefiles · KGIS geometry on drill-down"
+      : "Districts: public shapefiles · no sub-district geometry yet";
 
   // Force GeoJSON layer to re-style when filter changes (key trick).
   const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}-${maxDistrictCases}`;
@@ -921,7 +924,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
 
       {/* Boundary provenance note — shown for states drawn from the bundled real polygons. */}
       {geoReady && boundaryNote && (
-        <div className="absolute bottom-3 right-3 z-[1000] bg-card/80 backdrop-blur rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground pointer-events-none max-w-[60%] text-right">
+        <div className="absolute bottom-3 right-3 z-[1000] bg-card/80 backdrop-blur rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground pointer-events-none max-w-[48%] text-right">
           {boundaryNote}
         </div>
       )}

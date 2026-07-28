@@ -35,7 +35,8 @@ export default function DisclaimerBanner() {
     >
       <Info className="h-3.5 w-3.5 flex-shrink-0 text-[#C8912B]" aria-hidden="true" />
       <p className="text-center text-xs font-medium">
-        Demonstration environment — data shown is illustrative, not operational. For live
+        Demonstration environment — case data is illustrative, not operational. Map
+        boundaries are official; the case counts shaded onto them are not. For live
         surveillance, refer to the production dashboard.
       </p>
       <button

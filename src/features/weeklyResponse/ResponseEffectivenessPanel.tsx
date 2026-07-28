@@ -6,6 +6,8 @@ import { useStateSelection } from "@/contexts/StateContext";
 import { stateLabelFromId } from "@/data/canonical";
 import { buildEffectivenessRows, sortEffRows, trendLabel, isActionGap, type Coverage, type EffRow } from "./effectiveness";
 import { useWeeklyResponseContext } from "./weeklyResponseContext";
+import { makeGeographyId } from "./types";
+import type { AreaAggregate } from "./aggregation";
 
 // Response Effectiveness — joins case rise × larval survey coverage × logged
 // action per ward to surface "action gap" wards.
@@ -45,8 +47,27 @@ export default function ResponseEffectivenessPanel() {
   const [windowWeeks, setWindowWeeks] = useState<EffectivenessWindow>(2);
   const { appliedFilters } = useFilters();
   const { stateId } = useStateSelection();
-  const { allRecords } = useWeeklyResponseContext();
+  const { allRecords, openDrawer } = useWeeklyResponseContext();
   const stateLabel = stateLabelFromId(stateId);
+
+  // Open the existing Log Response drawer pre-filled with this gap ward.
+  const logResponse = (r: EffRow) => {
+    const key = makeGeographyId(stateId, r.district, r.block, r.ward);
+    const agg: AreaAggregate = {
+      row: { key, name: r.ward, risk: "high", level: "ward", district: r.district, block: r.block, ward: r.ward },
+      records: [],
+      hasRecord: false,
+      fieldActivity: "none",
+      status: "pending",
+      reporting: "not_reported",
+      personnel: 0,
+      areasCovered: 0,
+      householdsCovered: 0,
+      sourceReduction: 0,
+      actionsCount: 0,
+    };
+    openDrawer(agg);
+  };
 
   const rows = useMemo(
     () => sortEffRows(buildEffectivenessRows(stateLabel, appliedFilters, windowWeeks, allRecords)),
@@ -148,6 +169,14 @@ export default function ResponseEffectivenessPanel() {
                     <span className="inline-flex items-center gap-1 text-risk-low cursor-default" title={actionTooltip(r)}>
                       <Check className="h-4 w-4" />
                     </span>
+                  ) : isActionGap(r) ? (
+                    <button
+                      onClick={() => logResponse(r)}
+                      className="inline-flex items-center h-7 px-2 rounded-md text-xs font-medium text-white hover:opacity-90"
+                      style={{ backgroundColor: "hsl(var(--risk-high))" }}
+                    >
+                      Log Response
+                    </button>
                   ) : (
                     <Minus className="h-4 w-4 text-muted-foreground" />
                   )}

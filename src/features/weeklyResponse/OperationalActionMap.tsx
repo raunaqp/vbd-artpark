@@ -11,13 +11,20 @@
 import { useState } from "react";
 import DashboardMap from "@/components/DashboardMap";
 import { OVERLAY_IDS, OVERLAY_LABELS, type OverlayId } from "@/lib/operationalOverlay";
-import { useOperationalWards } from "./useOperationalWards";
-import { useWeeklyResponseContext } from "./weeklyResponseContext";
+import type { OperationalWardMap } from "./operationalWards";
 
-export default function OperationalActionMap() {
-  const { epiWeek } = useWeeklyResponseContext();
+interface Props {
+  /** Ward scope for the active filters, resolved once by the Response tab (R4.4.4). */
+  wards: OperationalWardMap;
+  loading?: boolean;
+  error?: string | null;
+}
+
+// R4.4.4: the ward scope arrives as a prop rather than from an own
+// `useOperationalWards` call, so the tiles, the map and the table all read one
+// resolve. Overlay behaviour is unchanged from R4.3.
+export default function OperationalActionMap({ wards, loading = false, error = null }: Props) {
   const [overlay, setOverlay] = useState<OverlayId>("forecast_risk");
-  const { wards, loading, error } = useOperationalWards(epiWeek);
 
   return (
     <div>

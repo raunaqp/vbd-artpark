@@ -18,6 +18,15 @@ export interface WeeklyResponseCtx {
   priorityRows: PriorityRow[];
   summary: WeeklySummary;
   scopedRecords: WeeklyResponseRecord[];
+  /**
+   * Every record for this state and reporting week, at any grain.
+   *
+   * The Priority Action Table is always ward grain while `aggregates` follows
+   * the drill level, so it cannot look a ward up there. It summarises against
+   * this instead, which is what lets the Log button open an existing entry for
+   * editing rather than a blank form that would overwrite it.
+   */
+  weekRecords: WeeklyResponseRecord[];
   allRecords: WeeklyResponseRecord[];
   openDrawer: (agg: AreaAggregate) => void;
   openNoActivity: (agg: AreaAggregate) => void;

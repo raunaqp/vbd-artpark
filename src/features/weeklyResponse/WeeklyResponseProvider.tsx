@@ -88,7 +88,7 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
 
   const value: WeeklyResponseCtx = {
     epiWeek, setEpiWeek, weekEnding, forecastGeneratedAt, areaLabel,
-    aggregates, priorityRows, summary, scopedRecords, allRecords: records, openDrawer, openNoActivity,
+    aggregates, priorityRows, summary, scopedRecords, weekRecords, allRecords: records, openDrawer, openNoActivity,
   };
 
   return (

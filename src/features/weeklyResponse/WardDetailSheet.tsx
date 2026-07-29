@@ -25,6 +25,9 @@ import {
 } from "./wardHistory";
 import type { WeeklyResponseRecord } from "./types";
 
+/** Matches the sheet's close transition (shadcn sheet: duration-300). */
+const SHEET_CLOSE_MS = 320;
+
 const STATUS_META: Record<WorklistStatus, { label: string; cls: string }> = {
   completed: { label: "Completed", cls: "text-risk-low" },
   pending: { label: "Pending", cls: "text-risk-high" },
@@ -139,9 +142,25 @@ export default function WardDetailSheet({
   const status = STATUS_META[logStatus];
   const rec = row.recommendation;
 
-  // Closing before opening the drawer: the Log sheet is narrower than this one,
-  // and stacking two right-hand sheets reads as a glitch rather than a hierarchy.
-  const act = (fn: (r: PriorityRow) => void) => { onOpenChange(false); fn(row); };
+  /**
+   * Close this sheet, then open the requested dialog.
+   *
+   * The delay makes the handoff sequential: this sheet slides out, then the
+   * dialog slides in, rather than swapping mid-frame. Both are right-hand
+   * sheets, so without it the 896px panel is replaced by a 448px one in a
+   * single frame, which reads as a glitch.
+   *
+   * It is not a correctness fix. An earlier version of this comment claimed it
+   * repaired a stuck `body { pointer-events: none }`; that lock turned out to
+   * be an artifact of automated verification, where the renderer produces no
+   * animation frames (measured: 0 fps), so Radix's exit animation never
+   * completes and the dialog never unmounts. Real foreground tabs animate
+   * normally. See known_debt.md.
+   */
+  const act = (fn: (r: PriorityRow) => void) => {
+    onOpenChange(false);
+    window.setTimeout(() => fn(row), SHEET_CLOSE_MS);
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

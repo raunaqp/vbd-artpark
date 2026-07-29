@@ -528,6 +528,82 @@ Filter *values* are generic (tiers, not ward names) so nothing goes stale, and
 "reset to priority" / "Clear all" recover in one click. Left as-is: resetting
 the officer's view on every state change would be its own annoyance.
 
+## R5-lite entries
+
+Landed 29 Jul 2026. Read-only ward detail sheet on Priority Action Table row click.
+
+### Row activation keeps the row role, deliberately — [decision]
+The R5.2 brief asked for `role="button"` on the `<tr>`. It was implemented, and
+eleven existing tests went red: `getAllByRole("row")` returned nothing, because
+`role="button"` overrides the implicit row role and removes every row from the
+table's semantics. Assistive tech would stop reporting rows as rows in a grid —
+no "row 3 of 20", no column association, no table navigation — which is a real
+cost on a 331-row operational table.
+
+Shipped instead: the row keeps its row role and gets `tabIndex={0}` plus an
+`aria-label` ("Ward detail for Dharwad Ward 3") announcing what activating it
+does. Every functional requirement holds — focusable, Enter and Space activate,
+pointer affordance, action buttons isolated with `stopPropagation`. A test
+asserts both that the row has no role override and that the table still reports
+all its rows, so neither can regress silently.
+
+Deviation reviewed and approved. Recorded here because the reasoning is not
+obvious from the code alone.
+
+### Browser-automation verification cannot test dialog close paths — [process]
+**The automated browser produces no animation frames.** Measured directly during
+R5.3: a `requestAnimationFrame` loop counted **0 frames in 2 seconds (0 fps)**.
+
+Consequence: any Radix component that unmounts on an exit animation never
+unmounts. The dialog stays in the DOM at `data-state="closed"`, Radix never
+releases `body { pointer-events: none }`, and **every subsequent click is
+silently swallowed**. During R5.3 this presented as "the page is dead after
+closing the Log drawer", reproducible from a clean load, and it survived 116
+seconds before a screenshot forced a frame and released it.
+
+It is not an application defect. Real foreground tabs animate at ~60 fps, the
+0.3 s exit animation completes, and cleanup runs normally — the same close paths
+work when driven interactively. But it cost a long detour, and an earlier code
+comment briefly asserted a bug that did not exist.
+
+**When verifying anything that opens or closes a dialog:** take a screenshot
+after each open and each close to force a frame, and treat a "click did nothing"
+result as a suspected frame stall until a screenshot rules it out. Do not
+conclude a pointer-events lock is a product bug without checking fps first.
+
+Related: "Browser-automation screenshots flaky on map-heavy pages" below.
+
+### Sheet-to-dialog handoff is delayed by 320 ms — [demo-ok]
+`WardDetailSheet` closes itself, waits out its own close transition, then opens
+the Log Response drawer or the No Activity dialog. Both are right-hand sheets at
+different widths (896 px and 448 px), so swapping them in one frame reads as a
+glitch; the delay makes it a sequence.
+
+The delay is presentational only. It is *not* a fix for the pointer-events lock
+described above — that was an automation artifact.
+
+### Larval trend shows ISO weeks against an epi-week UI — [fix-before-real]
+Section 3's larval table lists weeks as `2026-W31 / W30 / W29 / W28`, because the
+R3 larval dataset is keyed on ISO weeks. Every other week reference in the app —
+the reporting-week selector, the sheet's own "Epidemiological week W19" line, the
+case-trend window — uses the season-based `EPI_WEEKS` list (W36..W52 then
+W1..W19).
+
+So the sheet can show "Epidemiological week W19" a few lines above a larval trend
+starting at W31. An officer reading closely will ask why, and the honest answer is
+that the two datasets number weeks differently.
+
+Demo risk, not a correctness bug — the larval values themselves are the right
+four weeks in the right order. Resolves by keying the generated larval indices on
+the app's epi-week vocabulary, alongside the other R3 re-key debt.
+
+### Ward detail sheet is read-only by design — [planned]
+No edit-in-place, no drill-down, no history pagination: the two action buttons
+hand off to the existing dialogs unchanged. A test asserts the sheet renders no
+form inputs at all, so this stays true by accident-proofing rather than
+convention. The fuller side panel in
+`docs/design/PREDICTION_VS_OPERATIONS.md` remains future work.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

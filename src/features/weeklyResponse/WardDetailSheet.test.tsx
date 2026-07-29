@@ -218,31 +218,38 @@ describe("WardDetailSheet — section 4, actions", () => {
       .toEqual(["Close", "Mark No Activity", "Log Response"]);
   });
 
-  it("closes itself before opening the Log drawer, rather than stacking sheets", () => {
+  it("closes itself before opening the Log drawer, rather than stacking sheets", async () => {
     const { onLog, onOpenChange } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Log Response" }));
+    // Close first, synchronously...
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onLog).toHaveBeenCalledWith(ROW);
+    expect(onLog).not.toHaveBeenCalled();
+    // ...then hand off, once this sheet has finished unmounting. Overlapping
+    // the two leaves Radix's modal count unbalanced and the page unclickable.
+    await waitFor(() => expect(onLog).toHaveBeenCalledWith(ROW));
   });
 
-  it("closes itself before opening the No Activity dialog", () => {
+  it("closes itself before opening the No Activity dialog", async () => {
     const { onNoActivity, onOpenChange } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Mark No Activity" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onNoActivity).toHaveBeenCalledWith(ROW);
+    expect(onNoActivity).not.toHaveBeenCalled();
+    await waitFor(() => expect(onNoActivity).toHaveBeenCalledWith(ROW));
   });
 
-  it("closes without acting on Close", () => {
+  it("closes without acting on Close", async () => {
     const { onLog, onNoActivity, onOpenChange } = setup();
     fireEvent.click(within(footer()).getByRole("button", { name: "Close" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
+    await new Promise((r) => setTimeout(r, 400));
     expect(onLog).not.toHaveBeenCalled();
     expect(onNoActivity).not.toHaveBeenCalled();
   });
 
-  it("passes the ward's real risk through to whichever action is taken", () => {
+  it("passes the ward's real risk through to whichever action is taken", async () => {
     const { onLog } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Log Response" }));
+    await waitFor(() => expect(onLog).toHaveBeenCalled());
     expect(onLog.mock.calls[0][0]).toMatchObject({ ward: "Dharwad Ward 3", risk: "very_high" });
   });
 });

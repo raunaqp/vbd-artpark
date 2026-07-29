@@ -242,18 +242,31 @@ interface DashboardMapProps {
 // (e.g. after a state change resets to the same default zoom).
 function MapViewUpdater({ center, zoom, bounds, viewKey }: { center: [number, number]; zoom: number; bounds?: LatLngBounds | null; viewKey: string }) {
   const map = useMap();
+  // Sub-district polygons are fetched asynchronously, so at block level the
+  // tighter `subBounds` arrives a beat *after* the filter change that triggered
+  // the drill. Keying the fit on `viewKey` alone meant that first fit used the
+  // parent district's bounds and nothing ever re-fitted — leaving a city's wards
+  // as a speck. Re-running when the bounds themselves change is what makes the
+  // ward layer actually frame. Stringified so an equal box doesn't re-fit.
+  const boundsKey = bounds ? bounds.toBBoxString() : "";
   useEffect(() => {
     // The map is created before its card has settled to full size, so Leaflet's
     // cached container size can be stale — which makes fitBounds compute a far
     // too low zoom and leave a drill-down looking like the state view.
     map.invalidateSize({ animate: false });
+    // `animate: false` on both paths is load-bearing, not a style choice. A drill
+    // fires this effect more than once — first for the parent district, then
+    // again when the sub-district polygons finish loading and a tighter bounds
+    // becomes available. Animated transitions from those calls race each other:
+    // going down, the ward fit got reverted and the map stayed at state zoom;
+    // coming back up, the reset never landed and the map stayed at ward zoom.
     if (bounds) {
-      map.fitBounds(bounds, { padding: [24, 24], animate: true });
+      map.fitBounds(bounds, { padding: [24, 24], animate: false });
     } else {
-      map.setView(center, zoom, { animate: true });
+      map.setView(center, zoom, { animate: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewKey]);
+  }, [viewKey, boundsKey]);
   return null;
 }
 

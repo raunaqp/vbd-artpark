@@ -412,6 +412,17 @@ within a corporation exactly the way the existing case choropleth does. See
 a new problem, it inherits the existing one. Both are fixed by the same thing:
 keying polygons on official ward IDs.
 
+### Map overlay verification protocol — [process]
+Fill-tally alone is insufficient — it counts DOM presence, not visible area.
+Any overlay verification must run the area-check script (see
+`scripts/r3/smoke/README.md`) and assert widthPct and heightPct both above
+~40%. A path with fill colour but 1px² area passes the fill-tally but fails the
+user.
+
+Caveat documented in the README: the map card is ~3.7:1 while a city is roughly
+square, so a correct fit often fills one axis and not the other. Read it as "at
+least one axis above ~40%, neither in single digits".
+
 ### Operational overlays need a synchronous lookup — [demo-ok]
 Every R3 getter is async, but Leaflet calls `styleFeature` / `styleSubFeature`
 synchronously on each repaint. `buildOperationalWardMap`

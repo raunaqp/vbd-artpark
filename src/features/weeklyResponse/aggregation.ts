@@ -1,5 +1,5 @@
 import type { WeeklyResponseRecord, RiskLevel, ReportingStatus } from "./types";
-import { ACTIVITY_TAXONOMY } from "@/data/mock_dataset";
+import { ACTIVITY_TAXONOMY, EPI_WEEKS } from "@/data/mock_dataset";
 
 // ── Worklist status ────────────────────────────────────────────────
 // The four operational states shown to officers:
@@ -124,6 +124,33 @@ export function summarizeRow(row: AreaRow, records: WeeklyResponseRecord[]): Are
     actionsCount,
     activityDate,
   };
+}
+
+/**
+ * Weekly responses logged against one ward over the last N epi-weeks,
+ * most recent first (R5.1, ward detail sheet section 3).
+ *
+ * `weekRecords` on the context covers a single week, which is the wrong window
+ * for "recent activity" — this reads the full record set instead. Matches the
+ * ward either as the record's own geography or via `wards_affected`, the same
+ * two ways a response can name a ward.
+ */
+export function recentWardActivity(
+  records: WeeklyResponseRecord[],
+  ward: { district: string; ward: string },
+  epiWeek: string,
+  weeks = 4,
+): WeeklyResponseRecord[] {
+  const end = EPI_WEEKS.indexOf(epiWeek);
+  if (end < 0) return [];
+  const window = new Set(EPI_WEEKS.slice(Math.max(0, end - weeks + 1), end + 1));
+  return records
+    .filter((r) => {
+      if (!window.has(r.epidemiological_week)) return false;
+      if (r.district !== ward.district) return false;
+      return r.ward_or_village === ward.ward || (r.wards_affected?.includes(ward.ward) ?? false);
+    })
+    .sort((a, b) => EPI_WEEKS.indexOf(b.epidemiological_week) - EPI_WEEKS.indexOf(a.epidemiological_week));
 }
 
 // ── Summary over display rows ──────────────────────────────────────

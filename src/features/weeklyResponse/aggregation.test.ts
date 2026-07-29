@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   summarizeRow,
   buildSummary,
+  recentWardActivity,
   collateDistrict,
   collateState,
   collateRecords,
@@ -280,5 +281,45 @@ describe("collateRecords reporting completeness", () => {
     expect(c.totalAreas).toBe(2);
     expect(c.reporting).toBe(2);
     expect(c.reportingPct).toBe(100);
+  });
+});
+
+describe("recentWardActivity (ward detail sheet, section 3)", () => {
+  // Real EPI_WEEKS values — the list runs W36..W52 then W1..W19, so a window is
+  // positional, not arithmetic on the week number.
+  const at = (week: string, ward: string | null, district = "D") =>
+    rec({ district, block: "B1", ward, week, risk: "high", activity: "yes" });
+
+  it("returns only records inside the trailing window, newest week first", () => {
+    const all = [at("W16", "W-1"), at("W19", "W-1"), at("W17", "W-1"), at("W13", "W-1")];
+    const out = recentWardActivity(all, { district: "D", ward: "W-1" }, "W19", 4);
+    expect(out.map((r) => r.epidemiological_week)).toEqual(["W19", "W17", "W16"]);
+  });
+
+  it("spans the year boundary, because the week list wraps W52 to W1", () => {
+    const all = [at("W51", "W-1"), at("W52", "W-1"), at("W1", "W-1"), at("W2", "W-1")];
+    const out = recentWardActivity(all, { district: "D", ward: "W-1" }, "W2", 4);
+    expect(out.map((r) => r.epidemiological_week)).toEqual(["W2", "W1", "W52", "W51"]);
+  });
+
+  it("excludes other wards and other districts", () => {
+    const all = [at("W19", "W-1"), at("W19", "W-2"), at("W19", "W-1", "Other")];
+    const out = recentWardActivity(all, { district: "D", ward: "W-1" }, "W19", 4);
+    expect(out).toHaveLength(1);
+    expect(out[0].ward_or_village).toBe("W-1");
+  });
+
+  it("matches a ward named only in wards_affected", () => {
+    const r = at("W19", null);
+    r.wards_affected = ["W-1"];
+    expect(recentWardActivity([r], { district: "D", ward: "W-1" }, "W19", 4)).toHaveLength(1);
+  });
+
+  it("returns nothing for an unknown epi week rather than guessing a window", () => {
+    expect(recentWardActivity([at("W19", "W-1")], { district: "D", ward: "W-1" }, "W99", 4)).toEqual([]);
+  });
+
+  it("returns an empty list when the ward has logged nothing", () => {
+    expect(recentWardActivity([], { district: "D", ward: "W-1" }, "W19", 4)).toEqual([]);
   });
 });

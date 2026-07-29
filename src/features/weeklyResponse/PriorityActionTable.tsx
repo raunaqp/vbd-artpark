@@ -11,14 +11,16 @@
 // element per row. Row click opens the geography side panel in R5.
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, ChevronDown, ChevronUp, Minus } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import TablePagination from "@/components/TablePagination";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CoverageLevel, FoggingTier, PriorityRow, TrendTier } from "./priorityRows";
+// Shared with the ward detail sheet so the two surfaces cannot describe the
+// same ward differently.
+import { CoveragePill, FoggingCell, RiskPill, TrendCell } from "./wardCells";
 import {
   activeFilterCount,
   applyTableView,
-  formatFogging,
   nextSort,
   riskOptions,
   toggleValue,
@@ -55,63 +57,6 @@ const COLUMNS: Column[] = [
   { key: "coverage", label: "Larval Survey Coverage", source: "Khushi Baby", align: "center" },
   { key: "action", label: "Recommended Action", source: "Dashboard" },
 ];
-
-// ──────────────── Cell rendering ────────────────
-
-const TREND_META: Record<TrendTier, { label: string; Icon: typeof ArrowUp; cls: string }> = {
-  rising: { label: "Rising", Icon: ArrowUp, cls: "text-risk-high font-medium" },
-  steady: { label: "Steady", Icon: ArrowRight, cls: "text-muted-foreground" },
-  falling: { label: "Falling", Icon: ArrowDown, cls: "text-risk-low" },
-  none: { label: "No cases", Icon: Minus, cls: "text-muted-foreground" },
-};
-
-// Colour only — the label text lives with the rest of the formatting in
-// priorityTableView.ts so it can be tested without a DOM.
-const FOGGING_CLS: Record<FoggingTier, string> = {
-  overdue: "text-risk-high font-medium",
-  due: "text-risk-moderate",
-  recent: "text-risk-low",
-  no_record: "text-muted-foreground",
-};
-
-const COVERAGE_META: Record<CoverageLevel, { label: string; cssVar: string | null }> = {
-  high: { label: "High", cssVar: "--risk-low" },
-  medium: { label: "Medium", cssVar: "--risk-moderate" },
-  low: { label: "Low", cssVar: "--risk-high" },
-  no_data: { label: "No data", cssVar: null },
-};
-
-function RiskPill({ row }: { row: PriorityRow }) {
-  if (row.risk === "no_data") {
-    return <span className="text-xs text-muted-foreground">No Data</span>;
-  }
-  // The palette is deliberately three-colour (see index.css). `very_high` reuses
-  // the high hue as a solid fill rather than a tint, so the top tier is
-  // distinguishable without inventing a fourth risk colour.
-  if (row.risk === "very_high") {
-    return (
-      <span
-        className="px-3 py-1 rounded-full text-xs font-semibold text-white"
-        style={{ backgroundColor: "hsl(var(--risk-high))" }}
-      >
-        {row.riskLabel}
-      </span>
-    );
-  }
-  return <span className={`risk-badge-${row.risk}`}>{row.riskLabel}</span>;
-}
-
-function CoveragePill({ coverage }: { coverage: CoverageLevel }) {
-  const c = COVERAGE_META[coverage];
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${c.cssVar ? "" : "bg-muted text-muted-foreground"}`}
-      style={c.cssVar ? { backgroundColor: `hsl(var(${c.cssVar}) / 0.15)`, color: `hsl(var(${c.cssVar}))` } : undefined}
-    >
-      {c.label}
-    </span>
-  );
-}
 
 // ──────────────── Filter controls ────────────────
 
@@ -330,19 +275,8 @@ export default function PriorityActionTable({ rows, onLog, onNoActivity, loading
                   <div className="text-[11px] text-muted-foreground">{r.district} · {r.block}</div>
                 </td>
                 <td className="py-2 px-2 text-center"><RiskPill row={r} /></td>
-                <td className="py-2 px-2">
-                  {(() => {
-                    const t = TREND_META[r.trend];
-                    return (
-                      <span className={`inline-flex items-center gap-1 text-xs whitespace-nowrap ${t.cls}`}>
-                        <t.Icon className="h-3.5 w-3.5" />{t.label}
-                      </span>
-                    );
-                  })()}
-                </td>
-                <td className={`py-2 px-2 text-xs whitespace-nowrap ${FOGGING_CLS[r.foggingStatus ?? "no_record"]}`}>
-                  {formatFogging(r)}
-                </td>
+                <td className="py-2 px-2"><TrendCell trend={r.trend} /></td>
+                <td className="py-2 px-2"><FoggingCell row={r} /></td>
                 <td className="py-2 px-2 text-xs whitespace-nowrap text-muted-foreground">
                   <span className={r.majorOpen > 0 ? "text-foreground font-medium" : ""}>{r.majorOpen} major</span>
                   {" · "}{r.minorOpen} minor

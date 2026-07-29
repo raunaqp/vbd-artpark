@@ -398,6 +398,33 @@ alone is 3.96 MB.
 trap as `boundaries.ts`: one static import folds megabytes back into the entry
 chunk with no error and no warning.
 
+## R4 entries
+
+### Ward-level operational shading inherits the positional join — [fix-before-real]
+Ward-level operational shading uses positional matching where geographic joins
+are unavailable — same as case-count shading.
+
+Concretely: the overlays added in R4 (fogging status, breeding sites, larval
+coverage) resolve their values through the mock ward record a polygon was
+*positionally* paired with, so an overlay colour sits on an arbitrary polygon
+within a corporation exactly the way the existing case choropleth does. See
+"GBA ward case data is joined to polygons by position" above — R4 does not add
+a new problem, it inherits the existing one. Both are fixed by the same thing:
+keying polygons on official ward IDs.
+
+### Operational overlays need a synchronous lookup — [demo-ok]
+Every R3 getter is async, but Leaflet calls `styleFeature` / `styleSubFeature`
+synchronously on each repaint. `buildOperationalWardMap`
+(`src/features/weeklyResponse/operationalWards.ts`) therefore resolves the whole
+ward scope up front into a plain Map that the style callbacks read without
+blocking, and `DashboardMap` receives it as a prop rather than importing the R3
+loader — which is also what keeps the lazy-load boundary intact.
+
+Cost is O(wards) prebuilt-map reads (worst case Odisha, 481 wards), rebuilt
+whenever state / filters / epi-week change. If a future iteration needs this at
+finer granularity or higher frequency, memoise per scope rather than widening
+the resolver.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

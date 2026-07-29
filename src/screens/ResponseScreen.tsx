@@ -7,6 +7,7 @@ import GlobalFilters from "@/components/GlobalFilters";
 import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
 import OperationalActionMap from "@/features/weeklyResponse/OperationalActionMap";
 import PriorityActionTable from "@/features/weeklyResponse/PriorityActionTable";
+import ResponseHistoryPanel from "@/features/weeklyResponse/ResponseHistoryPanel";
 import WardDetailSheet from "@/features/weeklyResponse/WardDetailSheet";
 import ReportingWeekSelector from "@/features/weeklyResponse/ReportingWeekSelector";
 import ResponseSummaryTiles from "@/features/weeklyResponse/ResponseSummaryTiles";
@@ -61,6 +62,9 @@ function ResponseTabContent() {
   const { rows, loading, error } = usePriorityRows(epiWeek);
 
   const scoped = useMemo(() => scopeRows(rows, appliedFilters), [rows, appliedFilters]);
+  // Storage is already partitioned per state, but the provider filters
+  // defensively when it passes records on and so does this.
+  const stateRecords = useMemo(() => allRecords.filter((r) => r.state === stateId), [allRecords, stateId]);
   const wards = useMemo(() => toOperationalWardMap(scoped), [scoped]);
 
   /**
@@ -145,6 +149,10 @@ function ResponseTabContent() {
         loading={loading}
         error={error}
       />
+
+      {/* Past actions, below the worklist and collapsed by default — a
+          different question, asked less often. */}
+      <ResponseHistoryPanel records={stateRecords} />
 
       <WardDetailSheet
         open={detailOpen}

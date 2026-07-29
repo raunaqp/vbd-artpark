@@ -41,6 +41,10 @@ import {
   type OperationalWardState,
 } from "./operationalWards";
 
+// Re-exported so table-side modules can describe a row's coverage cell without
+// reaching past this one into the R4.1 resolver.
+export type { CoverageLevel } from "./operationalWards";
+
 /**
  * Case-trend window, in weeks.
  *

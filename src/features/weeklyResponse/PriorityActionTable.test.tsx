@@ -62,13 +62,13 @@ const CALM = row("Gamma Ward", { foggingStatus: null, daysSinceLastFogging: 999,
 
 const ROWS = [MIDDLE, WORST, CALM];
 
-const setup = (rows = ROWS, onLog = vi.fn()) => {
+const setup = (rows = ROWS, onLog = vi.fn(), onNoActivity = vi.fn()) => {
   const utils = render(
     <TooltipProvider>
-      <PriorityActionTable rows={rows} onLog={onLog} />
+      <PriorityActionTable rows={rows} onLog={onLog} onNoActivity={onNoActivity} />
     </TooltipProvider>,
   );
-  return { ...utils, onLog };
+  return { ...utils, onLog, onNoActivity };
 };
 
 /** Ward names in render order — the first cell of each body row. */
@@ -90,7 +90,7 @@ describe("PriorityActionTable — columns and provenance", () => {
       "Breeding SitesGovernment",
       "Larval Survey CoverageKhushi Baby",
       "Recommended ActionDashboard",
-      "Log",
+      "Actions",
     ]);
   });
 
@@ -275,24 +275,46 @@ describe("PriorityActionTable — pagination", () => {
   });
 });
 
-describe("PriorityActionTable — Log button", () => {
-  it("is the only interactive element on a row, and passes the whole row up", () => {
-    const { onLog } = setup();
+describe("PriorityActionTable — row actions", () => {
+  it("offers exactly the two actions on a row, and passes the whole row up", () => {
+    const { onLog, onNoActivity } = setup();
     const alphaRow = screen.getByText("Alpha Ward").closest("tr")!;
     const buttons = within(alphaRow).getAllByRole("button");
-    expect(buttons.map((b) => b.textContent)).toEqual(["Log Response"]);
+    expect(buttons.map((b) => b.textContent)).toEqual(["Log Response", "No Activity"]);
 
     fireEvent.click(buttons[0]);
     expect(onLog).toHaveBeenCalledTimes(1);
     expect(onLog).toHaveBeenCalledWith(WORST);
+    expect(onNoActivity).not.toHaveBeenCalled();
+  });
+
+  it("routes No Activity to its own handler with the same row", () => {
+    const { onLog, onNoActivity } = setup();
+    const alphaRow = screen.getByText("Alpha Ward").closest("tr")!;
+    fireEvent.click(within(alphaRow).getByRole("button", { name: "No Activity" }));
+    expect(onNoActivity).toHaveBeenCalledTimes(1);
+    expect(onNoActivity).toHaveBeenCalledWith(WORST);
+    expect(onLog).not.toHaveBeenCalled();
+  });
+
+  it("carries the ward's real risk through to whichever action is taken", () => {
+    // The old action-gap button hardcoded "high". Both handlers must receive the
+    // row as-is so the record captures what the forecast actually said.
+    const { onLog, onNoActivity } = setup();
+    const betaRow = screen.getByText("Beta Ward").closest("tr")!;
+    fireEvent.click(within(betaRow).getByRole("button", { name: "No Activity" }));
+    fireEvent.click(within(betaRow).getByRole("button", { name: "Log Response" }));
+    expect(onNoActivity.mock.calls[0][0]).toMatchObject({ ward: "Beta Ward", risk: "moderate" });
+    expect(onLog.mock.calls[0][0]).toMatchObject({ ward: "Beta Ward", risk: "moderate" });
   });
 
   it("stays enabled for every ward — no drill-down requirement", () => {
     setup();
-    for (const b of screen.getAllByRole("button", { name: "Log Response" })) {
-      expect(b).toBeEnabled();
+    for (const name of ["Log Response", "No Activity"]) {
+      const btns = screen.getAllByRole("button", { name });
+      expect(btns).toHaveLength(3);
+      for (const b of btns) expect(b).toBeEnabled();
     }
-    expect(screen.getAllByRole("button", { name: "Log Response" })).toHaveLength(3);
   });
 
   it("does not make the row itself clickable — R5 owns the side panel", () => {
@@ -310,7 +332,7 @@ describe("PriorityActionTable — empty and loading", () => {
 
     rerender(
       <TooltipProvider>
-        <PriorityActionTable rows={[]} onLog={vi.fn()} loading />
+        <PriorityActionTable rows={[]} onLog={vi.fn()} onNoActivity={vi.fn()} loading />
       </TooltipProvider>,
     );
     expect(screen.getByText("Resolving ward data…")).toBeInTheDocument();
@@ -319,7 +341,7 @@ describe("PriorityActionTable — empty and loading", () => {
   it("surfaces a resolver error without blanking the table", () => {
     render(
       <TooltipProvider>
-        <PriorityActionTable rows={ROWS} onLog={vi.fn()} error="boom" />
+        <PriorityActionTable rows={ROWS} onLog={vi.fn()} onNoActivity={vi.fn()} error="boom" />
       </TooltipProvider>,
     );
     expect(screen.getByText(/operational data unavailable/)).toBeInTheDocument();

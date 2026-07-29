@@ -184,12 +184,19 @@ interface Props {
   rows: PriorityRow[];
   /** Opens the existing Log Response modal for this ward. */
   onLog: (row: PriorityRow) => void;
+  /**
+   * Opens the existing "no field activity this week" dialog for this ward.
+   *
+   * Deleting AreaResponseTable in R4.4.4 removed the only entry point to that
+   * workflow — the dialog was still mounted but unreachable. This restores it.
+   */
+  onNoActivity: (row: PriorityRow) => void;
   /** True until the resolver's first pass lands. */
   loading?: boolean;
   error?: string | null;
 }
 
-export default function PriorityActionTable({ rows, onLog, loading = false, error = null }: Props) {
+export default function PriorityActionTable({ rows, onLog, onNoActivity, loading = false, error = null }: Props) {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
@@ -312,7 +319,7 @@ export default function PriorityActionTable({ rows, onLog, loading = false, erro
                   </th>
                 );
               })}
-              <th className="text-right py-2 px-2 align-bottom text-xs font-medium text-muted-foreground">Log</th>
+              <th className="text-right py-2 px-2 align-bottom text-xs font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -357,12 +364,25 @@ export default function PriorityActionTable({ rows, onLog, loading = false, erro
                   )}
                 </td>
                 <td className="py-2 px-2 text-right">
-                  <button
-                    onClick={() => onLog(r)}
-                    className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40 whitespace-nowrap"
-                  >
-                    Log Response
-                  </button>
+                  {/* Both always enabled — logging is not gated on drilling to a
+                      district (Flag B). Equal visual weight: recording that a
+                      week had no activity is a first-class outcome, not a
+                      lesser one, and understating it is how wards end up
+                      looking unreported when they were simply unworkable. */}
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => onLog(r)}
+                      className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40 whitespace-nowrap"
+                    >
+                      Log Response
+                    </button>
+                    <button
+                      onClick={() => onNoActivity(r)}
+                      className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40 whitespace-nowrap"
+                    >
+                      No Activity
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

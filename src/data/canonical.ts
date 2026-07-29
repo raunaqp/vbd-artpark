@@ -232,7 +232,15 @@ function icmrLabelFromLevel(level?: HForecastLevel): ICMRClass {
   return "Low";
 }
 
-function labelForLevel(stateLabel: string, level?: HForecastLevel): string {
+/**
+ * State-aware display label for a raw 4-tier forecast level.
+ *
+ * Exported for R4.4's Priority Action Table, which shows the raw level rather
+ * than the 3-tier legacy risk so the top tier survives to the officer's screen
+ * ("Critical" in ICMR states, "Very High" in WHO states). `levelToLegacy`
+ * collapses `very_high` into `high` and would lose it.
+ */
+export function labelForLevel(stateLabel: string, level?: HForecastLevel): string {
   const method = (STATE_RISK_METHOD as Record<string, string>)[stateLabel] ?? "WHO";
   return method === "ICMR" ? icmrLabelFromLevel(level) : whoLabelFromLevel(level);
 }

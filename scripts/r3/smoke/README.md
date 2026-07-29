@@ -7,6 +7,7 @@ Node smoke tests (run with `npx vite-node <path>`):
 | `verify_data_load.ts` | R3 datasets load; app→manifest re-key is deterministic across sessions |
 | `verify_recommendations.ts` | Every rule in `RECOMMENDATION_RULES` is reachable; catches a missing `MATCHERS` entry after a config regen |
 | `verify_operational_wards.ts` | Ward-scope resolver returns fogging / breeding / coverage per ward and shrinks with filters |
+| `verify_priority_rows.ts` | Priority Action Table rows enumerate the whole state regardless of drill state; composite score stays in range, sorts descending, and is identical on rebuild; `scopeRows` reproduces a filtered async resolve exactly |
 
 ---
 

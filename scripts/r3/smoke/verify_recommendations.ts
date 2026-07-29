@@ -1,10 +1,14 @@
-// R3.3 verification harness — recommendation engine.
+// Smoke test: recommendation engine.
 //
-// Run with:  npx vite-node scripts/r3/verify_r3_3.ts
+// Run with:  npx vite-node scripts/r3/smoke/verify_recommendations.ts
 //
-// Browser verification is deferred to R3.5, so this stands in: it runs
-// getWardRecommendation over every app ward in all four states and reports
-// which rules fire, where, and whether any rule is unreachable.
+// Not part of the app bundle. Runs getWardRecommendation over every app ward in
+// all four states and reports which rules fire, where, and whether any rule is
+// unreachable — the check that catches a MATCHERS entry missing after the
+// generator emits a new rule.
+//
+// Rule indices are resolved by condition string, never hardcoded: inserting a
+// rule shifts every index below it.
 
 import { enumerateWards } from "@/features/weeklyResponse/effectiveness";
 import { larvalWardKey } from "@/data/mock_larval_surveys";

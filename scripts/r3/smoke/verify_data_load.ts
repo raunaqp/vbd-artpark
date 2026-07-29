@@ -1,12 +1,14 @@
-// Temporary R3.2 verification harness — not part of the app bundle.
+// Smoke test: R3 data loading + app→manifest ward re-key.
 //
-// Run with:  npx vite-node scripts/r3/verify_r3_2.ts
+// Run with:  npx vite-node scripts/r3/smoke/verify_data_load.ts
 //
-// Browser verification is deferred to R3.5, so this stands in: it exercises the
-// loader wrappers and the app→manifest re-key from Node and prints enough to
-// eyeball correctness, determinism and bucket distribution.
+// Not part of the app bundle. Exercises the loader wrappers and the re-key from
+// Node, printing enough to eyeball correctness, determinism and bucket
+// distribution.
 //
-// Delete once R3.5 confirms the same behaviour in the browser.
+// Determinism is the load-bearing property here: run this twice and diff the
+// output. It must be byte-identical, because the re-key is what guarantees a
+// ward keeps the same synthetic profile across sessions.
 
 import { enumerateWards } from "@/features/weeklyResponse/effectiveness";
 import { larvalWardKey } from "@/data/mock_larval_surveys";

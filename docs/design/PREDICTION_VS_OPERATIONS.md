@@ -169,3 +169,25 @@ If any of the above fails after ship, we've missed the intent.
 If asked "why is it structured this way?", the answer is:
 
 > Prediction and operations are two different questions asked by two different people. Mixing them clutters the interface for both. The Forecast tab is for leaders scanning where risk is heading. The Response tab is for operational managers ensuring the field response matches the forecast. Same dashboard, two clear surfaces.
+
+---
+
+## R3 addendum — data model + recommendation engine landed (2026-07-29)
+
+**Delivered:**
+- Three lazy-loaded mock datasets in `src/data/r3/`: fogging events (5,460 records), breeding sites (10,558 records), larval indices (14,460 records × 1,205 wards × 12 weeks)
+- Deterministic ward-key mapping from app hierarchy to manifest via `appWardKeyToManifestKey()`
+- `getWardRecommendation(appWardKey)` engine at `src/data/recommendations.ts` — evaluates 10 rules from NVBDCP Odisha activity matrix
+- Admin → Assumptions tab (config transparency, display-only) at `src/components/admin/AssumptionsPanel.tsx`
+
+**Recommendation logic:**
+- Each rule cites its NVBDCP protocol row (e.g., "NVBDCP: high-risk hotspot, weekly fogging protocol")
+- Rule 8 is a high-risk-specific fallback: "Maintain weekly cadence — no gaps detected" — prevents "High risk · Continue routine monitoring" from surfacing to state officers
+- Rule 9 (default): "Continue routine monitoring" for calm low-risk wards
+
+**Not yet wired:**
+- Recommendations exist as getter only. Not consumed by Response tab render.
+- R4 will surface recommendations via Operational Action Map overlay wiring.
+- R5 will surface recommendations in Priority Action Table + geography side panel.
+
+**Debt tracked:** see `known_debt.md` R3 section.

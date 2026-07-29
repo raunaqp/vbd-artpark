@@ -290,9 +290,26 @@ colour-palette addition, an updated legend, and a card-label/ceiling update —
 real R-work, not a small fix. Deferred until it's the highest-value change to
 make.
 
-### R3 data model re-keys app wards onto manifest wards — [fix-before-real]
-R3 data-model uses deterministic re-key from app wards to manifest wards
-(~30 lines in `src/data/r3/loader.ts::appWardKeyToManifestKey`). Same app ward
+## R3 debt entries
+
+Landed 29 Jul 2026. Data model + recommendation engine + Admin → Assumptions.
+Smoke tests for all of this live in `scripts/r3/smoke/` — run them before
+trusting any of the numbers below after a regen.
+
+### mock_larval_indices.ts uses @ts-nocheck — [fix-before-real]
+TS2590 union-complexity limit on 14,460-element array literal. Data is
+structurally correct; type inference disabled only for compiler perf. Future R3
+iteration should split by state or chunk-load per-state to eliminate this
+workaround.
+
+Verified structurally correct two ways before suppressing: with the type
+annotation removed, the only complaint is string-literal widening, which the
+annotation itself resolves. The generator now emits the header, so a regen keeps
+it. This is the one line added to an otherwise byte-for-byte generated file.
+
+### Ward-key re-key in loader.ts — [fix-before-real]
+R3 uses ~30-line deterministic hash-based mapping from app ward_keys to manifest
+ward_keys (`src/data/r3/loader.ts::appWardKeyToManifestKey`). Same app ward
 always resolves to the same synthetic fogging/breeding/larval profile. Future
 step: regenerate mock datasets from canonical app hierarchy — retire this
 re-key layer.
@@ -317,19 +334,69 @@ distribution is Poisson-shaped, as a hash-mod should be — no clustering:
 | Odisha | 481 | 241 | 211 | 8 |
 | Andhra Pradesh | 107 | 100 | 71 | 4 |
 
-### R3 manifest `forecast_risk` is advisory, not the risk input — [demo-ok]
-R3 manifest carries `forecast_risk` per ward as seed for data-tier distribution
-(fogging cadence, breeding site counts, index ranges were generated to match
-it). In `getWardRecommendation`, `forecast_risk` input comes from the app's
-`RiskLevel` derivation, not the manifest. Fine for demo; real integration would
-sync these.
+### Manifest forecast_risk is advisory only — [demo-ok]
+R3 manifest carries `forecast_risk` per ward as seed for data-tier distribution.
+In `getWardRecommendation`, forecast_risk input comes from app's RiskLevel
+derivation, not manifest. Fine for demo; real integration would sync these.
 
-Consequence to expect: because the re-key above is a hash, a ward the app calls
-high-risk will often draw a profile generated for a low-risk ward. Recommendations
-stay internally consistent (they read live app risk + the drawn observations),
-but the observations won't *look* like they belong to that risk tier. Both this
-and the re-key disappear together once the datasets are regenerated from the
-canonical hierarchy.
+The app-side derivation reuses `levelToLegacy` exported from `canonical.ts`
+rather than reimplementing it, so a recommendation can never disagree with the
+risk rendered beside it.
+
+### Re-key + app-risk interaction creates demo artifacts — [demo-ok]
+Because mapping is a hash, a ward the app calls high-risk may draw a data
+profile generated for a low-risk ward — sparse fogging, few breeding sites, low
+indices. Recommendations remain internally consistent. Visible artifact only
+under close inspection. Vanishes at canonical-hierarchy regen.
+
+### AP never fires rules 1-2 — [demo-ok]
+Small-sample artifact: 12 high-risk wards drawing from low-risk-heavy manifest
+pool. No high-observation profile gets pulled (max major_open = 2 vs rule
+threshold ≥3; max BI = 2.8 vs rule threshold >5). Resolves at
+canonical-hierarchy regen.
+
+Every other state fires all 10 rules. `verify_recommendations.ts` reports this
+in its verdict line, so a regen that fixes it will say so.
+
+### Assumptions are display-only — [planned]
+Admin → Assumptions renders the `editable` flag from the config but binds
+nothing to an input. Wiring the fields means deciding where overrides persist
+(localStorage per state, matching the other admin panels) and how a changed
+threshold reaches the engine, which currently reads the frozen config module.
+Deferred to a future release; the tab carries a footnote saying so.
+
+### getWardRecommendation loads full datasets per call — [demo-ok]
+Each call awaits the whole fogging / breeding / larval modules (cached after
+first load) and `getLatestLarvalIndices` linear-scans all 14,460 index records.
+At demo scale that is a full sweep of 1,286 wards in a few seconds from Node,
+and single-ward lookups are imperceptible. If R5's Priority Action Table ends up
+calling this for every visible row on every filter change, pre-index by ward_key
+the way `FOGGING_STATUS_BY_WARD` already does.
+
+### Recommendation rules are hardcoded in config_assumptions.ts — [planned]
+`RECOMMENDATION_RULES` ships in the generated config, identical for every state.
+State-level rule overrides are deferred. Note the coupling: each condition
+string is a key into the `MATCHERS` table in `src/data/recommendations.ts`, so a
+generator that emits a new condition also needs a matcher. An unmatched
+condition is skipped with a one-time console warning rather than silently never
+firing, and `verify_recommendations.ts` catches it as an unreachable rule.
+
+### Signals tab restructure deferred (Reading C) — [planned]
+Signals tab currently has three overlapping sections (surveillance signals,
+forecast drivers, ground reports). R3 leaves Signals untouched; recommendation
+engine reads underlying data directly. Future design session should merge news
+feed + surveillance metrics + fogging/breeding indicators into unified feed.
+
+### R3 datasets are ~10 MB combined — [demo-ok]
+Lazy-loaded into four separate chunks, so the entry chunk grew 6.64 kB
+(2,726.00 → 2,732.64 kB) across all of R3. Verified in-browser that none load at
+app boot; all arrive on Response-tab mount. Future iterations should consider
+splitting per-state or streaming if the datasets grow — the larval indices chunk
+alone is 3.96 MB.
+
+**Those dynamic imports must stay the only imports of the four modules.** Same
+trap as `boundaries.ts`: one static import folds megabytes back into the entry
+chunk with no error and no warning.
 
 ## Build / tooling
 

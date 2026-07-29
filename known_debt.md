@@ -463,19 +463,32 @@ Decision approved at R4.4 Step 0 (Flag A, option 2): surfacing the top tier in
 the table is worth the temporary inconsistency, because collapsing `very_high`
 into `high` hides the most urgent wards from the officer entirely.
 
-### Orphaned context fields, one with a name collision — [polish]
-`WeeklyResponseCtx` still exposes `priorityRows`, `scopedRecords`, `areaLabel`
-and `openNoActivity`. After R4.4 only `areaLabel` is consumed (by the tile row);
-the other three have no reader now that `PriorityAreasSection`,
-`AreaResponseTable` and `ResponseEffectivenessPanel` are deleted. Kept
-deliberately — R5's geography side panel is likely to want `priorityRows` back.
+### ~~Orphaned context fields, one with a name collision~~ — RESOLVED (collision), partial (orphans)
+**Collision resolved.** `weeklyResponseContext.ts` used to export a type called
+`PriorityRow` (`{ agg, window, reason }`) while `priorityRows.ts` exports a
+completely different `PriorityRow` (one ward's row in the Priority Action
+Table). Nothing imported both, so there was no error — but R5's side panel is
+likely to touch both modules.
 
-The trap: **`weeklyResponseContext.ts` exports a type called `PriorityRow`
-(`{ agg, window, reason }`) and `priorityRows.ts` exports a completely different
-type with the same name** (one ward's row in the Priority Action Table). Nothing
-imports both today, so there is no error — but anything in R5 that touches both
-modules will need an alias. Rename the context one (`PriorityAreaRow`?) when the
-side panel lands, or delete it if R5 does not use it.
+Deleted rather than renamed: after R4.4 the context type had **zero readers**.
+Its only consumer, `PriorityAreasSection`, went with the three deleted tables,
+and the provider's `predictionByArea` memo existed solely to feed it. Renaming
+would have kept dead code alive under a better name. Removed the type, the
+`priorityRows` context field, both producing `useMemo`s, and the now-unused
+`getOutbreakPredictions` / `sortAreaAggregates` imports in the provider.
+(`sortAreaAggregates` itself stays in `aggregation.ts` — still exercised by its
+tests; `getOutbreakPredictions` still serves Hotspots, DashboardMap and Admin.)
+
+If R5's side panel wants forecast window + "why prioritised" per area, it should
+build that at **ward** grain. The deleted version was at the current drill grain
+and covered only high/moderate areas, so it would not have fitted a ward-level
+panel anyway.
+
+**Still orphaned — [polish]:** `scopedRecords` and `openNoActivity` remain on
+the context with no reader. `openNoActivity` is the more interesting one: the
+provider still renders `NoActivityDialog`, but nothing can open it now that
+`AreaResponseTable` is gone, so "Mark as no activity" is unreachable UI. Decide
+in R5 whether the unified table should offer it or whether the dialog should go.
 
 ### Area-check protocol gives a false failure below ward level — [process]
 The script in `scripts/r3/smoke/README.md` measures the bounding box of

@@ -1,14 +1,14 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
-import { getFilteredRegions, getOutbreakPredictions } from "@/data/mockData";
+import { getFilteredRegions } from "@/data/mockData";
 import { getActiveDisease, stateLabelFromId } from "@/data/canonical";
 import { EPI_WEEKS, WEEK_ENDINGS, STATE_HIERARCHY_LABELS } from "@/data/mock_dataset";
 import { latestEpiWeek, latestWeekEnding } from "@/lib/epiWeek";
 import { useWeeklyResponses } from "./useWeeklyResponses";
-import { summarizeRow, buildSummary, sortAreaAggregates, type AreaRow, type AreaAggregate } from "./aggregation";
+import { summarizeRow, buildSummary, type AreaRow, type AreaAggregate } from "./aggregation";
 import { makeGeographyId, type RiskLevel } from "./types";
-import { WeeklyResponseContext, type WeeklyResponseCtx, type PriorityRow } from "./weeklyResponseContext";
+import { WeeklyResponseContext, type WeeklyResponseCtx } from "./weeklyResponseContext";
 import WeeklyResponseDrawer from "./WeeklyResponseDrawer";
 import NoActivityDialog from "./NoActivityDialog";
 
@@ -49,15 +49,6 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
     return { rows, areaLabel: label };
   }, [appliedFilters, stateId]);
 
-  // Forecast window + driver per area, joined by name (reuses forecast outputs).
-  const predictionByArea = useMemo(() => {
-    const map = new Map<string, { window: string; reason: string }>();
-    for (const p of getOutbreakPredictions(appliedFilters)) {
-      map.set(p.area, { window: p.expectedWeek, reason: p.signal });
-    }
-    return map;
-  }, [appliedFilters]);
-
   const weekRecords = useMemo(
     () => records.filter((r) => r.state === stateId && r.epidemiological_week === epiWeek),
     [records, stateId, epiWeek],
@@ -65,18 +56,6 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
 
   const aggregates = useMemo(() => rows.map((row) => summarizeRow(row, weekRecords)), [rows, weekRecords]);
   const summary = useMemo(() => buildSummary(aggregates), [aggregates]);
-
-  const priorityRows: PriorityRow[] = useMemo(() => {
-    const priority = aggregates.filter((a) => a.row.risk === "high" || a.row.risk === "moderate");
-    return sortAreaAggregates(priority).map((agg) => {
-      const p = predictionByArea.get(agg.row.name);
-      return {
-        agg,
-        window: p?.window || "Next 4 weeks",
-        reason: p?.reason || (agg.row.risk === "high" ? "High forecast outbreak risk" : "Elevated forecast risk"),
-      };
-    });
-  }, [aggregates, predictionByArea]);
 
   const scopedRecords = useMemo(
     () => weekRecords.filter((r) => aggregates.some((a) => a.records.includes(r))),
@@ -88,7 +67,7 @@ export function WeeklyResponseProvider({ children }: { children: ReactNode }) {
 
   const value: WeeklyResponseCtx = {
     epiWeek, setEpiWeek, weekEnding, forecastGeneratedAt, areaLabel,
-    aggregates, priorityRows, summary, scopedRecords, weekRecords, allRecords: records, openDrawer, openNoActivity,
+    aggregates, summary, scopedRecords, weekRecords, allRecords: records, openDrawer, openNoActivity,
   };
 
   return (

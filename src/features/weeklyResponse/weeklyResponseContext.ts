@@ -2,12 +2,6 @@ import { createContext, useContext } from "react";
 import type { AreaAggregate, WeeklySummary } from "./aggregation";
 import type { WeeklyResponseRecord } from "./types";
 
-export interface PriorityRow {
-  agg: AreaAggregate;
-  window: string;   // forecast week / window ("why now")
-  reason: string;   // driver / why prioritised
-}
-
 export interface WeeklyResponseCtx {
   epiWeek: string;
   setEpiWeek: (w: string) => void;
@@ -15,7 +9,6 @@ export interface WeeklyResponseCtx {
   forecastGeneratedAt: string;
   areaLabel: string;
   aggregates: AreaAggregate[];
-  priorityRows: PriorityRow[];
   summary: WeeklySummary;
   scopedRecords: WeeklyResponseRecord[];
   /**

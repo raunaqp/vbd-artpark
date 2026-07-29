@@ -32,6 +32,16 @@ import {
   type PolygonJoin,
 } from "@/lib/boundaryLayers";
 import type { RegionData } from "@/data/mockData";
+import { stateLabelFromId } from "@/data/canonical";
+import type { OperationalWardMap } from "@/features/weeklyResponse/operationalWards";
+import {
+  OPERATIONAL_DIMMED,
+  isOperationalOverlay,
+  resolveOperationalFill,
+  resolveOperationalLegend,
+  resolveOperationalTooltip,
+  type OverlayId,
+} from "@/lib/operationalOverlay";
 
 /** A resolved sub-district polygon layer plus its join to mock case data. */
 interface SubLayer {
@@ -59,6 +69,9 @@ const hotspotBurdenColor: Record<string, string> = {
   high: "#dc2626",
 };
 const NO_DATA_COLOR = "#cbd5e1"; // neutral slate for unmatched polygons
+// Stable empty default, so an absent `operationalWards` prop doesn't allocate a
+// new Map every render and churn the memos below.
+const EMPTY_OPERATIONAL_WARDS: OperationalWardMap = new Map();
 const trendArrow: Record<string, string> = { up: "↑", down: "↓", stable: "→" };
 
 // Single-hue blue intensity scale for case-load encoding (Overview "current" mode).
@@ -204,10 +217,24 @@ interface DashboardMapProps {
    * "current"  → color polygons by past-cases risk (RegionData)
    * "forecast" → color polygons by predicted outbreak risk (OutbreakPrediction)
    * "hotspot"  → color polygons by hotspot data (HotspotData) — same source as the hotspot table
+   * "operational" → Response tab. Colour polygons by the active operational
+   *                 overlay (see `overlay`). Ward-grain data, so the three
+   *                 non-forecast overlays only render below district level.
    */
-  mode?: "current" | "forecast" | "hotspot";
+  mode?: "current" | "forecast" | "hotspot" | "operational";
   /** Hotspot lookback window. Only used when mode === "hotspot". */
   hotspotLookbackWeeks?: 2 | 4;
+  /** Active overlay. Only used when mode === "operational". */
+  overlay?: OverlayId;
+  /**
+   * Ward-grain operational state, resolved by `useOperationalWards`.
+   *
+   * Passed in rather than loaded here on purpose: the R3 datasets are lazy and
+   * their getters async, while Leaflet styles synchronously. Keeping the fetch
+   * on the Response side also keeps this component out of the R3 loader, so the
+   * lazy-load boundary holds. May be empty while loading.
+   */
+  operationalWards?: OperationalWardMap;
 }
 
 // Helper: imperatively update the map view when center/zoom inputs change.
@@ -230,15 +257,45 @@ function MapViewUpdater({ center, zoom, bounds, viewKey }: { center: [number, nu
   return null;
 }
 
-export default function DashboardMap({ height = "400px", mode = "current", hotspotLookbackWeeks = 4 }: DashboardMapProps) {
+export default function DashboardMap({
+  height = "400px",
+  mode = "current",
+  hotspotLookbackWeeks = 4,
+  overlay = "forecast_risk",
+  operationalWards,
+}: DashboardMapProps) {
   const { appliedFilters, drillDown, breadcrumb, isLocked, dateWindow } = useFilters();
   const { stateId } = useStateSelection();
 
+  // ─── Operational mode ───
+  // `opActive` gates every operational branch below, so the four pre-existing
+  // modes reach exactly the code they did before R4.2.
+  const opActive = mode === "operational" && isOperationalOverlay(overlay);
+  // The Forecast Risk overlay *is* the forecast choropleth — same source, same
+  // colours — so operational mode borrows the forecast path wholesale for it.
+  // Without this it would silently fall through to the current-cases risk and
+  // disagree with the Forecast tab for the same geography.
+  const forecastRiskView = mode === "forecast" || (mode === "operational" && overlay === "forecast_risk");
+  const opWards: OperationalWardMap = operationalWards ?? EMPTY_OPERATIONAL_WARDS;
+  const stateLabel = stateLabelFromId(stateId);
+
+  /**
+   * App ward key for a mock region record — the join between a polygon and its
+   * R3 operational state. Mirrors `larvalWardKey(state, district, block, ward)`.
+   * Wards carry their parents on the record; anything above ward grain has no
+   * key and resolves to "no data".
+   */
+  const wardKeyFor = (rec?: RegionData | null): string | null => {
+    if (!rec || (rec.type !== "ward" && rec.type !== "village")) return null;
+    if (!rec.parentDistrict || !rec.parentBlock) return null;
+    return `${stateLabel}|${rec.parentDistrict}|${rec.parentBlock}|${rec.name}`;
+  };
+
   const regions = getFilteredRegions(appliedFilters);
-  const predictions = mode === "forecast" ? getOutbreakPredictions(appliedFilters) : [];
+  const predictions = forecastRiskView ? getOutbreakPredictions(appliedFilters) : [];
   const predByArea = useMemo(() => new Map(predictions.map((p) => [p.area, p])), [predictions]);
   // Projected cases per area (forecast mode) — shown in tooltips instead of probability (R1.3).
-  const priorityForecast = mode === "forecast" ? getPriorityForecastAreas(appliedFilters) : [];
+  const priorityForecast = forecastRiskView ? getPriorityForecastAreas(appliedFilters) : [];
   const projectedByArea = useMemo(() => new Map(priorityForecast.map((p) => [p.area, p.projectedCases])), [priorityForecast]);
   const projectedLabel = (name: string | null): string => {
     const v = name ? projectedByArea.get(name) : undefined;
@@ -349,7 +406,7 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
   } => {
     if (!name) return { risk: null, cases: "—" };
 
-    if (mode === "forecast") {
+    if (forecastRiskView) {
       const pred = predByArea.get(name);
       // Show projected cases (R1.3) — never probability. Gap areas render "—".
       if (pred) return { risk: pred.risk, cases: projectedLabel(name), week: pred.expectedWeek };
@@ -415,6 +472,20 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
       return {
         fillColor: NO_DATA_COLOR,
         fillOpacity: isSelected ? 0.45 : dimmed ? 0.1 : 0.18,
+        color: isSelected ? "#0f172a" : "#94a3b8",
+        weight: isSelected ? 2.5 : 1,
+        opacity: dimmed ? 0.55 : 1,
+      };
+    }
+
+    // Operational overlays are ward-grain, so a district polygon has nothing
+    // truthful to show. Rather than leave a stale risk colour sitting under a
+    // toggle that no longer means risk, drop to neutral and let the drill-down
+    // hint banner explain why.
+    if (opActive) {
+      return {
+        fillColor: OPERATIONAL_DIMMED,
+        fillOpacity: isSelected ? 0.5 : dimmed ? 0.15 : 0.35,
         color: isSelected ? "#0f172a" : "#94a3b8",
         weight: isSelected ? 2.5 : 1,
         opacity: dimmed ? 0.55 : 1,
@@ -651,7 +722,11 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
       // Official polygon with no mock counterpart — drawn, but never shaded.
       return { ...base, fillColor: NO_DATA_COLOR, fillOpacity: 0.25 };
     }
-    if (mode === "forecast") return { ...base, fillColor: riskColor[rec.risk], fillOpacity: 0.7 };
+    // Ward grain — this is where the operational overlays actually mean something.
+    if (opActive) {
+      return { ...base, fillColor: resolveOperationalFill(wardKeyFor(rec), overlay, opWards), fillOpacity: 0.75 };
+    }
+    if (mode === "forecast" || mode === "operational") return { ...base, fillColor: riskColor[rec.risk], fillOpacity: 0.7 };
     if (mode === "hotspot") return { ...base, fillColor: hotspotBurdenColor[rec.risk], fillOpacity: 0.65 };
     return { ...base, fillColor: blueForIntensity(rec.confirmed, maxSubCases), fillOpacity: 0.8 };
   };
@@ -670,7 +745,9 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
          <div style="font-weight:700;margin-bottom:2px">${areaName}</div>
          <div style="opacity:0.6;font-size:11px">${[kind, parent].filter(Boolean).join(" · ")}</div>
          ${assembly ? `<div style="opacity:0.6;font-size:11px">${assembly}</div>` : ""}
-         ${rec
+         ${opActive
+           ? resolveOperationalTooltip(wardKeyFor(rec), overlay, opWards)
+           : rec
            ? `<div style="margin-top:3px">Cases: <strong>${rec.confirmed} ${trendArrow[rec.trend] || ""}</strong></div>`
            : `<div style="margin-top:3px;opacity:0.7">Data not available</div>`}
        </div>`,
@@ -726,7 +803,9 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
       : "Districts: public shapefiles · no sub-district geometry yet";
 
   // Force GeoJSON layer to re-style when filter changes (key trick).
-  const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}-${maxDistrictCases}`;
+  // `overlay` and the resolved ward map join the key so switching overlays (or
+  // R3 finishing its load) actually repaints the polygons.
+  const geoKey = `${stateId}-${appliedFilters.district}-${mode}-${regions.length}-${maxDistrictCases}-${overlay}-${opWards.size}`;
   const subKey = `${geoKey}-${appliedFilters.block}-${subLayer?.data.features.length ?? 0}-${maxSubCases}`;
 
   // Breadcrumb navigation
@@ -888,8 +967,11 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
             const coords = districtCoordinates[r.name];
             if (!coords) return null;
             const pred = predByArea.get(r.name);
-            const displayRisk = (mode === "forecast" && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
-            const useNeutral = mode !== "forecast" && mode !== "hotspot";
+            const displayRisk = (forecastRiskView && pred ? pred.risk : r.risk) as "high" | "moderate" | "low";
+            // Odisha and AP have no ward polygons, so these dots are the only
+            // surface an operational overlay can colour there.
+            const opKey = opActive ? wardKeyFor(r) : null;
+            const useNeutral = mode !== "forecast" && mode !== "operational" && mode !== "hotspot";
             return (
               <CircleMarker
                 key={`${r.type}-${r.name}`}
@@ -902,7 +984,9 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                     : Math.max(4, Math.min(8, 4 + r.confirmed / 12))
                 }
                 pathOptions={{
-                  fillColor: mode === "hotspot"
+                  fillColor: opActive
+                    ? resolveOperationalFill(opKey, overlay, opWards)
+                    : mode === "hotspot"
                     ? hotspotBurdenColor[displayRisk] || "#1d4ed8"
                     : useNeutral
                     ? "#3b82f6"
@@ -918,7 +1002,18 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
                 }
               >
                 <Tooltip sticky>
-                  {mode === "forecast" && pred ? (
+                  {opActive ? (
+                    <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 170 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                        {r.name}{r.type ? ` (${r.type})` : ""}
+                      </div>
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: resolveOperationalTooltip(opKey, overlay, opWards),
+                        }}
+                      />
+                    </div>
+                  ) : mode === "forecast" && pred ? (
                     <div style={{ fontSize: 12, lineHeight: 1.45, minWidth: 160 }}>
                       <div style={{ fontWeight: 700, marginBottom: 2 }}>
                         {r.name}{r.type ? ` (${r.type})` : ""}
@@ -966,6 +1061,14 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
         </div>
       )}
 
+      {/* Drill-down hint — operational overlays are ward-grain, so at state view
+          there is nothing to shade. Says so rather than showing an empty map. */}
+      {geoReady && opActive && isStateLevel && (
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-1.5 text-[11px] text-muted-foreground pointer-events-none max-w-[80%] text-center">
+          Drill into a corporation or district to see operational overlays.
+        </div>
+      )}
+
       {/* Boundary provenance note — shown for states drawn from the bundled real polygons. */}
       {geoReady && boundaryNote && (
         <div className="absolute bottom-3 right-3 z-[1000] bg-card/80 backdrop-blur rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground pointer-events-none max-w-[48%] text-right">
@@ -975,7 +1078,19 @@ export default function DashboardMap({ height = "400px", mode = "current", hotsp
 
       {/* Legend — risk colours only in forecast mode; current = blue intensity; hotspot = blue circles. */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-card/90 backdrop-blur rounded-md border border-border px-3 py-2 flex gap-3 items-center">
-        {mode === "forecast" ? (
+        {mode === "operational" ? (
+          <>
+            <span className="text-[11px] font-medium text-foreground mr-1">
+              {resolveOperationalLegend(overlay).title}:
+            </span>
+            {resolveOperationalLegend(overlay).entries.map((e) => (
+              <div key={e.label} className="flex items-center gap-1.5 text-xs">
+                <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: e.color }} />
+                <span>{e.label}</span>
+              </div>
+            ))}
+          </>
+        ) : mode === "forecast" ? (
           <>
             {(["low", "moderate", "high"] as const).map((level) => (
               <div key={level} className="flex items-center gap-1.5 text-xs">

@@ -191,3 +191,41 @@ If asked "why is it structured this way?", the answer is:
 - R5 will surface recommendations in Priority Action Table + geography side panel.
 
 **Debt tracked:** see `known_debt.md` R3 section.
+
+---
+
+## R4 addendum — operational map + unified Priority Action Table landed (2026-07-29)
+
+**Delivered across R4.1–R4.4:**
+
+- **R4.1** — `buildOperationalWardMap()` at `src/features/weeklyResponse/operationalWards.ts`: async R3 getters resolved once into a plain Map that Leaflet's synchronous style callbacks can read
+- **R4.2/R4.3** — `OperationalActionMap` with four toggleable overlays (Forecast Risk / Fogging Status / Breeding Sites / Larval Survey Coverage), one active at a time, adaptive legend
+- **R4.4** — six-tile summary row + unified ward-level **Priority Action Table**, replacing three overlapping tables
+
+**Correction to the session plan above:** the Priority Action Table was scheduled for R5. It landed in **R4.4** instead, because the six-tile row and the table read the same resolved ward data — splitting them across sessions would have meant resolving the R3 datasets twice and shipping a Response tab that still carried the three tables it was meant to replace.
+
+**R5 is therefore narrower than planned:** geography side panel (row click) + expanded Log Response workflow. Everything else in the original R5 line is done.
+
+### Response tab as shipped
+
+1. Filters bar
+2. Six-tile summary row — High-risk Areas, Priority Responses Completed, Priority Responses Pending, Fogging Overdue Wards, Major Breeding Sites Open, Response Coverage — with the reporting-week selector in its header
+3. Operational Action Map + overlay toggle
+4. Priority Action Table
+
+**Deleted:** Priority Areas for Field Response, Area-wise Operational Response, Response Effectiveness (with its action-gap top-30), Actions by Category. Three tables became one.
+
+### Design decisions taken in R4.4
+
+- **The table is always ward grain and always state-wide.** Drill filters narrow the tiles and the map, not the table — officers narrow it with search and column filters instead, so a supervisor can find their ward without first knowing which zone it sits in. One async resolve feeds all three surfaces.
+- **Forecast Risk shows the raw 4-tier level**, labelled by the state's method — "Critical" in ICMR states, "Very High" in WHO states. `levelToLegacy` collapses `very_high` into `high` and would have hidden the most urgent wards. The map still paints the 3-tier palette, so pill and polygon can disagree at the top tier; tracked in `known_debt.md` against the deferred "Critical as a first-class tier" work.
+- **Case trend is fixed at a 4-week window**, matching the forecast horizon, so the Trend and Risk columns describe the same four weeks.
+- **Composite priority score** (0–225) ranks rows by default: forecast risk 100/75/40/10/0 + case trend 30/10/0 + fogging 40/30/20/0 + open major breeding 30/15/0 + coverage 25/20/10/0. A moderate-risk ward failing on every operational signal outranks a quiet high-risk one — which is the point.
+- **Every column sorts, first click descending**, so one rule holds everywhere: first click means most urgent first.
+- **Logging is no longer gated on drilling to district.** The table synthesises a ward-grain record capturing the ward's real forecast risk, and pre-fills from an existing entry rather than opening a blank form that would overwrite it.
+
+### Still outstanding against this document
+
+- **Geography side panel** — the doc's "Forecast context + Fogging + Breeding + Field Activities + one Recommended Action per area" panel. R5.
+- **Expanded Log Response workflow** — recording fogging, breeding site counts, source reduction. R5.
+- **Response History (collapsed by default)** — listed in the Response tab content above; not built in any session so far.

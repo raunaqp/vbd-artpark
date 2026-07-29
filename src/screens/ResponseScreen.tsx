@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { loadAllR3 } from "@/data/r3/loader";
 import GlobalFilters from "@/components/GlobalFilters";
 import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
+import OperationalActionMap from "@/features/weeklyResponse/OperationalActionMap";
 import PriorityAreasSection from "@/features/weeklyResponse/PriorityAreasSection";
 import WeeklyOperationalResponseSection from "@/features/weeklyResponse/WeeklyOperationalResponseSection";
 
@@ -27,6 +28,7 @@ export default function ResponseScreen() {
       </div>
 
       <WeeklyResponseProvider>
+        <OperationalActionMap />
         <PriorityAreasSection />
         <WeeklyOperationalResponseSection />
       </WeeklyResponseProvider>

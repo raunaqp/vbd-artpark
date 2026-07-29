@@ -120,6 +120,13 @@ const MATCHERS: Record<string, Predicate> = {
   "forecast_risk === 'low' && any_outbreak_threshold_breached": (c) =>
     c.forecast_risk === "low" && c.any_outbreak_threshold_breached,
 
+  // Rule 7b — high-risk fallback, sits directly above `default`. A single
+  // clause with no other conditions, so it catches every high-risk ward that
+  // reached this far: fogging current, sites closed, indices calm. Without it
+  // those wards fall to `default` and read as "High risk · Continue routine
+  // monitoring", which invites the wrong question on screen.
+  "forecast_risk === 'high'": (c) => c.forecast_risk === "high",
+
   // Terminal rule — always matches, so a ward always gets exactly one action.
   default: () => true,
 };
@@ -172,6 +179,9 @@ function triggerReason(ctx: WardContext, condition: string): string {
 
     case "forecast_risk === 'low' && any_outbreak_threshold_breached":
       return `${risk}, but vector indices breached threshold (BI ${ctx.bi}, HI ${ctx.hi}%, CI ${ctx.ci}%)`;
+
+    case "forecast_risk === 'high'":
+      return `${risk}; fogging current, no major sites open, indices below threshold`;
 
     default:
       return ctx.fogging_status === "no_record"

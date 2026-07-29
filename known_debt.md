@@ -290,6 +290,47 @@ colour-palette addition, an updated legend, and a card-label/ceiling update —
 real R-work, not a small fix. Deferred until it's the highest-value change to
 make.
 
+### R3 data model re-keys app wards onto manifest wards — [fix-before-real]
+R3 data-model uses deterministic re-key from app wards to manifest wards
+(~30 lines in `src/data/r3/loader.ts::appWardKeyToManifestKey`). Same app ward
+always resolves to the same synthetic fogging/breeding/larval profile. Future
+step: regenerate mock datasets from canonical app hierarchy — retire this
+re-key layer.
+
+Why it exists: the generated datasets are keyed on a synthetic ward hierarchy
+that overlaps the app's canonical hierarchy by only ~3% (37 of 1,286 wards).
+The key *format* matches (`state|district|block|ward`, same as `larvalWardKey`)
+but the names inside do not — GBA is shifted a level (manifest district is
+"GBA Central", block is the corporation), and most Odisha / AP districts and
+blocks are spelled differently ("Balasore" vs "Baleshwar"). Without the re-key,
+97% of app wards would resolve to `null` in R4's overlays and R5's side panel.
+
+Mapping is djb2-hash-mod, scoped per state, so a Karnataka ward always draws
+Karnataka data. Where a state has more app wards than manifest wards (Odisha:
+481 vs 241) the modulo wraps and several app wards share one profile. Observed
+distribution is Poisson-shaped, as a hash-mod should be — no clustering:
+
+| State | App wards | Manifest wards | Manifest wards used | Busiest |
+|---|---|---|---|---|
+| GBA Central | 367 | 367 | 235 | 5 |
+| Karnataka | 331 | 497 | 246 | 4 |
+| Odisha | 481 | 241 | 211 | 8 |
+| Andhra Pradesh | 107 | 100 | 71 | 4 |
+
+### R3 manifest `forecast_risk` is advisory, not the risk input — [demo-ok]
+R3 manifest carries `forecast_risk` per ward as seed for data-tier distribution
+(fogging cadence, breeding site counts, index ranges were generated to match
+it). In `getWardRecommendation`, `forecast_risk` input comes from the app's
+`RiskLevel` derivation, not the manifest. Fine for demo; real integration would
+sync these.
+
+Consequence to expect: because the re-key above is a hash, a ward the app calls
+high-risk will often draw a profile generated for a low-risk ward. Recommendations
+stay internally consistent (they read live app risk + the drawn observations),
+but the observations won't *look* like they belong to that risk tier. Both this
+and the re-key disappear together once the datasets are regenerated from the
+canonical hierarchy.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

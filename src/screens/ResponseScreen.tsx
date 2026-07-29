@@ -10,9 +10,10 @@ import WeeklyOperationalResponseSection from "@/features/weeklyResponse/WeeklyOp
 // Effectiveness (R2.3). Six-tile summary (R3), action map (R4), side panel /
 // priority table (R5) land later.
 export default function ResponseScreen() {
-  // Warm the R3 operational datasets (~10 MB, lazy chunks) on first visit to
-  // this tab, so R4's map overlays and R5's side panel find them already parsed.
-  // Nothing on this screen reads them yet — R3 renders no new UI here.
+  // R3: force lazy-load on tab mount. Data is not consumed in R3;
+  // R4 will wire recommendations into the six-tile row.
+  // Without a real call here Rollup tree-shakes the dynamic imports away and
+  // the R3 chunks never get emitted.
   useEffect(() => { void loadAllR3(); }, []);
   return (
     <div className="space-y-6">

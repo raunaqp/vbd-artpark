@@ -32,15 +32,44 @@ Drill to ward level, select a non-Forecast overlay, then run in DevTools:
 ```js
 const OP=['#22c55e','#eab308','#ef4444','#94a3b8'];
 const el=document.querySelector('.leaflet-container');
-const P=[...el.querySelectorAll('path')];
-const col=P.filter(p=>OP.includes(p.getAttribute('fill')));
+const v=el.getBoundingClientRect();
+// The ward sub-layer is every ward polygon, NOT just the coloured ones:
+// unmatched wards render #cbd5e1. Measuring only the coloured subset
+// understates the fit — see the R4.4 note below.
+const wards=[...el.querySelectorAll('path')].filter(p=>{
+  const f=p.getAttribute('fill'); return f==='#cbd5e1'||OP.includes(f);});
+const col=wards.filter(p=>OP.includes(p.getAttribute('fill')));
 const bb=e=>{let a=1e9,b=1e9,c=-1e9,d=-1e9;e.forEach(p=>{const r=p.getBoundingClientRect();
   a=Math.min(a,r.left);b=Math.min(b,r.top);c=Math.max(c,r.right);d=Math.max(d,r.bottom);});
   return {w:Math.round(c-a),h:Math.round(d-b)};};
-const v=el.getBoundingClientRect(), g=bb(col);
-console.log({coloured:col.length, bbox:g, viewport:{w:Math.round(v.width),h:Math.round(v.height)},
+const g=bb(wards);
+console.log({wardPolygons:wards.length, coloured:col.length, bbox:g,
+  viewport:{w:Math.round(v.width),h:Math.round(v.height)},
   widthPct:(100*g.w/v.width).toFixed(1)+'%', heightPct:(100*g.h/v.height).toFixed(1)+'%'});
 ```
+
+**Cross-check `wardPolygons` against the map's own "Showing: Ward boundaries
+(N)" label.** If they disagree, the filter above is picking up the wrong paths
+and every percentage below is meaningless.
+
+### Measure the whole ward layer, not the coloured subset (R4.4)
+
+`coloured` will usually be **less** than `wardPolygons`, and that is expected:
+operational overlays colour only wards present in the app hierarchy, while the
+KGIS boundary files carry many more polygons than that. Hubballi-Dharwad has
+**82 ward polygons and 22 coloured**, because the app hierarchy has 22 wards
+for that corporation.
+
+Those 22 are geographically clustered, so measuring only them gives
+**10.1% x 39.2%** — an apparent failure — while the real ward layer fits
+correctly at **23.2% x 73.8%**. The original version of this script measured
+the coloured subset and produced exactly that false alarm during R4.4.5
+verification.
+
+So: **assert on the ward-layer bbox.** Use `coloured` as a separate sanity
+check — it should equal the number of app-hierarchy wards in the current scope
+(the Priority Action Table's row count for that scope, which you can read off
+its "Showing 1-N of N" line after searching for the block name).
 
 ### Reading the result
 

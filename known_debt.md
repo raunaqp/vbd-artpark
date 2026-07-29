@@ -436,6 +436,85 @@ whenever state / filters / epi-week change. If a future iteration needs this at
 finer granularity or higher frequency, memoise per scope rather than widening
 the resolver.
 
+## R4.4 entries
+
+Landed 29 Jul 2026. Unified Priority Action Table + six-tile summary row.
+Three tables deleted, two summary blocks folded into six tiles.
+
+### Priority Action Table shows a tier the map cannot paint — [planned]
+The table's **Forecast Risk** column reads the raw 4-tier level via
+`getForecastForGeography` and labels it with `labelForLevel`, so it renders
+Critical / Very High / High / Moderate / Low / No Data. Map polygons continue to
+render on the 3-tier legacy palette (High / Moderate / Low). **Pill and colour
+may disagree at the top tier for the same ward** — a `very_high` ward reads
+"Critical" in the table and paints red-for-High on the map.
+
+Mitigated, not solved: `RiskPill` draws `very_high` as a *solid* high-hue fill
+against the *tinted* fill used for `high`, so the two tiers are distinguishable
+in the table without inventing a fourth risk colour (`index.css` line 48 records
+the deliberate decision to keep the palette three-colour).
+
+This is the same divergence as **""Critical" tier is inconsistent across
+surfaces"** above, now with one more surface on the 4-tier side. Resolves when
+that deferred "Critical as a first-class tier" work lands — a 4th `risk` value,
+a palette addition, an updated legend, and a card-label update.
+
+Decision approved at R4.4 Step 0 (Flag A, option 2): surfacing the top tier in
+the table is worth the temporary inconsistency, because collapsing `very_high`
+into `high` hides the most urgent wards from the officer entirely.
+
+### Orphaned context fields, one with a name collision — [polish]
+`WeeklyResponseCtx` still exposes `priorityRows`, `scopedRecords`, `areaLabel`
+and `openNoActivity`. After R4.4 only `areaLabel` is consumed (by the tile row);
+the other three have no reader now that `PriorityAreasSection`,
+`AreaResponseTable` and `ResponseEffectivenessPanel` are deleted. Kept
+deliberately — R5's geography side panel is likely to want `priorityRows` back.
+
+The trap: **`weeklyResponseContext.ts` exports a type called `PriorityRow`
+(`{ agg, window, reason }`) and `priorityRows.ts` exports a completely different
+type with the same name** (one ward's row in the Priority Action Table). Nothing
+imports both today, so there is no error — but anything in R5 that touches both
+modules will need an alias. Rename the context one (`PriorityAreaRow`?) when the
+side panel lands, or delete it if R5 does not use it.
+
+### Area-check protocol gives a false failure below ward level — [process]
+The script in `scripts/r3/smoke/README.md` measures the bounding box of
+**coloured** paths. That was right for R4.3, when the working assumption was
+that every ward polygon gets an overlay colour. It is not right in general:
+operational overlays colour only the wards present in the *app hierarchy*, and
+the KGIS boundary files carry many more polygons than that.
+
+Hubballi-Dharwad measured during R4.4.5: **82 ward polygons, 22 coloured** —
+because the app hierarchy has 22 wards for that corporation. The 22 are
+geographically clustered, so the coloured bbox reads **10.1% x 39.2%** and
+appears to fail the threshold, while the actual ward layer fits correctly at
+**23.2% x 73.8%** — exactly the figure the README documents as correct.
+
+The fit was never wrong. The measurement was measuring the wrong thing. README
+updated to measure the ward sub-layer (unmatched `#cbd5e1` polygons **plus** the
+coloured ones) and to cross-check that count against the map's own "Showing:
+Ward boundaries (N)" label.
+
+The 22-of-82 gap itself is the app-hierarchy-vs-official-boundary mismatch
+already tracked under "Karnataka municipal wards are joined by position" — it
+predates R4.4 and is unchanged by it.
+
+### Reporting week persists across a state switch — [demo-ok]
+`epiWeek` lives in `WeeklyResponseProvider` and is not keyed on `stateId`, so
+switching Karnataka -> Odisha keeps whatever week was selected. Defensible
+(comparing two states at the same week is a real thing to want) and pre-existing,
+but it is a surprise if you have been exploring: the tiles and larval coverage
+resolve against the carried-over week, not the current one. Noted because it
+briefly looked like a data mismatch during R4.4.5 verification.
+
+### Table view state survives a state switch — [demo-ok]
+Sort column, filters, search and page live in `PriorityActionTable`'s own state.
+The component does not unmount when the state selector changes, so a sort by
+"Fogging Done" applied in Karnataka is still applied after switching to Odisha.
+Filter *values* are generic (tiers, not ward names) so nothing goes stale, and
+"reset to priority" / "Clear all" recover in one click. Left as-is: resetting
+the officer's view on every state change would be its own annoyance.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

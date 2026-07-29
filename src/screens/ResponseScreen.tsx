@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
-import { levelToLegacy } from "@/data/canonical";
+import { levelToLegacy, stateLabelFromId } from "@/data/canonical";
 import { loadAllR3 } from "@/data/r3/loader";
 import GlobalFilters from "@/components/GlobalFilters";
 import { WeeklyResponseProvider } from "@/features/weeklyResponse/WeeklyResponseProvider";
 import OperationalActionMap from "@/features/weeklyResponse/OperationalActionMap";
 import PriorityActionTable from "@/features/weeklyResponse/PriorityActionTable";
+import WardDetailSheet from "@/features/weeklyResponse/WardDetailSheet";
 import ReportingWeekSelector from "@/features/weeklyResponse/ReportingWeekSelector";
 import ResponseSummaryTiles from "@/features/weeklyResponse/ResponseSummaryTiles";
-import { summarizeRow, type AreaRow } from "@/features/weeklyResponse/aggregation";
+import { recentWardActivity, summarizeRow, type AreaRow } from "@/features/weeklyResponse/aggregation";
 import { scopeRows, toOperationalWardMap, type PriorityRow } from "@/features/weeklyResponse/priorityRows";
 import { usePriorityRows } from "@/features/weeklyResponse/usePriorityRows";
 import { makeGeographyId, type RiskLevel } from "@/features/weeklyResponse/types";
@@ -56,7 +57,7 @@ export default function ResponseScreen() {
 function ResponseTabContent() {
   const { appliedFilters } = useFilters();
   const { stateId } = useStateSelection();
-  const { epiWeek, setEpiWeek, summary, areaLabel, weekRecords, openDrawer, openNoActivity } = useWeeklyResponseContext();
+  const { epiWeek, setEpiWeek, summary, areaLabel, weekRecords, allRecords, openDrawer, openNoActivity } = useWeeklyResponseContext();
   const { rows, loading, error } = usePriorityRows(epiWeek);
 
   const scoped = useMemo(() => scopeRows(rows, appliedFilters), [rows, appliedFilters]);
@@ -103,6 +104,27 @@ function ResponseTabContent() {
     [openNoActivity, wardAggregate],
   );
 
+  // ── Ward detail sheet (R5.2) ──
+  //
+  // Owned here rather than inside the table: the sheet needs the week's records
+  // and the state label, neither of which the table knows about, and the table
+  // stays presentational with a third callback symmetric to the two it has.
+  const [detailRow, setDetailRow] = useState<PriorityRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const openDetail = useCallback((r: PriorityRow) => { setDetailRow(r); setDetailOpen(true); }, []);
+
+  // Same summariser the two action handlers use, so the status the sheet shows
+  // is the status the Log dialog will open against.
+  const detailStatus = useMemo(
+    () => (detailRow ? wardAggregate(detailRow).status : "pending"),
+    [detailRow, wardAggregate],
+  );
+
+  const detailActivity = useMemo(
+    () => (detailRow ? recentWardActivity(allRecords, { district: detailRow.district, ward: detailRow.ward }, epiWeek) : []),
+    [allRecords, detailRow, epiWeek],
+  );
+
   return (
     <div className="space-y-6">
       <ResponseSummaryTiles
@@ -119,8 +141,21 @@ function ResponseTabContent() {
         rows={rows}
         onLog={handleLog}
         onNoActivity={handleNoActivity}
+        onRowClick={openDetail}
         loading={loading}
         error={error}
+      />
+
+      <WardDetailSheet
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        row={detailRow}
+        stateLabel={stateLabelFromId(stateId)}
+        epiWeek={epiWeek}
+        logStatus={detailStatus}
+        recentActivity={detailActivity}
+        onLog={handleLog}
+        onNoActivity={handleNoActivity}
       />
     </div>
   );

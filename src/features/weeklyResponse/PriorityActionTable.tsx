@@ -136,12 +136,14 @@ interface Props {
    * workflow — the dialog was still mounted but unreachable. This restores it.
    */
   onNoActivity: (row: PriorityRow) => void;
+  /** Opens the read-only ward detail sheet (R5.2). */
+  onRowClick: (row: PriorityRow) => void;
   /** True until the resolver's first pass lands. */
   loading?: boolean;
   error?: string | null;
 }
 
-export default function PriorityActionTable({ rows, onLog, onNoActivity, loading = false, error = null }: Props) {
+export default function PriorityActionTable({ rows, onLog, onNoActivity, onRowClick, loading = false, error = null }: Props) {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
@@ -269,7 +271,22 @@ export default function PriorityActionTable({ rows, onLog, onNoActivity, loading
           </thead>
           <tbody>
             {paged.map((r) => (
-              <tr key={r.wardKey} className="border-b border-border/50 hover:bg-muted/30">
+              <tr
+                key={r.wardKey}
+                onClick={() => onRowClick(r)}
+                onKeyDown={(e) => {
+                  // Space would otherwise scroll the page.
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); }
+                }}
+                tabIndex={0}
+                // Deliberately NOT role="button": that overrides the implicit
+                // row role and drops the row out of the table's semantics
+                // entirely, so assistive tech stops reporting it as a row in a
+                // grid. The row stays a row; aria-label announces what
+                // activating it does.
+                aria-label={`Ward detail for ${r.ward}`}
+                className="border-b border-border/50 hover:bg-muted/30 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              >
                 <td className="py-2 px-2">
                   <div className="font-medium text-foreground">{r.ward}</div>
                   <div className="text-[11px] text-muted-foreground">{r.district} · {r.block}</div>
@@ -305,13 +322,13 @@ export default function PriorityActionTable({ rows, onLog, onNoActivity, loading
                       looking unreported when they were simply unworkable. */}
                   <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={() => onLog(r)}
+                      onClick={(e) => { e.stopPropagation(); onLog(r); }}
                       className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40 whitespace-nowrap"
                     >
                       Log Response
                     </button>
                     <button
-                      onClick={() => onNoActivity(r)}
+                      onClick={(e) => { e.stopPropagation(); onNoActivity(r); }}
                       className="text-xs px-2.5 py-1 rounded-md border border-border hover:bg-muted/40 whitespace-nowrap"
                     >
                       No Activity

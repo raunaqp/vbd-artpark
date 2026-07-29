@@ -62,13 +62,13 @@ const CALM = row("Gamma Ward", { foggingStatus: null, daysSinceLastFogging: 999,
 
 const ROWS = [MIDDLE, WORST, CALM];
 
-const setup = (rows = ROWS, onLog = vi.fn(), onNoActivity = vi.fn()) => {
+const setup = (rows = ROWS, onLog = vi.fn(), onNoActivity = vi.fn(), onRowClick = vi.fn()) => {
   const utils = render(
     <TooltipProvider>
-      <PriorityActionTable rows={rows} onLog={onLog} onNoActivity={onNoActivity} />
+      <PriorityActionTable rows={rows} onLog={onLog} onNoActivity={onNoActivity} onRowClick={onRowClick} />
     </TooltipProvider>,
   );
-  return { ...utils, onLog, onNoActivity };
+  return { ...utils, onLog, onNoActivity, onRowClick };
 };
 
 /** Ward names in render order — the first cell of each body row. */
@@ -317,11 +317,61 @@ describe("PriorityActionTable — row actions", () => {
     }
   });
 
-  it("does not make the row itself clickable — R5 owns the side panel", () => {
-    setup();
+  // Inverted from R4.4, where the row was deliberately inert and the side panel
+  // was still R5 work. R5.2 makes the row the way into the ward detail sheet.
+  it("makes the row activatable, with a pointer affordance", () => {
+    const { onRowClick } = setup();
     const alphaRow = screen.getByText("Alpha Ward").closest("tr")!;
-    expect(alphaRow).not.toHaveAttribute("onclick");
-    expect(alphaRow.className).not.toMatch(/cursor-pointer/);
+    expect(alphaRow.className).toMatch(/cursor-pointer/);
+    fireEvent.click(alphaRow);
+    expect(onRowClick).toHaveBeenCalledWith(WORST);
+  });
+
+  it("is reachable and activatable from the keyboard", () => {
+    const { onRowClick } = setup();
+    const alphaRow = screen.getByText("Alpha Ward").closest("tr")!;
+    expect(alphaRow).toHaveAttribute("tabindex", "0");
+    expect(alphaRow).toHaveAttribute("aria-label", "Ward detail for Alpha Ward");
+    // Still a row: making it activatable must not cost the table its semantics.
+    // role="button" here would drop it out of the grid for assistive tech.
+    expect(alphaRow).not.toHaveAttribute("role");
+    expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(ROWS.length + 1);
+
+    fireEvent.keyDown(alphaRow, { key: "Enter" });
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(alphaRow, { key: " " });
+    expect(onRowClick).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores other keys, so typing does not open a sheet", () => {
+    const { onRowClick } = setup();
+    const alphaRow = screen.getByText("Alpha Ward").closest("tr")!;
+    fireEvent.keyDown(alphaRow, { key: "a" });
+    fireEvent.keyDown(alphaRow, { key: "Tab" });
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it("does not open the sheet when a row action is clicked", () => {
+    // The buttons live inside the activatable row; without stopPropagation,
+    // "Log Response" would open the drawer and the sheet at once.
+    const { onLog, onNoActivity, onRowClick } = setup();
+    const alphaRow = screen.getByText("Alpha Ward").closest("tr")!;
+
+    fireEvent.click(within(alphaRow).getByRole("button", { name: "Log Response" }));
+    expect(onLog).toHaveBeenCalledTimes(1);
+    expect(onRowClick).not.toHaveBeenCalled();
+
+    fireEvent.click(within(alphaRow).getByRole("button", { name: "No Activity" }));
+    expect(onNoActivity).toHaveBeenCalledTimes(1);
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it("opens the sheet when the row is clicked away from the buttons", () => {
+    const { onLog, onNoActivity, onRowClick } = setup();
+    fireEvent.click(screen.getByText("Alpha Ward"));
+    expect(onRowClick).toHaveBeenCalledWith(WORST);
+    expect(onLog).not.toHaveBeenCalled();
+    expect(onNoActivity).not.toHaveBeenCalled();
   });
 });
 
@@ -332,7 +382,7 @@ describe("PriorityActionTable — empty and loading", () => {
 
     rerender(
       <TooltipProvider>
-        <PriorityActionTable rows={[]} onLog={vi.fn()} onNoActivity={vi.fn()} loading />
+        <PriorityActionTable rows={[]} onLog={vi.fn()} onNoActivity={vi.fn()} onRowClick={vi.fn()} loading />
       </TooltipProvider>,
     );
     expect(screen.getByText("Resolving ward data…")).toBeInTheDocument();
@@ -341,7 +391,7 @@ describe("PriorityActionTable — empty and loading", () => {
   it("surfaces a resolver error without blanking the table", () => {
     render(
       <TooltipProvider>
-        <PriorityActionTable rows={ROWS} onLog={vi.fn()} onNoActivity={vi.fn()} error="boom" />
+        <PriorityActionTable rows={ROWS} onLog={vi.fn()} onNoActivity={vi.fn()} onRowClick={vi.fn()} error="boom" />
       </TooltipProvider>,
     );
     expect(screen.getByText(/operational data unavailable/)).toBeInTheDocument();

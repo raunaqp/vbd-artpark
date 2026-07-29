@@ -69,6 +69,12 @@ export const RECOMMENDATION_RULES = [
     protocol_reference: "NVBDCP: low-risk anomaly warrants inspection escalation",
   },
   {
+    condition: "forecast_risk === 'high'",
+    action_text: "Maintain weekly cadence — no gaps detected",
+    priority: "routine",
+    protocol_reference: "NVBDCP: high-risk wards require sustained weekly protocols even when metrics stable",
+  },
+  {
     condition: "default",
     action_text: "Continue routine monitoring",
     priority: "routine",

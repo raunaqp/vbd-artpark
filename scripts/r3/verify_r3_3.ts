@@ -149,15 +149,34 @@ async function main() {
     (c) => c.forecast_risk === "high" && c.major_open >= 3 && c.fogging_status !== "overdue",
     1,
   );
+  // Resolved by condition, not hardcoded — rule indices shift whenever the
+  // generator inserts a rule (7b moved `default` from 8 to 9).
+  const defaultRuleId = rules.findIndex((r) => r.condition === "default");
+  const highFallbackId = rules.findIndex((r) => r.condition === "forecast_risk === 'high'");
+
   await findCase(
-    "Karnataka rural, low risk + no anomalies → rule 8 (default)",
+    `Karnataka rural, low risk + no anomalies → rule ${defaultRuleId} (default)`,
     allKeys["Karnataka"],
     (c) =>
       c.forecast_risk === "low" &&
       !c.any_outbreak_threshold_breached &&
       c.fogging_status !== "overdue",
-    8,
+    defaultRuleId,
   );
+
+  if (highFallbackId >= 0) {
+    await findCase(
+      `High risk, everything current → rule ${highFallbackId} (high-risk fallback)`,
+      [...allKeys["GBA Central"], ...allKeys["Karnataka"]],
+      (c) =>
+        c.forecast_risk === "high" &&
+        c.fogging_status !== "overdue" &&
+        c.major_open < 3 &&
+        c.coverage_tier !== "low" &&
+        (c.bi ?? 0) <= 5,
+      highFallbackId,
+    );
+  }
 
   rule("4. Verdict");
   console.log(`  rules defined     : ${rules.length}`);

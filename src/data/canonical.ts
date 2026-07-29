@@ -207,9 +207,12 @@ export function stateLabelFromId(id: StateId): string {
 
 // ──────────────── Hierarchy lookups ────────────────
 
-type HForecastLevel = "low" | "moderate" | "high" | "very_high";
+export type HForecastLevel = "low" | "moderate" | "high" | "very_high";
 
-function levelToLegacy(level?: HForecastLevel): "low" | "moderate" | "high" {
+// Exported for R3's recommendation engine (`src/data/recommendations.ts`), which
+// needs the same ward-risk derivation the region builders below use. Kept as one
+// function rather than duplicated so the two can't drift apart.
+export function levelToLegacy(level?: HForecastLevel): "low" | "moderate" | "high" {
   if (level === "very_high" || level === "high") return "high";
   if (level === "moderate") return "moderate";
   return "low";

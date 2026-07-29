@@ -604,6 +604,37 @@ form inputs at all, so this stays true by accident-proofing rather than
 convention. The fuller side panel in
 `docs/design/PREDICTION_VS_OPERATIONS.md` remains future work.
 
+## R6 entries
+
+Landed 29 Jul 2026. Response History section on the Response tab.
+
+### Filter pills are duplicated between two panels — [polish]
+`ResponseHistoryPanel` carries its own copy of the filter-pill component that
+`PriorityActionTable` defines privately. Sharing it would have meant editing the
+table, which the R6 session explicitly did not touch, so the copy was the
+deliberate choice over an out-of-scope refactor.
+
+~25 lines, no logic — the two are presentational twins. Fold them into
+`wardCells.tsx` (or a small `Pills.tsx`) next time either panel's filters are
+worked on. The table's 31 tests and the panel's 36 would both cover the move.
+
+### Response History is read-only — [planned]
+No row click, no editing, no deleting past records; a test asserts a row carries
+no action controls. Correcting a mis-logged response still means re-opening the
+ward's Log Response dialog and saving over it, which works because the record id
+is `geography::week` — but there is no way to delete one, and no audit trail of
+edits. Both are real gaps for an operational tool and neither is a demo blocker.
+
+### WeeklyResponseDrawer takes history records and ignores them — [polish]
+`WeeklyResponseDrawer` declares a `historyRecords` prop and never reads it;
+`WeeklyResponseProvider` computes `records.filter(r => r.state === stateId)` on
+every render to feed it. Pre-existing, found during R6 Step 0, and untouched
+because the session's scope excluded both files.
+
+It is exactly the data the new panel consumes, so whoever removes the dead prop
+should check whether the drawer was meant to show per-ward history inline — that
+is now the ward detail sheet's job (R5.1, section 3).
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

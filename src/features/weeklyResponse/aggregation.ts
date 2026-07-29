@@ -130,6 +130,14 @@ export function summarizeRow(row: AreaRow, records: WeeklyResponseRecord[]): Are
 export interface WeeklySummary {
   totalAreas: number;
   areasReporting: number;
+  /**
+   * Areas at the current drill grain forecast high risk (R4.4.3, summary tile 1).
+   *
+   * Distinct from `priorityAreas`, which is high **plus** moderate. The grain
+   * shifts with the filter bar — districts at state level, blocks under a
+   * district, wards under a block — so the tile shows it alongside the number.
+   */
+  highRiskAreas: number;
   priorityAreas: number;
   priorityCompleted: number;
   priorityPending: number;
@@ -152,6 +160,7 @@ export function buildSummary(aggs: AreaAggregate[]): WeeklySummary {
   return {
     totalAreas: aggs.length,
     areasReporting: aggs.filter((a) => a.hasRecord).length,
+    highRiskAreas: aggs.filter((a) => a.row.risk === "high").length,
     priorityAreas,
     priorityCompleted,
     priorityPending: priorityAreas - priorityCompleted,

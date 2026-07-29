@@ -160,6 +160,31 @@ describe("priority response coverage + zero-priority handling", () => {
     expect(s.priorityCoveragePct).toBe(67); // round(2/3*100)
   });
 
+  it("counts high-risk areas separately from priority areas (summary tile 1)", () => {
+    // Priority is high + moderate; tile 1 is high only. A tab that conflated the
+    // two would tell an officer four areas need urgent attention when two do.
+    const aggs = [
+      summarizeRow(leafRow("D", "B1", null, "high"), []),
+      summarizeRow(leafRow("D", "B2", null, "high"), []),
+      summarizeRow(leafRow("D", "B3", null, "moderate"), []),
+      summarizeRow(leafRow("D", "B4", null, "moderate"), []),
+      summarizeRow(leafRow("D", "B5", null, "low"), []),
+      summarizeRow(leafRow("D", "B6", null, "no_data"), []),
+    ];
+    const s = buildSummary(aggs);
+    expect(s.highRiskAreas).toBe(2);
+    expect(s.priorityAreas).toBe(4);
+    expect(s.totalAreas).toBe(6);
+  });
+
+  it("reports zero high-risk areas when none are forecast high", () => {
+    const aggs = [
+      summarizeRow(leafRow("D", "B1", null, "moderate"), []),
+      summarizeRow(leafRow("D", "B2", null, "low"), []),
+    ];
+    expect(buildSummary(aggs).highRiskAreas).toBe(0);
+  });
+
   it("returns null coverage when there are no priority areas", () => {
     const aggs = [
       summarizeRow(leafRow("D", "B1", null, "low"), [rec({ district: "D", block: "B1", risk: "low", activity: "yes" })]),

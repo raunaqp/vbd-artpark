@@ -10,18 +10,36 @@ import { getFreshness } from "@/lib/freshness";
 const trendIcon = { up: ArrowUp, down: ArrowDown, stable: ArrowRight };
 const PAGE_SIZE = 20;
 
-interface Props { maxRows?: number }
+interface Props {
+  maxRows?: number;
+  /** Trailing weeks to aggregate. Defaults to 4, matching the panel heading. */
+  windowWeeks?: number;
+  /** Restrict to high-risk areas — for the High Risk Areas KPI breakdown. */
+  onlyHighRisk?: boolean;
+  /** Drop the card chrome and heading, for embedding under someone else's title. */
+  embedded?: boolean;
+  /** Shown in place of the table when nothing matches. */
+  emptyMessage?: string;
+}
 
-export default function RegionTable({ maxRows }: Props = {}) {
+export default function RegionTable({
+  maxRows,
+  windowWeeks = 4,
+  onlyHighRisk = false,
+  embedded = false,
+  emptyMessage,
+}: Props = {}) {
   const { appliedFilters } = useFilters();
   const { stateId } = useStateSelection();
-  const regions = getFilteredRegions(appliedFilters);
-  const sorted = [...regions].sort((a, b) => b.confirmed - a.confirmed);
+  const regions = getFilteredRegions(appliedFilters, windowWeeks);
+  const scoped = onlyHighRisk ? regions.filter((r) => r.risk === "high") : regions;
+  const sorted = [...scoped].sort((a, b) => b.confirmed - a.confirmed);
   const limited = maxRows ? sorted.slice(0, maxRows) : sorted;
 
   const [page, setPage] = useState(1);
-  // Reset to page 1 when filtered set changes.
-  useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block]);
+  // Reset to page 1 when the filtered set changes — including when the window
+  // or risk scope changes underneath an embedded copy.
+  useEffect(() => { setPage(1); }, [appliedFilters.district, appliedFilters.block, windowWeeks, onlyHighRisk]);
 
   const start = (page - 1) * PAGE_SIZE;
   const visible = maxRows ? limited : sorted.slice(start, start + PAGE_SIZE);
@@ -32,12 +50,20 @@ export default function RegionTable({ maxRows }: Props = {}) {
     ? "Blocks / Municipalities"
     : "Districts";
 
+  if (sorted.length === 0 && emptyMessage) {
+    return <p className={`text-sm text-muted-foreground ${embedded ? "py-6 text-center" : "section-card p-4"}`}>{emptyMessage}</p>;
+  }
+
   return (
-    <div className="section-card p-4">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="section-title">High Risk Areas (Last 4 Weeks)</h3>
-      </div>
-      <p className="text-xs text-muted-foreground mb-3">Based on confirmed cases in last 4 weeks · Showing {areaLabel.toLowerCase()}</p>
+    <div className={embedded ? "" : "section-card p-4"}>
+      {!embedded && (
+        <>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="section-title">High Risk Areas (Last {windowWeeks} Weeks)</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Based on confirmed cases in last {windowWeeks} weeks · Showing {areaLabel.toLowerCase()}</p>
+        </>
+      )}
       <div className="overflow-auto max-h-[340px]">
         <table className="w-full text-sm">
           <thead>

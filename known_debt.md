@@ -673,6 +673,28 @@ belong in `RiskForecastPoint` / `PriorityForecastArea` alongside the point, and
 `formatCaseRange` should take the bounds as input instead of deriving them.
 That is the data-model change this session deliberately did not make.
 
+## "How to use" tab entries
+
+### package.json version is 0.0.0 while the app shows v0.3 — [polish]
+`APP_VERSION` in `src/lib/build_info.ts` is the literal `"0.3"`, consumed by
+both the footer and the "How to use" page. `package.json` still carries
+`"version": "0.0.0"` from the project scaffold, so reading it would put
+"v0.0.0" on screen next to a footer saying v0.3.
+
+Post-demo: bump `package.json` to the real version and expose it through a
+Vite define (alongside `__BUILD_SHA__` / `__BUILD_TIME__`), then have
+`APP_VERSION` read that. One source, and `npm version` starts working.
+
+### Admin → Assumptions carries an `editable` flag but wires no input — [planned]
+Every row in `AssumptionsPanel` reports `editable: true/false` from the
+generated config, and nothing is editable — there is no input bound to any
+threshold. Pre-existing since R3.4, where the tab shipped as transparency
+rather than configuration.
+
+The "How to use" page therefore says the thresholds are *visible* in Admin →
+Assumptions and that the view is read-only, with a test asserting it never
+says "configurable". Update that copy when the inputs land.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

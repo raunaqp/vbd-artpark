@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, TrendingUp, ClipboardCheck, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings, Shield } from "lucide-react";
+import { LayoutDashboard, Activity, TrendingUp, ClipboardCheck, CloudRain, MapPin, Upload, AlertTriangle, Download, ChevronDown, User, Radio, ChevronRight, Bug, MapPinned, Settings, Shield, BookOpen } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { useDisease, diseases } from "@/contexts/DiseaseContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -19,6 +19,8 @@ const baseTabs = [
   { id: "hotspots", label: "Hotspots", icon: MapPin },
   { id: "signals", label: "Signals", icon: Radio },
   { id: "upload", label: "Data Upload", icon: Upload },
+  // Last in the nav, before Admin — reference material, not a daily surface.
+  { id: "howto", label: "How to use", icon: BookOpen },
 ] as const;
 
 const settingsTab = { id: "settings", label: "View Settings", icon: Settings } as const;

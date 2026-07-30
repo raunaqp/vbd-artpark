@@ -11,6 +11,7 @@ import SignalsScreen from "@/screens/SignalsScreen";
 import DataUploadScreen from "@/screens/DataUploadScreen";
 import ViewSettingsScreen from "@/screens/ViewSettingsScreen";
 import AdminScreen from "@/screens/AdminScreen";
+import HowToUsePanel from "@/components/HowToUsePanel";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { DiseaseProvider } from "@/contexts/DiseaseContext";
@@ -28,6 +29,7 @@ const screens: Record<TabId, React.ComponentType<{ onNavigate?: (tab: TabId) => 
   hotspots: HotspotsScreen,
   signals: SignalsScreen,
   upload: DataUploadScreen,
+  howto: HowToUsePanel,
   settings: ViewSettingsScreen,
   admin: AdminScreen,
 };

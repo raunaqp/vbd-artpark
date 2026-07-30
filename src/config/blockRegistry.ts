@@ -5,7 +5,10 @@ export interface BlockDef {
   label: string;
 }
 
-export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings" | "admin">, BlockDef[]> = {
+// "howto" is excluded alongside the two admin surfaces: it is static
+// documentation with no blocks to toggle, so a card for it in View Settings
+// would be permanently empty.
+export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings" | "admin" | "howto">, BlockDef[]> = {
   overview: [
     { id: "situation_summary", label: "Situation Summary" },
     { id: "kpis", label: "Key Metrics" },

@@ -30,6 +30,7 @@ const TAB_LABELS: Record<TabId, string> = {
   hotspots: "Hotspots",
   signals: "Signals",
   upload: "Data Upload",
+  howto: "How to use",
   settings: "View Settings",
   admin: "Admin",
 };

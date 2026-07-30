@@ -3,6 +3,7 @@ import { Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveC
 import GlobalFilters from "@/components/GlobalFilters";
 import DashboardMap from "@/components/DashboardMap";
 import KpiCards from "@/components/KpiCards";
+import AreaBreakdownModal from "@/components/AreaBreakdownModal";
 import TablePagination from "@/components/TablePagination";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import { getWeeklyTimeSeries, getDailyTimeSeries, getMonthlyTimeSeries, getLineListing, weeksFromFilters, getWeatherData } from "@/data/mockData";
@@ -23,6 +24,8 @@ export default function CaseSurveillanceScreen() {
   const [timeRange, setTimeRange] = useState<TimeRange>("weekly");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  // KPI click-through (Session B). `null` closes and clears the title.
+  const [breakdownKpi, setBreakdownKpi] = useState<string | null>(null);
   const { appliedFilters } = useFilters();
   const { diseaseName } = useDisease();
   const { stateId, options: stateOptions } = useStateSelection();
@@ -113,7 +116,14 @@ export default function CaseSurveillanceScreen() {
       </div>
       )}
 
-      {show("kpis") && <KpiCards windowWeeks={weeksFromFilters(appliedFilters)} />}
+      {show("kpis") && <KpiCards windowWeeks={weeksFromFilters(appliedFilters)} onTotalClick={setBreakdownKpi} />}
+
+      <AreaBreakdownModal
+        open={breakdownKpi !== null}
+        onOpenChange={(o) => { if (!o) setBreakdownKpi(null); }}
+        kpiName={breakdownKpi}
+      />
+
 
       {show("cases_over_time") && overlayData.length > 0 && (
       <div className="section-card p-5 mb-6">

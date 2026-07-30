@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
+import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import { levelToLegacy, stateLabelFromId } from "@/data/canonical";
 import { loadAllR3 } from "@/data/r3/loader";
 import GlobalFilters from "@/components/GlobalFilters";
@@ -58,6 +59,8 @@ export default function ResponseScreen() {
 function ResponseTabContent() {
   const { appliedFilters } = useFilters();
   const { stateId } = useStateSelection();
+  const { isVisible } = useBlockVisibility();
+  const show = (id: string) => isVisible("response", id);
   const { epiWeek, setEpiWeek, summary, areaLabel, weekRecords, allRecords, openDrawer, openNoActivity } = useWeeklyResponseContext();
   const { rows, loading, error } = usePriorityRows(epiWeek);
 
@@ -151,8 +154,8 @@ function ResponseTabContent() {
       />
 
       {/* Past actions, below the worklist and collapsed by default — a
-          different question, asked less often. */}
-      <ResponseHistoryPanel records={stateRecords} />
+          different question, asked less often. Admin-toggleable. */}
+      {show("response_history") && <ResponseHistoryPanel records={stateRecords} />}
 
       <WardDetailSheet
         open={detailOpen}

@@ -27,9 +27,12 @@ export const BLOCK_REGISTRY: Record<Exclude<TabId, "settings" | "admin">, BlockD
     { id: "actual_vs_predicted", label: "Incidence — Actual vs Predicted" },
     { id: "outbreak_table", label: "Priority Forecast Areas" },
   ],
-  // Response tab (R2). Operational sections don't have block-visibility toggles
-  // yet; add them here if/when they become individually toggleable.
-  response: [],
+  // Response tab. The operational sections above the fold (tiles, map, priority
+  // table) are the tab's reason to exist and stay always-on; Response History is
+  // supplementary, so it is Admin-toggleable.
+  response: [
+    { id: "response_history", label: "Response History" },
+  ],
   weather: [
     { id: "observed_climate", label: "Observed Climate (Last 8 Weeks)" },
     { id: "forecast_climate", label: "Forecast Climate (Next 8 Weeks)" },

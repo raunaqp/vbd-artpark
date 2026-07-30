@@ -10,6 +10,7 @@ import {
   getLineListing,
   type DashboardFiltersLike,
 } from "@/data/mockData";
+import { formatCaseRange } from "@/lib/forecast_range";
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
@@ -122,7 +123,7 @@ export function exportForecastCsv(ctx: ExportContext) {
     section: "weekly_forecast",
     week_label: w.label,
     week_start: w.week,
-    projected_cases: w.cases,
+    projected_cases: formatCaseRange(w.cases, { plain: true }),
     forecast_risk: w.risk,
     area: ctx.filters.district !== "All Districts" ? ctx.filters.district : ctx.stateLabel,
   }));
@@ -130,7 +131,10 @@ export function exportForecastCsv(ctx: ExportContext) {
     section: "area_forecast",
     week_label: p.expectedWeek,
     week_start: "",
-    projected_cases: p.projectedCases ?? "", // blank when no forecast4w for this area (gap)
+    // Still blank when no forecast4w for this area (gap). The on-screen table
+    // shows an em dash there, but a CSV gap stays empty so downstream filtering
+    // on blank keeps working.
+    projected_cases: p.projectedCases === null ? "" : formatCaseRange(p.projectedCases, { plain: true }),
     forecast_risk: p.riskLabel ?? p.risk,
     area: p.area,
     drivers: p.signal,

@@ -12,6 +12,7 @@ import { useBlockVisibility } from "@/contexts/BlockVisibilityContext";
 import { useStateSelection } from "@/contexts/StateContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useIsSectionVisible } from "@/lib/sectionVisibility";
+import { formatCaseRange } from "@/lib/forecast_range";
 import {
   getFilteredRegions,
   getSituationSummary,
@@ -137,7 +138,7 @@ export default function OverviewScreen({ onNavigate }: Props) {
             return (
               <div key={f.week} className={`rounded-lg border-2 p-3 text-center ${riskClass}`}>
                 <div className="text-xs font-semibold">{f.label}</div>
-                <div className="text-2xl font-bold mt-1">{f.cases}</div>
+                <div className="text-lg font-bold mt-1 tabular-nums">{formatCaseRange(f.cases)}</div>
                 <div className="text-[11px] opacity-80">projected cases</div>
                 <div className="mt-1.5"><span className={`risk-badge-${f.risk}`}>{f.riskLabel ?? f.risk}</span></div>
               </div>

@@ -11,6 +11,7 @@ import DashboardMap from "@/components/DashboardMap";
 import TablePagination from "@/components/TablePagination";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import { latestEpiWeek, epiWeekRange } from "@/lib/epiWeek";
+import { formatCaseRange, CASE_RANGE_CAPTION } from "@/lib/forecast_range";
 
 const PAGE_SIZE = 20;
 
@@ -63,13 +64,13 @@ export default function ForecastScreen() {
       {
         title: "Forecast — Next 4 Weeks",
         type: "kv" as const,
-        lines: riskForecast.map((f, i) => `${f.label}: ${f.cases} projected cases · ${f.riskLabel ?? f.risk}`),
+        lines: riskForecast.map((f) => `${f.label}: ${formatCaseRange(f.cases)} projected cases · ${f.riskLabel ?? f.risk}`),
       },
       {
         title: "Priority Forecast Areas",
         type: "table" as const,
         headers: [areaLabel, "Projected Cases", "Forecast Risk"],
-        rows: priorityAreas.map((r) => [r.area, r.projectedCases === null ? "—" : r.projectedCases.toLocaleString(), String(r.riskLabel ?? r.risk)]),
+        rows: priorityAreas.map((r) => [r.area, formatCaseRange(r.projectedCases), String(r.riskLabel ?? r.risk)]),
       },
     ];
     return sections;
@@ -100,6 +101,7 @@ export default function ForecastScreen() {
       </div>
 
       {show("risk_cards") && (
+      <div className="space-y-1.5">
       <div className="grid grid-cols-4 gap-3">
         {riskForecast.map((f) => {
           const riskClass = f.risk === "high" ? "border-risk-high bg-risk-high/5 text-risk-high"
@@ -108,12 +110,14 @@ export default function ForecastScreen() {
           return (
             <div key={f.week} className={`rounded-lg border-2 p-3 text-center ${riskClass}`}>
               <div className="text-xs font-semibold">{f.label}</div>
-              <div className="text-2xl font-bold mt-1">{f.cases}</div>
+              <div className="text-lg font-bold mt-1 tabular-nums">{formatCaseRange(f.cases)}</div>
               <div className="text-[11px] opacity-80">projected cases</div>
               <div className="mt-1.5"><span className={`risk-badge-${f.risk}`}>{f.riskLabel ?? f.risk}</span></div>
             </div>
           );
         })}
+      </div>
+      <p className="text-[11px] text-muted-foreground">{CASE_RANGE_CAPTION}</p>
       </div>
       )}
 
@@ -154,7 +158,7 @@ export default function ForecastScreen() {
                     {r.areaType && <span className="text-[10px] text-muted-foreground ml-1.5">({r.areaType})</span>}
                   </td>
                   <td className="py-2.5 px-3 font-semibold text-foreground tabular-nums">
-                    {r.projectedCases === null ? <span className="text-muted-foreground font-normal">—</span> : r.projectedCases.toLocaleString()}
+                    {r.projectedCases === null ? <span className="text-muted-foreground font-normal">—</span> : formatCaseRange(r.projectedCases)}
                   </td>
                   <td className="py-2.5 px-3"><span className={`risk-badge-${r.risk}`}>{r.riskLabel ?? r.risk}</span></td>
                 </tr>

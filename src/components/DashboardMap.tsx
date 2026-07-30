@@ -33,6 +33,7 @@ import {
 } from "@/lib/boundaryLayers";
 import type { RegionData } from "@/data/mockData";
 import { stateLabelFromId } from "@/data/canonical";
+import { formatCaseRange } from "@/lib/forecast_range";
 import type { OperationalWardMap } from "@/features/weeklyResponse/operationalWards";
 import {
   OPERATIONAL_DIMMED,
@@ -312,7 +313,7 @@ export default function DashboardMap({
   const projectedByArea = useMemo(() => new Map(priorityForecast.map((p) => [p.area, p.projectedCases])), [priorityForecast]);
   const projectedLabel = (name: string | null): string => {
     const v = name ? projectedByArea.get(name) : undefined;
-    return v === null || v === undefined ? "—" : v.toLocaleString();
+    return formatCaseRange(v);
   };
   // Hotspot mode → state-level hotspot list, same source the hotspot table reads from.
   const hotspotsForMap = mode === "hotspot" ? getFilteredHotspots({ ...appliedFilters, district: "All Districts", block: "All Blocks", ward: "All Wards" }, hotspotLookbackWeeks) : [];

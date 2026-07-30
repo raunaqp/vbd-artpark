@@ -635,6 +635,44 @@ It is exactly the data the new panel consumes, so whoever removes the dead prop
 should check whether the drawer was meant to show per-ward history inline — that
 is now the ward detail sheet's job (R5.1, section 3).
 
+## Forecast range display entries
+
+### Ward detail sheet has no projected cases — [planned]
+Section 2 of the ward detail sheet shows observed 4-week actuals
+(`windowCases` vs `priorCases`), not projections, and `PriorityRow` carries no
+forecast field at all. The range session scoped a "projected cases → range"
+change there and then dropped it: ward-level projections are not computed by
+design (only district/corporation level does — see "Priority Forecast Areas: no
+projected cases below district level"), so the field would have shown "—" for
+every ward, and wrapping the observed actuals in a ±10% band would have
+presented a counted number as a forecast.
+
+Add a Projected Cases field to section 2 when ward-level forecasting arrives —
+at that point it should read the real bounds, not the mocked band.
+
+### `RiskStrip` is an orphaned component — [polish]
+`src/components/RiskStrip.tsx` is defined and exported but imported nowhere, so
+Rollup tree-shakes it out — `grep RiskStrip dist/` finds nothing. It renders its
+own copy of the weekly forecast cards.
+
+Found while wiring forecast ranges. It was updated along with the live surfaces
+so it does not drift further, but the change could not be verified in the
+browser because the component never mounts. Either wire it up or delete it; a
+third copy of the forecast-card markup earning no keep is the actual problem.
+
+### Forecast ranges are a mocked ±10% band — [fix-before-real]
+`src/lib/forecast_range.ts` derives every displayed range as
+`point × 0.9 … point × 1.1`. It is a display-only stand-in for model
+uncertainty: no data model carries a range, and the band is deliberately not
+config-driven, so there is no knob that makes it look more real than it is.
+
+Six surfaces render it — the Forecast cards, Priority Forecast Areas table,
+Forecast PDF and CSV, the Overview cards, RiskStrip, and forecast-mode map
+tooltips. When the model emits genuine (and probably asymmetric) bounds, they
+belong in `RiskForecastPoint` / `PriorityForecastArea` alongside the point, and
+`formatCaseRange` should take the bounds as input instead of deriving them.
+That is the data-model change this session deliberately did not make.
+
 ## Build / tooling
 
 ### Main bundle > 500 kB — [demo-ok]

@@ -1,4 +1,5 @@
 import { getRiskForecast } from "@/data/mockData";
+import { formatCaseRange } from "@/lib/forecast_range";
 import { useDisease } from "@/contexts/DiseaseContext";
 import { useFilters } from "@/contexts/FilterContext";
 import { useStateSelection } from "@/contexts/StateContext";
@@ -31,7 +32,7 @@ export default function RiskStrip() {
         {riskForecast.map((f) => (
           <div key={f.week} className={`rounded-lg border-2 p-3 text-center ${riskColors[f.risk] || riskColors.moderate}`}>
             <div className="text-xs font-semibold uppercase">{f.label}</div>
-            <div className="text-lg font-bold">{f.cases}</div>
+            <div className="text-sm font-bold tabular-nums">{formatCaseRange(f.cases)}</div>
             <div className="text-xs opacity-80">cases (predicted)</div>
             <div className="mt-1">
               <span className={`risk-badge-${f.risk}`}>{f.riskLabel ?? f.risk}</span>
